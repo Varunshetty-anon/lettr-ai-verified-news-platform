@@ -3,9 +3,9 @@ import { ScorePillar } from './components/ui/ScorePillar';
 
 export default function Home() {
   const trendingNews = [
-    { id: 1, title: 'Global Climate Summit Reaches Unprecedented Accord on Emission Standards', summary: 'Delegates from 195 nations finalized a binding agreement targeting a 45% reduction in greenhouse gas emissions by 2030, marking a pivotal moment in international climate policy.', score: 98 },
-    { id: 2, title: 'Central Bank Unexpectedly Hikes Interest Rates, Market Recoils', summary: 'In a surprise move to combat persistent inflation, the central bank raised rates by 50 basis points. The decision immediately rippled through global equity markets.', score: 85 },
-    { id: 3, title: 'Tech Giant Unveils Revolutionary "Neural Interface" Device', summary: 'Silicon Valley powerhouse showcased a non-invasive wearable that claims to interpret neural signals for device control, though independent verification remains scarce.', score: 45, isDisputed: true },
+    { id: 1, title: 'Global Climate Summit Reaches Unprecedented Accord on Emission Standards', summary: 'Delegates from 195 nations finalized a binding agreement targeting a 45% reduction in greenhouse gas emissions by 2030, marking a pivotal moment in international climate policy.', score: 98, originSource: 'Verified Wire' },
+    { id: 2, title: 'Central Bank Unexpectedly Hikes Interest Rates, Market Recoils', summary: 'In a surprise move to combat persistent inflation, the central bank raised rates by 50 basis points. The decision immediately rippled through global equity markets.', score: 85, originSource: undefined },
+    { id: 3, title: 'Tech Giant Unveils Revolutionary "Neural Interface" Device', summary: 'Silicon Valley powerhouse showcased a non-invasive wearable that claims to interpret neural signals for device control, though independent verification remains scarce.', score: 45, isDisputed: true, originSource: undefined },
   ];
 
   return (

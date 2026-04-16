@@ -30,8 +30,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
            // Registration flow
            user = await User.create({
              name: (credentials.email as string).split("@")[0],
-             email: credentials.email,
-             password: credentials.password, // IMPORTANT: Hash this in real prod
+             email: credentials.email as string,
+             password: credentials.password as string, // IMPORTANT: Hash this in real prod
              role: 'READER' // Role assigned Reader by default
            });
         } else {
@@ -53,8 +53,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!existingUser) {
           await User.create({
             name: user.name || "Unknown",
-            email: user.email,
-            image: user.image,
+            email: user.email as string,
+            image: user.image as string,
             role: 'READER'
           });
         }
