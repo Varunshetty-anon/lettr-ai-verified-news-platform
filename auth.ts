@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import AppleProvider from "next-auth/providers/apple";
 import CredentialsProvider from "next-auth/providers/credentials";
 import dbConnect from "./lib/mongodb";
 import { User } from "./models/User";
@@ -9,6 +10,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    }),
+    AppleProvider({
+      clientId: process.env.APPLE_ID || "",
+      clientSecret: process.env.APPLE_PRIVATE_KEY || "", // Typically requires specialized generation for standard JWT matching
     }),
     CredentialsProvider({
       name: "Email and Password",
@@ -46,13 +51,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (account?.provider === "google") {
+      if (account?.provider === "google" || account?.provider === "apple") {
         await dbConnect();
         const existingUser = await User.findOne({ email: user.email });
         
         if (!existingUser) {
           await User.create({
-            name: user.name || "Unknown",
+            name: user.name || (account.provider === "apple" ? "Apple User" : "Unknown"),
             email: user.email,
             image: user.image,
             role: 'READER'
