@@ -7,9 +7,18 @@ export async function GET(request: Request) {
   await dbConnect();
 
   try {
-    const posts = await Post.find({ isPublished: true })
-      .sort({ createdAt: -1 })
-      .limit(25)
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+    const sort = searchParams.get('sort') || 'recent'; // recent | score
+
+    const filter: any = { isPublished: true };
+    if (category) filter.category = category;
+
+    const sortObj: Record<string, -1> = sort === 'score' ? { factScore: -1 } : { createdAt: -1 };
+
+    const posts = await Post.find(filter)
+      .sort(sortObj)
+      .limit(30)
       .lean();
 
     // Hydrate author info

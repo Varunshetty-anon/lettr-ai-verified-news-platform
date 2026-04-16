@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* ===== LIGHT MODE (DEFAULT) ===== */
 :root {
   --background: #fafbfc;
   --foreground: #141718;
@@ -36,6 +37,34 @@
   --color-on-tertiary-container: #ff7e73;
 }
 
+/* ===== DARK MODE ===== */
+.dark {
+  --background: #0b0b0b;
+  --foreground: #e4e4e4;
+
+  --color-surface: #0b0b0b;
+  --color-surface-container-low: #141414;
+  --color-surface-container-lowest: #1a1a1a;
+  --color-surface-container-high: #1e1e1e;
+  --color-surface-container-highest: #252525;
+  --color-surface-variant: #1e1e1e;
+  
+  --color-on-surface: #e4e4e4;
+  --color-on-surface-variant: #9a9fa5;
+  --color-outline-variant: #3a3f44;
+  
+  --color-primary: #7ec8d0;
+  --color-primary-container: #1a4a50;
+  --color-on-primary: #0b0b0b;
+  --color-on-primary-container: #a0d5db;
+  
+  --color-secondary: #8ab0be;
+  
+  --color-tertiary: #ff6b5e;
+  --color-tertiary-container: #4a0003;
+  --color-on-tertiary-container: #ff9e96;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -43,14 +72,16 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Subtle selection color */
 ::selection {
   background: #0a2e3322;
 }
+.dark ::selection {
+  background: #7ec8d044;
+}
 
-/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 4px;
 }
@@ -58,11 +89,10 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c4c9ce;
+  background: var(--color-outline-variant);
   border-radius: 2px;
 }
 
-/* Smooth line clamp */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -70,10 +100,32 @@ body {
   overflow: hidden;
 }
 
-/* Spin animation for loading */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
 }

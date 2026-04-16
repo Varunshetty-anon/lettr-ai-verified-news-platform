@@ -5,7 +5,9 @@ export interface IPost extends Document {
   headline: string;
   description: string;
   sourceLink?: string;
+  sourceHash?: string;
   originSource?: string;
+  category?: string;
   mediaUrl?: string;
   factScore: number;
   reasoning?: string;
@@ -20,7 +22,9 @@ const PostSchema: Schema<IPost> = new Schema({
   headline: { type: String, required: true },
   description: { type: String, required: true },
   sourceLink: { type: String },
+  sourceHash: { type: String, index: true },
   originSource: { type: String },
+  category: { type: String, index: true },
   mediaUrl: { type: String },
   factScore: { type: Number, required: true, default: 0 },
   reasoning: { type: String },

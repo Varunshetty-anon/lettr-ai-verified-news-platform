@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Compass, Home, PenTool, User as UserIcon, Shield } from 'lucide-react';
+import { ThemeToggle } from '../ui/ThemeToggle';
 
 export function LeftSidebar() {
   const navItems = [
@@ -44,10 +45,11 @@ export function LeftSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-outline-variant/12 pt-4 mt-auto">
+      <div className="border-t border-outline-variant/12 pt-4 mt-auto flex items-center justify-between">
         <p className="font-label text-[9px] text-on-surface-variant/40 uppercase tracking-wider">
           Lettr © 2026
         </p>
+        <ThemeToggle />
       </div>
     </aside>
   );

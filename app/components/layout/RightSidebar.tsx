@@ -10,13 +10,11 @@ interface BotInfo {
 
 export function RightSidebar() {
   const [bots, setBots] = useState<BotInfo[]>([]);
-  const [seedStatus, setSeedStatus] = useState('');
 
   useEffect(() => {
     fetch('/api/posts')
       .then(res => res.json())
       .then(data => {
-        // Extract unique bot authors
         const authorMap = new Map<string, BotInfo>();
         (data.posts || []).forEach((p: any) => {
           if (p.author && p.author.role === 'AUTHOR') {
@@ -28,48 +26,40 @@ export function RightSidebar() {
             });
           }
         });
-        setBots(Array.from(authorMap.values()));
+        setBots(Array.from(authorMap.values()).sort((a, b) => b.totalPosts - a.totalPosts));
       })
       .catch(() => {});
   }, []);
 
-  const handleSeed = async () => {
-    setSeedStatus('Seeding...');
-    try {
-      const res = await fetch('/api/cron/seed-bots');
-      const data = await res.json();
-      setSeedStatus(data.success ? 'Posted!' : data.message || 'Done');
-      setTimeout(() => setSeedStatus(''), 3000);
-    } catch {
-      setSeedStatus('Error');
-    }
-  };
-
-  const trendingTopics = ["Global Policy", "Silicon Valley", "Renewable Energy", "Financial Markets", "Artificial Intelligence"];
+  const trendingTopics = ["Global Policy", "AI & Tech", "Renewable Energy", "Financial Markets", "World Affairs"];
 
   return (
-    <aside className="w-[280px] h-screen sticky top-0 hidden lg:flex flex-col border-l border-outline-variant/12 bg-surface px-6 py-8 overflow-y-auto">
+    <aside className="w-[260px] h-screen sticky top-0 hidden lg:flex flex-col border-l border-outline-variant/12 bg-surface px-6 py-8 overflow-y-auto">
 
-      {/* Bot Status Panel */}
+      {/* Active Bots */}
       <div className="mb-8">
-        <h3 className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/40 mb-4">Bot Network</h3>
-        <button
-          onClick={handleSeed}
-          className="w-full font-label text-[10px] uppercase tracking-[0.15em] border border-primary/20 text-primary py-2.5 hover:bg-primary/5 transition-colors mb-4"
-        >
-          {seedStatus || 'Trigger Bot Seed'}
-        </button>
-        {bots.length > 0 && (
-          <div className="flex flex-col gap-2">
+        <h3 className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/40 mb-4">Active Bot Authors</h3>
+        {bots.length > 0 ? (
+          <div className="flex flex-col gap-2.5">
             {bots.map((bot, i) => (
-              <div key={i} className="flex items-center justify-between py-1.5">
-                <span className="font-body text-xs text-on-surface/80">{bot.name}</span>
+              <div key={i} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="font-label text-[10px] text-on-surface-variant/50">{bot.totalPosts} posts</span>
-                  <span className="font-label text-[10px] text-emerald-600">{bot.trustScore}</span>
+                  <div className="w-6 h-6 bg-primary/10 text-primary flex items-center justify-center font-display text-[10px] font-bold">
+                    {bot.name.charAt(0)}
+                  </div>
+                  <span className="font-body text-xs text-on-surface/80">{bot.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-label text-[10px] text-on-surface-variant/40">{bot.totalPosts}</span>
+                  <span className="font-label text-[10px] text-emerald-600 dark:text-emerald-400">{bot.trustScore}</span>
                 </div>
               </div>
             ))}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            <span className="font-label text-[10px] text-on-surface-variant/50">Bots auto-posting...</span>
           </div>
         )}
       </div>
@@ -77,19 +67,19 @@ export function RightSidebar() {
       {/* Trending Topics */}
       <div className="mb-8">
         <h3 className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/40 mb-4">Trending Topics</h3>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2.5">
           {trendingTopics.map((topic, i) => (
             <button key={i} className="text-left group">
-              <span className="font-display text-sm font-semibold text-on-surface/80 group-hover:text-primary transition-colors leading-tight">{topic}</span>
+              <span className="font-body text-sm text-on-surface/70 group-hover:text-primary transition-colors">{topic}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Platform Info */}
+      {/* Info */}
       <div className="mt-auto pt-4 border-t border-outline-variant/12">
-        <p className="font-label text-[9px] text-on-surface-variant/40 leading-relaxed">
-          LETTR uses Groq-powered AI (Llama 3.3) to verify every article before publication. Content below 45% accuracy is automatically rejected.
+        <p className="font-label text-[9px] text-on-surface-variant/30 leading-relaxed">
+          LETTR uses Groq-powered AI (Llama 3.3) to verify every article. Content below 45% accuracy is automatically rejected. Bots post every 5-10 minutes.
         </p>
       </div>
     </aside>

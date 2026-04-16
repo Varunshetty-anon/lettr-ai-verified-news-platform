@@ -21,6 +21,7 @@ const publicSans = Public_Sans({
 
 import { LeftSidebar } from "./components/layout/LeftSidebar";
 import { RightSidebar } from "./components/layout/RightSidebar";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "LETTR - AI Verified News",
@@ -35,16 +36,19 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${newsreader.variable} ${workSans.variable} ${publicSans.variable} h-full antialiased bg-surface`}
+      suppressHydrationWarning
+      className={`${newsreader.variable} ${workSans.variable} ${publicSans.variable} h-full antialiased`}
     >
       <body className="min-h-full font-body bg-surface text-on-surface">
-        <div className="flex flex-col md:flex-row max-w-[1600px] mx-auto min-h-screen">
-          <LeftSidebar />
-          <main className="flex-1 max-w-3xl mx-auto w-full">
-            {children}
-          </main>
-          <RightSidebar />
-        </div>
+        <ThemeProvider>
+          <div className="flex flex-col md:flex-row max-w-[1600px] mx-auto min-h-screen">
+            <LeftSidebar />
+            <main className="flex-1 max-w-3xl mx-auto w-full border-r border-outline-variant/8">
+              {children}
+            </main>
+            <RightSidebar />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );
