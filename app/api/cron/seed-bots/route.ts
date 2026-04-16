@@ -62,7 +62,7 @@ Summary: <text>`;
     let rewriteContent = { cleanHeadline: rawTitle, cleanSummary: "Live news feed summary." };
 
     try {
-      const rewriteResponse = await fetch("https://api-inference.huggingface.co/models/google/gemma-7b-it", {
+      const rewriteResponse = await fetch("https://api-inference.huggingface.co/models/google/gemma-2-2b-it", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
