@@ -15,14 +15,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Headline and description are required.' }, { status: 400 });
     }
 
-    // Find or create the author
-    let author = await User.findOne({ email: authorEmail || 'anonymous@lettr.ai' });
+    // Find the author
+    const author = await User.findOne({ email: authorEmail || 'anonymous@lettr.ai' });
+    
     if (!author) {
-      author = await User.create({
-        name: 'Anonymous',
-        email: 'anonymous@lettr.ai',
-        role: 'READER'
-      });
+      return NextResponse.json({ error: 'User not found. Please sign in.' }, { status: 401 });
+    }
+
+    // Check verified author status
+    if (!author.isVerifiedAuthor && author.role !== 'AUTHOR') {
+      return NextResponse.json({ 
+        error: 'Not authorized to publish. Only verified authors can submit articles.',
+        requiresVerification: true
+      }, { status: 403 });
     }
 
     // AI Fact Verification
@@ -43,11 +48,15 @@ export async function POST(request: Request) {
       description,
       sourceLink: sourceLink || undefined,
       originSource: 'User Submitted',
+      category: body.category || 'World',
       factScore: verification.factScore,
       reasoning: verification.reasoning,
       isPublished: true,
       engagement: 0
     });
+
+    // Increment author post count
+    await User.findByIdAndUpdate(author._id, { $inc: { totalPosts: 1 } });
 
     return NextResponse.json({ 
       success: true, 

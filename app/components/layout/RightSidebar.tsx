@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { Activity } from 'lucide-react';
 
 interface BotInfo {
   name: string;
@@ -31,55 +32,63 @@ export function RightSidebar() {
       .catch(() => {});
   }, []);
 
-  const trendingTopics = ["Global Policy", "AI & Tech", "Renewable Energy", "Financial Markets", "World Affairs"];
-
   return (
-    <aside className="w-[260px] h-screen sticky top-0 hidden lg:flex flex-col border-l border-outline-variant/12 bg-surface px-6 py-8 overflow-y-auto">
+    <aside className="w-[240px] h-screen sticky top-0 hidden lg:flex flex-col border-l border-outline-variant bg-surface px-5 py-7 overflow-y-auto">
 
-      {/* Active Bots */}
-      <div className="mb-8">
-        <h3 className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/40 mb-4">Active Bot Authors</h3>
+      {/* Bot Network */}
+      <div className="mb-7">
+        <div className="flex items-center gap-1.5 mb-3">
+          <Activity size={12} className="text-accent" />
+          <h3 className="font-label text-[8px] uppercase tracking-[0.2em] text-on-surface-variant/40">Bot Network</h3>
+        </div>
         {bots.length > 0 ? (
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2">
             {bots.map((bot, i) => (
-              <div key={i} className="flex items-center justify-between">
+              <div key={i} className="flex items-center justify-between py-1">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-primary/10 text-primary flex items-center justify-center font-display text-[10px] font-bold">
+                  <div className="w-5 h-5 bg-primary/10 text-primary flex items-center justify-center font-display text-[9px] font-bold">
                     {bot.name.charAt(0)}
                   </div>
-                  <span className="font-body text-xs text-on-surface/80">{bot.name}</span>
+                  <span className="font-body text-[11px] text-on-surface/70">{bot.name}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-label text-[10px] text-on-surface-variant/40">{bot.totalPosts}</span>
-                  <span className="font-label text-[10px] text-emerald-600 dark:text-emerald-400">{bot.trustScore}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-label text-[9px] text-on-surface-variant/30">{bot.totalPosts}</span>
+                  <span className="font-label text-[9px] text-emerald-600 dark:text-emerald-400">{bot.trustScore}</span>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            <span className="font-label text-[10px] text-on-surface-variant/50">Bots auto-posting...</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
+            <span className="font-label text-[9px] text-on-surface-variant/40">Auto-posting active...</span>
           </div>
         )}
       </div>
 
-      {/* Trending Topics */}
-      <div className="mb-8">
-        <h3 className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/40 mb-4">Trending Topics</h3>
-        <div className="flex flex-col gap-2.5">
-          {trendingTopics.map((topic, i) => (
-            <button key={i} className="text-left group">
-              <span className="font-body text-sm text-on-surface/70 group-hover:text-primary transition-colors">{topic}</span>
-            </button>
-          ))}
+      {/* Quick Stats */}
+      <div className="mb-7">
+        <h3 className="font-label text-[8px] uppercase tracking-[0.2em] text-on-surface-variant/40 mb-3">Platform</h3>
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <span className="font-label text-[10px] text-on-surface-variant/50">Active bots</span>
+            <span className="font-label text-[10px] text-on-surface/70">{bots.length}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="font-label text-[10px] text-on-surface-variant/50">Interval</span>
+            <span className="font-label text-[10px] text-on-surface/70">5-10 min</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="font-label text-[10px] text-on-surface-variant/50">Min score</span>
+            <span className="font-label text-[10px] text-on-surface/70">45/100</span>
+          </div>
         </div>
       </div>
 
       {/* Info */}
-      <div className="mt-auto pt-4 border-t border-outline-variant/12">
-        <p className="font-label text-[9px] text-on-surface-variant/30 leading-relaxed">
-          LETTR uses Groq-powered AI (Llama 3.3) to verify every article. Content below 45% accuracy is automatically rejected. Bots post every 5-10 minutes.
+      <div className="mt-auto pt-3 border-t border-outline-variant">
+        <p className="font-label text-[8px] text-on-surface-variant/25 leading-relaxed">
+          Powered by Groq AI (Llama 3.3). Content below 45% accuracy is rejected.
         </p>
       </div>
     </aside>

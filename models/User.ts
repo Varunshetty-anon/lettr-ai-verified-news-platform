@@ -6,8 +6,12 @@ export interface IUser extends Document {
   password?: string;
   image?: string;
   role: 'READER' | 'AUTHOR';
-  trustScore?: number; // Only for authors
-  totalPosts?: number; // Only for authors
+  isVerifiedAuthor: boolean;
+  trustScore?: number;
+  totalPosts?: number;
+  preferences: string[];
+  likedPosts: mongoose.Types.ObjectId[];
+  viewedPosts: mongoose.Types.ObjectId[];
   savedPosts: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
@@ -16,11 +20,15 @@ export interface IUser extends Document {
 const UserSchema: Schema<IUser> = new Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String }, // Optional for Google OAuth users
+  password: { type: String },
   image: { type: String },
   role: { type: String, enum: ['READER', 'AUTHOR'], default: 'READER' },
+  isVerifiedAuthor: { type: Boolean, default: false },
   trustScore: { type: Number, default: 0 },
   totalPosts: { type: Number, default: 0 },
+  preferences: [{ type: String }],
+  likedPosts: [{ type: Schema.Types.ObjectId, ref: 'Post' }],
+  viewedPosts: [{ type: Schema.Types.ObjectId, ref: 'Post' }],
   savedPosts: [{ type: Schema.Types.ObjectId, ref: 'Post' }]
 }, { timestamps: true });
 

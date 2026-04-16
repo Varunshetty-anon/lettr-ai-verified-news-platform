@@ -55,6 +55,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           trustScore: author.trustScore,
           role: author.role,
           totalPosts: author.totalPosts,
+          isVerifiedAuthor: author.isVerifiedAuthor,
         } : null,
       },
       related: relatedHydrated,
