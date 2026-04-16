@@ -46,54 +46,49 @@ export async function GET(request: Request) {
      let mediaUrl = targetContent.thumbnail;
      if (mediaUrl === 'self' || mediaUrl === 'default') mediaUrl = undefined;
 
-     // 1. REWRITE VIA GEMMA (HUGGING FACE)
-     const apiKey = process.env.HUGGINGFACE_API_KEY;
-     if (!apiKey) throw new Error("Missing HF API Key");
-
-     const rewritePrompt = `Act as a professional news editor. Rewrite the following raw text into a serious headline and a short 2 line summary. Do NOT copy raw text.
-
-Raw Title: ${rawTitle}
-Raw Text: ${rawText.substring(0, 500) + '...'}
-
-Format:
-Headline: <text>
-Summary: <text>`;
+     // 1. REWRITE VIA GROQ
+     const apiKey = process.env.GROQ_API_KEY;
+     if (!apiKey) throw new Error("Missing GROQ API Key");
 
     let rewriteContent = { cleanHeadline: rawTitle, cleanSummary: "Live news feed summary." };
 
     try {
-      const rewriteResponse = await fetch("https://api-inference.huggingface.co/models/google/gemma-2-2b-it", {
+      const rewriteResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          inputs: rewritePrompt,
-          parameters: { max_new_tokens: 150, temperature: 0.3 }
+          model: "llama-3.3-70b-versatile",
+          messages: [
+            {
+               role: "system",
+               content: "Act as a professional news editor. Output exactly the requested format."
+            },
+            {
+               role: "user",
+               content: `Rewrite the following raw text into a serious headline and a short 2 line summary. Do NOT copy raw text.\n\nRaw Title: ${rawTitle}\nRaw Text: ${rawText.substring(0, 500) + '...'}\n\nFormat:\nHeadline: <text>\nSummary: <text>`
+            }
+          ],
+          temperature: 0.3
         })
       });
 
-      // Handle Cold Starts elegantly
-      if (rewriteResponse.status === 503) {
-         console.warn("HF Model Cold Start. Delaying...");
-         await new Promise(r => setTimeout(r, 12000));
-         return NextResponse.json({ message: "Engine warming up. Retry next loop." }, { status: 202 });
-      }
-
       if (rewriteResponse.ok) {
         const rewriteData = await rewriteResponse.json();
-        const outputText = rewriteData[0]?.generated_text || "";
+        const outputText = rewriteData.choices[0]?.message?.content || "";
         
-        const extracted = outputText.substring(rewritePrompt.length);
-        const headMatch = extracted.match(/Headline:\s*(.*)/i);
-        const sumMatch = extracted.match(/Summary:\s*((.|\n)*)/i);
+        const headMatch = outputText.match(/Headline:\s*(.*)/i);
+        const sumMatch = outputText.match(/Summary:\s*((.|\n)*)/i);
 
         if (headMatch) rewriteContent.cleanHeadline = headMatch[1].trim();
         if (sumMatch) rewriteContent.cleanSummary = sumMatch[1].trim();
+      } else {
+        console.error("Groq Return Error:", rewriteResponse.status);
       }
     } catch (e) {
-      console.error("HF Rewrite AI Failed. Utilizing safe default parser.", e);
+      console.error("Groq Rewrite AI Failed. Utilizing safe default parser.", e);
     }
 
     // 2. FACT VERIFICATION
