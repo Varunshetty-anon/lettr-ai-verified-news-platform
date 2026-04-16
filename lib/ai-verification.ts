@@ -1,57 +1,76 @@
-const NVAPI_KEY = "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";
-
 export interface VerificationResult {
   factScore: number;
   reasoning: string;
 }
 
-export async function verifyFact(headline: string, description: string, referenceLink?: string): Promise<VerificationResult> {
-  const prompt = `
-    You are an expert fact-checker. 
-    Analyze the following news post:
-    Headline: "${headline}"
-    Description: "${description}"
-    Reference Link: "${referenceLink || 'None'}"
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-    Evaluate factual accuracy, consistency, and any misinformation signals.
-    Output ONLY valid JSON with two exact fields:
-    {
-      "factScore": (a number between 0 and 100 representing factual accuracy),
-      "reasoning": (a short string, max 2 sentences with the reasoning)
-    }
-  `;
+export async function verifyFact(headline: string, description: string, referenceLink?: string, retries = 2): Promise<VerificationResult> {
+  const apiKey = process.env.HUGGINGFACE_API_KEY;
+  if (!apiKey) {
+    console.warn("Missing HUGGINGFACE_API_KEY, defaulting to 50");
+    return { factScore: 50, reasoning: "Unverified (Missing API Key)." };
+  }
+
+  // Trim to reduce latency
+  const trimmedDesc = description.length > 600 ? description.substring(0, 600) + "..." : description;
+
+  const prompt = `Analyze the following news content for factual accuracy.
+
+Content:
+Headline: ${headline}
+Summary: ${trimmedDesc}
+Source: ${referenceLink || 'None'}
+
+Tasks:
+1. Verify against general knowledge and reliable sources
+2. Estimate factual accuracy
+3. Output ONLY:
+   - Fact Score (0-100)
+   - Short reasoning (1 line)
+
+Format:
+Score: <number>
+Reason: <text>`;
 
   try {
-    const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+    const response = await fetch("https://api-inference.huggingface.co/models/google/gemma-7b-it", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${NVAPI_KEY}`
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "google/gemma-2-9b-it", // Using Gemma as specified
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.2,
-        max_tokens: 256,
-        response_format: { type: "json_object" }
+        inputs: prompt,
+        parameters: { max_new_tokens: 100, temperature: 0.1 }
       })
     });
 
     if (!response.ok) {
-        throw new Error(`AI Verification failed: ${response.statusText}`);
+      if (response.status === 503 && retries > 0) {
+        console.log("HF Model Cold Start. Waiting 15 seconds...");
+        await sleep(15000); // Wait for HF to load the model
+        return verifyFact(headline, description, referenceLink, retries - 1);
+      }
+      throw new Error(`HF API Error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    const content = data.choices[0].message.content;
-    const parsed = JSON.parse(content);
+    const outputText = data[0]?.generated_text || "";
     
-    return {
-      factScore: typeof parsed.factScore === 'number' ? parsed.factScore : parseInt(parsed.factScore) || 50,
-      reasoning: parsed.reasoning || "System evaluation complete."
-    };
+    // The HF models repeat the prompt. We parse the last section.
+    const extractionMatch = outputText.substring(prompt.length);
+    
+    const scoreMatch = extractionMatch.match(/Score:\s*(\d{1,3})/i);
+    const reasonMatch = extractionMatch.match(/Reason:\s*(.*)/i);
+
+    const factScore = scoreMatch ? parseInt(scoreMatch[1], 10) : 50;
+    const reasoning = reasonMatch ? reasonMatch[1].trim() : "System evaluation incomplete. Assuming verified status.";
+
+    return { factScore, reasoning };
+
   } catch (error) {
-    console.error("Fact verification Error:", error);
-    // Fallback if API is unreachable (so development isn't fully blocked)
-    return { factScore: 50, reasoning: "Unable to verify facts due to network error." };
+    console.error("Fact verification Error (HF):", error);
+    return { factScore: 50, reasoning: "Unverified (API Error / Timeout)." };
   }
 }

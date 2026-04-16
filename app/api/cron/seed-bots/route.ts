@@ -46,36 +46,55 @@ export async function GET(request: Request) {
      let mediaUrl = targetContent.thumbnail;
      if (mediaUrl === 'self' || mediaUrl === 'default') mediaUrl = undefined;
 
-     // 1. REWRITE VIA GEMMA
-     const rewritePrompt = `
-       Act as a professional news editor. Rewrite the following raw internet content into a serious, credible news headline and a short 2-4 line summary. 
-       Do NOT copy the raw text. Make it sound like a premium news brief.
-       Raw Title: ${rawTitle}
-       Raw Text: ${rawText}
+     // 1. REWRITE VIA GEMMA (HUGGING FACE)
+     const apiKey = process.env.HUGGINGFACE_API_KEY;
+     if (!apiKey) throw new Error("Missing HF API Key");
 
-       Output ONLY valid JSON containing EXACTLY:
-       {
-         "cleanHeadline": "...",
-         "cleanSummary": "..."
-       }
-     `;
+     const rewritePrompt = `Act as a professional news editor. Rewrite the following raw text into a serious headline and a short 2 line summary. Do NOT copy raw text.
 
-    const rewriteResponse = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${NVAPI_KEY}`
-      },
-      body: JSON.stringify({
-        model: "google/gemma-2-9b-it",
-        messages: [{ role: "user", content: rewritePrompt }],
-        temperature: 0.3,
-        response_format: { type: "json_object" }
-      })
-    });
+Raw Title: ${rawTitle}
+Raw Text: ${rawText.substring(0, 500) + '...'}
 
-    const rewriteData = await rewriteResponse.json();
-    const rewriteContent = JSON.parse(rewriteData.choices[0].message.content);
+Format:
+Headline: <text>
+Summary: <text>`;
+
+    let rewriteContent = { cleanHeadline: rawTitle, cleanSummary: "Live news feed summary." };
+
+    try {
+      const rewriteResponse = await fetch("https://api-inference.huggingface.co/models/google/gemma-7b-it", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          inputs: rewritePrompt,
+          parameters: { max_new_tokens: 150, temperature: 0.3 }
+        })
+      });
+
+      // Handle Cold Starts elegantly
+      if (rewriteResponse.status === 503) {
+         console.warn("HF Model Cold Start. Delaying...");
+         await new Promise(r => setTimeout(r, 12000));
+         return NextResponse.json({ message: "Engine warming up. Retry next loop." }, { status: 202 });
+      }
+
+      if (rewriteResponse.ok) {
+        const rewriteData = await rewriteResponse.json();
+        const outputText = rewriteData[0]?.generated_text || "";
+        
+        const extracted = outputText.substring(rewritePrompt.length);
+        const headMatch = extracted.match(/Headline:\s*(.*)/i);
+        const sumMatch = extracted.match(/Summary:\s*((.|\n)*)/i);
+
+        if (headMatch) rewriteContent.cleanHeadline = headMatch[1].trim();
+        if (sumMatch) rewriteContent.cleanSummary = sumMatch[1].trim();
+      }
+    } catch (e) {
+      console.error("HF Rewrite AI Failed. Utilizing safe default parser.", e);
+    }
 
     // 2. FACT VERIFICATION
     const verification = await verifyFact(rewriteContent.cleanHeadline, rewriteContent.cleanSummary, originalLink);
