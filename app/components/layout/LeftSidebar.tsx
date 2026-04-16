@@ -1,56 +1,53 @@
 import React from 'react';
 import Link from 'next/link';
-import { Compass, FileText, Home, LogOut, User as UserIcon, PenTool } from 'lucide-react';
+import { Compass, Home, PenTool, User as UserIcon, Shield } from 'lucide-react';
 
 export function LeftSidebar() {
+  const navItems = [
+    { href: '/', label: 'Feed', icon: Home, section: 'Platform' },
+    { href: '/explore', label: 'Explore', icon: Compass, section: 'Platform' },
+    { href: '/publish', label: 'Publish', icon: PenTool, section: 'Author' },
+    { href: '/verify', label: 'Verification', icon: Shield, section: 'Author' },
+    { href: '/account', label: 'Account', icon: UserIcon, section: 'Personal' },
+  ];
+
+  const sections = [...new Set(navItems.map(i => i.section))];
+
   return (
-    <aside className="w-[280px] h-screen sticky top-0 hidden md:flex flex-col border-r border-outline-variant/20 bg-surface px-6 py-10">
-      <div className="mb-12">
-        <Link href="/" className="font-display font-black text-3xl tracking-tighter text-primary">
-          LETTR.
+    <aside className="w-[240px] h-screen sticky top-0 hidden md:flex flex-col border-r border-outline-variant/12 bg-surface px-5 py-8">
+      {/* Logo */}
+      <div className="mb-10">
+        <Link href="/" className="flex items-baseline gap-0.5">
+          <span className="font-display font-black text-2xl tracking-[-0.04em] text-primary">LETTR</span>
+          <span className="font-display text-2xl text-primary/40">.</span>
         </Link>
+        <p className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/50 mt-1">Verified News Network</p>
       </div>
 
+      {/* Navigation */}
       <nav className="flex-1 flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <span className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-2">Platform</span>
-          <Link href="/" className="flex items-center gap-3 font-body text-on-surface hover:text-primary transition-colors py-2">
-            <Home size={20} strokeWidth={1.5} />
-            <span className="font-medium text-lg">Home Feed</span>
-          </Link>
-          <Link href="/explore" className="flex items-center gap-3 font-body text-on-surface hover:text-primary transition-colors py-2">
-            <Compass size={20} strokeWidth={1.5} />
-            <span className="font-medium text-lg">Explore</span>
-          </Link>
-          <Link href="/verified" className="flex items-center gap-3 font-body text-on-surface hover:text-primary transition-colors py-2">
-            <FileText size={20} strokeWidth={1.5} />
-            <span className="font-medium text-lg">Verified News</span>
-          </Link>
-        </div>
-
-        <div className="flex flex-col gap-2 mt-4">
-          <span className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-2">Authored</span>
-          <Link href="/publish" className="flex items-center gap-3 font-body text-on-surface hover:text-primary transition-colors py-2">
-            <PenTool size={20} strokeWidth={1.5} />
-            <span className="font-medium text-lg">Publish Article</span>
-          </Link>
-        </div>
-
-        <div className="flex flex-col gap-2 mt-4">
-          <span className="font-label text-xs uppercase tracking-widest text-on-surface-variant mb-2">Personal</span>
-          <Link href="/account" className="flex items-center gap-3 font-body text-on-surface hover:text-primary transition-colors py-2">
-            <UserIcon size={20} strokeWidth={1.5} />
-            <span className="font-medium text-lg">Profile & Saves</span>
-          </Link>
-        </div>
+        {sections.map(section => (
+          <div key={section} className="flex flex-col gap-0.5">
+            <span className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/40 mb-2 px-3">{section}</span>
+            {navItems.filter(i => i.section === section).map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center gap-3 px-3 py-2.5 font-body text-sm text-on-surface/80 hover:text-primary hover:bg-primary/[0.03] transition-all duration-150 group"
+              >
+                <item.icon size={16} strokeWidth={1.5} className="text-on-surface-variant/50 group-hover:text-primary transition-colors" />
+                <span className="font-medium">{item.label}</span>
+              </Link>
+            ))}
+          </div>
+        ))}
       </nav>
 
-      {/* Account Info Stub bottom */}
-      <div className="mt-auto border-t border-outline-variant/20 pt-6">
-         <button className="flex items-center gap-3 font-body text-on-surface-variant hover:text-on-surface transition-colors w-full text-left">
-            <LogOut size={20} strokeWidth={1.5} />
-            <span>Sign Out</span>
-         </button>
+      {/* Footer */}
+      <div className="border-t border-outline-variant/12 pt-4 mt-auto">
+        <p className="font-label text-[9px] text-on-surface-variant/40 uppercase tracking-wider">
+          Lettr © 2026
+        </p>
       </div>
     </aside>
   );

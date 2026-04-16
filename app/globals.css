@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafb;
-  --foreground: #191c1d;
+  --background: #fafbfc;
+  --foreground: #141718;
 }
 
 @theme inline {
@@ -13,33 +13,67 @@
   --font-body: var(--font-work-sans);
   --font-label: var(--font-public-sans);
 
-  --color-surface: #f8fafb;
-  --color-surface-container-low: #f2f4f5;
+  --color-surface: #fafbfc;
+  --color-surface-container-low: #f3f4f6;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-high: #e6e8e9;
-  --color-surface-container-highest: #e1e3e4;
-  --color-surface-variant: #e1e3e4;
+  --color-surface-container-high: #e8eaec;
+  --color-surface-container-highest: #e1e3e5;
+  --color-surface-variant: #e5e7e9;
   
-  --color-on-surface: #191c1d;
-  --color-on-surface-variant: #404849;
-  --color-outline-variant: #c0c8c9;
+  --color-on-surface: #141718;
+  --color-on-surface-variant: #4a5055;
+  --color-outline-variant: #c4c9ce;
   
-  --color-primary: #002428;
-  --color-primary-container: #0d3b3f;
+  --color-primary: #0a2e33;
+  --color-primary-container: #143d42;
   --color-on-primary: #ffffff;
-  --color-on-primary-container: #7ba5aa;
+  --color-on-primary-container: #88b5bb;
   
-  --color-secondary: #48626e;
+  --color-secondary: #4b6570;
   
-  --color-tertiary: #4a0003;
-  --color-tertiary-container: #720009;
-  --color-on-tertiary-container: #ff7267;
+  --color-tertiary: #5a0004;
+  --color-tertiary-container: #7a000a;
+  --color-on-tertiary-container: #ff7e73;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-body), sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle selection color */
+::selection {
+  background: #0a2e3322;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #c4c9ce;
+  border-radius: 2px;
+}
+
+/* Smooth line clamp */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Spin animation for loading */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
 }

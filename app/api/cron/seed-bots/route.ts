@@ -4,8 +4,6 @@ import { getVerifiedBots } from '@/lib/bot-profiles';
 import { verifyFact } from '@/lib/ai-verification';
 import { Post } from '@/models/Post';
 
-const NVAPI_KEY = "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";
-
 // Map bots to their respective sources
 const BOT_SOURCES: Record<string, string[]> = {
   'TechNews Bot': ['https://www.reddit.com/r/technology/hot.json?limit=10', 'https://www.reddit.com/r/gadgets/hot.json?limit=10'],
