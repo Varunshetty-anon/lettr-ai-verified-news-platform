@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Public+Sans:wght@300;400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#526163",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#3a494b",
+                        "surface-variant": "#e2e2e2",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "surface": "#f9f9f9",
+                        "secondary-fixed": "#d5e6e7",
+                        "background": "#f9f9f9",
+                        "on-primary-fixed-variant": "#234d51",
+                        "on-tertiary-fixed-variant": "#613f25",
+                        "on-background": "#1a1c1c",
+                        "primary-container": "#0d3b3f",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#3c6569",
+                        "on-tertiary-container": "#c29574",
+                        "inverse-on-surface": "#f0f1f0",
+                        "tertiary-container": "#4d2e15",
+                        "primary-fixed-dim": "#a3ced3",
+                        "primary": "#002428",
+                        "error-container": "#ffdad6",
+                        "outline-variant": "#c0c8c9",
+                        "on-primary-container": "#7ba5aa",
+                        "surface-container-highest": "#e2e2e2",
+                        "surface-container": "#eeeeee",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#b9cacb",
+                        "on-secondary-container": "#586769",
+                        "tertiary-fixed-dim": "#eebd9a",
+                        "tertiary-fixed": "#ffdcc4",
+                        "on-surface-variant": "#404849",
+                        "inverse-primary": "#a3ced3",
+                        "surface-dim": "#dadada",
+                        "primary-fixed": "#bfeaef",
+                        "surface-container-low": "#f3f4f3",
+                        "surface-bright": "#f9f9f9",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#002022",
+                        "surface-container-high": "#e8e8e8",
+                        "outline": "#717879",
+                        "inverse-surface": "#2f3131",
+                        "on-error": "#ffffff",
+                        "tertiary": "#341903",
+                        "on-tertiary-fixed": "#2e1501",
+                        "on-surface": "#1a1c1c",
+                        "secondary-container": "#d5e6e7",
+                        "on-secondary-fixed": "#0f1e1f"
+                    },
+                    "borderRadius": {
+                        "none": "0px",
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "serif": ["Instrument Serif", "serif"],
+                        "sans": ["Public Sans", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; background-color: #f9f9f9; }
+        .font-serif { font-family: 'Instrument Serif', serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+    </style>
+<style>
+        .fact-score-prominent {
+            box-shadow: 0 0 15px rgba(13, 59, 63, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .score-high {
+            background-color: #0D3B3F !important;
+            color: #ffffff !important;
+        }
+        .score-mid {
+            background-color: #c29574 !important;
+            color: #ffffff !important;
+        }
+    </style></head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- Sidebar Navigation (Hidden on Mobile) -->
+<nav class="hidden md:flex w-64 h-screen fixed left-0 top-0 flex-col pt-8 pb-4 bg-white border-r-0 z-50">
+<div class="px-6 mb-12">
+<h1 class="font-serif font-bold tracking-tighter text-[#0D3B3F] text-5xl">Lettr</h1>
+<p class="font-sans tracking-tight text-xs text-secondary mt-1 uppercase tracking-[0.1em]">The Modern Archivist</p>
+</div>
+<div class="flex flex-col flex-1">
+<a class="flex items-center gap-3 bg-slate-100 text-[#0D3B3F] border-l-4 border-[#0D3B3F] px-4 py-3 font-bold group transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-sans tracking-tight text-sm">Home</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 px-4 py-3 hover:bg-slate-50 hover:text-[#0D3B3F] transition-all group transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-sans tracking-tight text-sm">Explore</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 px-4 py-3 hover:bg-slate-50 hover:text-[#0D3B3F] transition-all group transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="verified">verified</span>
+<span class="font-sans tracking-tight text-sm">Verification</span>
+</a>
+<a class="flex items-center gap-3 text-slate-600 px-4 py-3 hover:bg-slate-50 hover:text-[#0D3B3F] transition-all group transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-sans tracking-tight text-sm">Account</span>
+</a>
+</div>
+<div class="px-4 mt-auto">
+<button class="w-full bg-primary-container text-white py-3 font-sans text-sm tracking-widest uppercase hover:bg-primary transition-colors">
+                Submit Inquiry
+            </button>
+</div>
+</nav>
+<!-- Top AppBar (Mobile/Global Mobile View) -->
+<header class="md:hidden flex justify-between items-center w-full px-6 py-4 bg-white border-b border-slate-100 z-50 sticky top-0">
+<h1 class="font-serif font-bold tracking-tighter text-[#0D3B3F] text-4xl">Lettr</h1>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined cursor-pointer text-primary" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined cursor-pointer text-primary" data-icon="history_edu">history_edu</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="md:ml-64 min-h-screen bg-surface">
+<!-- Hero Section / Editorial Header -->
+<section class="max-w-6xl mx-auto px-6 py-12 lg:py-20 border-b border-outline-variant/10">
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+<div class="max-w-2xl">
+<span class="font-sans text-[0.65rem] font-bold uppercase tracking-[0.2em] text-secondary mb-4 block">Archive Edition • Vol. 84</span>
+<h2 class="font-serif text-5xl md:text-7xl font-bold tracking-tight text-primary leading-none">
+                        Intelligence for the <br/><span class="italic">Persistent Observer.</span>
+</h2>
+</div>
+<div class="lg:w-1/3">
+<p class="font-sans text-sm leading-relaxed text-secondary border-l border-primary/20 pl-6 py-2">
+                        Filtered through the rigorous lens of archival verification. We verify every claim, mapping the trajectory of truth in an era of digital transience.
+                    </p>
+</div>
+</div>
+</section>
+<!-- Bento Grid Feed -->
+<section class="max-w-6xl mx-auto px-6 py-12">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+<!-- Large Featured Post -->
+<div class="md:col-span-8 flex flex-col group cursor-pointer">
+<div class="relative overflow-hidden aspect-video bg-surface-container-low">
+<img class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" data-alt="Dark dramatic image of a typewriter on a wooden desk with a single beam of light hitting paper in a dark library" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeNq0MbOHzNZoalLoighNLdpNbpPP441M0Y_sC-rJM4MuoCCBah_p0RKEV1bZ3u8-heq_nCX-EdElIz-93960nNH-iwGjwDRAMpwttXF6ixVlYK8HJ8EV-bo3nJzFKCOt2_T4KD2eddczE88DCNfkJwfBUyn5FM-hg8H7tmyHRRSeTq_iPZE7QehvZjJa1v-Dj_9YWiT2ErybZ2onRUfV8h7eEh1BVtcQ2dTO1_UHZoAShBV4VRHNuHxnST1nITBoq2paD-kwD9T4"/>
+<div class="absolute top-4 left-4 flex flex-col gap-2">
+<span class="bg-primary text-white px-3 py-1 text-[0.65rem] font-bold tracking-[0.1em] uppercase">Investigative</span>
+<div class="flex items-center gap-2 score-high fact-score-prominent px-4 py-2 border-l-4 border-white">
+<span class="material-symbols-outlined text-[18px]" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-sans text-[0.85rem] font-bold tracking-widest uppercase">Fact Score: 98/100</span>
+</div>
+</div>
+</div>
+<div class="mt-6">
+<div class="flex items-center gap-3 mb-3">
+<span class="font-sans text-[0.7rem] text-secondary uppercase tracking-widest">12 Oct 2023</span>
+<span class="w-8 h-[1px] bg-outline-variant/30"></span>
+<span class="font-sans text-[0.7rem] text-secondary uppercase tracking-widest">Global Affairs</span>
+</div>
+<h3 class="font-serif text-4xl font-bold text-primary group-hover:underline underline-offset-8 decoration-1 leading-tight mb-4">
+                            The Silent Migration of Digital Assets: A Forensic Audit of Neobank Reserves.
+                        </h3>
+<p class="font-sans text-base text-secondary/80 leading-relaxed line-clamp-2 max-w-xl">
+                            Uncovering the structural instability of emerging financial systems through leaked internal memos and blockchain analysis.
+                        </p>
+<a class="mt-6 inline-flex items-center gap-2 font-sans text-xs font-bold text-primary uppercase tracking-widest group" href="#">
+                            Full Documentation
+                            <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Secondary Column (Metadata Focus) -->
+<div class="md:col-span-4 flex flex-col gap-12">
+<div class="group cursor-pointer">
+<div class="aspect-square bg-surface-container-low mb-6 relative">
+<img class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" data-alt="abstract architectural close-up of sharp geometric concrete edges against a high contrast blue sky" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoCoZxFvghZcgoTV3z41TKKNVERE0x2AZSPwtCAFO1SEMlDCzlbV2eqbeNAcK4VebEbAjujCycl7qD_2BNfOzC5IB9E5w14AZe2kdMdpJuy7mvZ_lX1yrXxOE_Nb3NLQE81RJWpOU4SKG55PqBn3-qRlL-ckA_T8Z_1Isawc1ZqI02LA-x-fxS5xabpq0CZVOJr2XAU6aIwVBlC0TznRSpmb1ba9iRs9V4dwFE4R3ee55VYYLTnQMbVBsd0cZuHSStWjH0AQI_Ehc"/>
+<div class="absolute bottom-4 left-4 score-high fact-score-prominent px-4 py-2 border-l-4 border-white">
+<span class="font-sans text-[0.75rem] font-bold tracking-widest uppercase">Fact Score: 92</span>
+</div>
+</div>
+<span class="font-sans text-[0.6rem] text-secondary uppercase tracking-widest block mb-2">Climate Archive</span>
+<h4 class="font-serif text-2xl font-bold text-primary leading-tight">Glacial Memory: Retrieving Carbon Data from Pre-Industrial Ice.</h4>
+</div>
+<div class="bg-surface-container-low p-6">
+<h5 class="font-sans text-[0.65rem] font-bold uppercase tracking-[0.2em] text-secondary mb-6 flex justify-between items-center">
+                            Latest Dispatches
+                            <span class="material-symbols-outlined text-xs" data-icon="refresh">refresh</span>
+</h5>
+<ul class="flex flex-col gap-6">
+<li class="border-l-4 border-primary pl-4">
+<span class="font-sans text-[0.6rem] text-secondary uppercase block mb-1">2m ago</span>
+<p class="font-serif text-lg font-medium leading-tight">Market signals indicate a shift in sovereign debt risk across G7.</p>
+</li>
+<li class="border-l-4 border-outline-variant/30 pl-4 hover:border-primary transition-colors">
+<span class="font-sans text-[0.6rem] text-secondary uppercase block mb-1">1h ago</span>
+<p class="font-serif text-lg font-medium leading-tight">Verification complete on 'Project Echo' surveillance leaks.</p>
+</li>
+<li class="border-l-4 border-outline-variant/30 pl-4 hover:border-primary transition-colors">
+<span class="font-sans text-[0.6rem] text-secondary uppercase block mb-1">3h ago</span>
+<p class="font-serif text-lg font-medium leading-tight">Urban planning archives from 1954 released to public domain.</p>
+</li>
+</ul>
+</div>
+</div>
+<!-- Horizontal Section Breakdown -->
+<div class="md:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-8 pt-12 border-t border-outline-variant/20 mt-12">
+<!-- Card 3 -->
+<div class="group">
+<div class="aspect-[4/3] bg-surface-container-low mb-6 overflow-hidden">
+<img class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" data-alt="microscopic view of intricate circuit patterns with glowing amber light paths" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVhOLSFmiZRzJVGHgZFPLQ0PcRja9VowFwNoFjlmWDBSK3inZZtcU1KpuFvpTrOTmp0Q5MzQAExTMDdmr6TWlGp6eCky2XmgmpLpbQM9Y41-h8lexZLQs0Q3bbo1yp-9XyRxrpbYgirBVBzBG9MYIzjvOeyLkw-df2crFaWywClPoB-Eh8w77XwY42FQcKtwdeN7UZulsSkgYX4N_jdKs8z6RP558UNdifTgDkXa4SmPrfZ4QrJf5lUzoVj0pOQ44qnrxcxIwc5HM"/>
+</div>
+<div class="flex items-center gap-2 mb-3">
+<div class="flex items-center gap-1 score-high fact-score-prominent px-3 py-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-sans text-[0.75rem] font-bold tracking-widest uppercase">94</span>
+</div>
+<span class="font-sans text-[0.6rem] text-secondary uppercase tracking-widest">Silicon Wars</span>
+</div>
+<h4 class="font-serif text-2xl font-bold text-primary group-hover:text-primary-container transition-colors">The Lithography Monopoly: ASML and the Future of Sovereign Compute.</h4>
+</div>
+<!-- Card 4 -->
+<div class="group">
+<div class="aspect-[4/3] bg-surface-container-low mb-6 overflow-hidden">
+<img class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" data-alt="minimalist close up of a fountain pen nib resting on textured cream paper" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjyQc6NEOylPUKDCmRUoTBpqmhLl4xa-_9X6X3uya3WZ_u9L9SW8FiHMxXOKliEa02bdfcdp6rHcl9QhmpDbvfpVnTLyBPgCx9EL2XO8sjSnBQpnRifHsNnmerXegtOi-ayjBwzwEHs2N5ZptiQfcokWxPJd4fCCu3p81mVW8qM5x0OuzTpv3Qi70OlMpvPF3YIHgf-LnFTnBHJmu2RenBqNlLS11PWKc05zco_S6AmsI_I16H3JaOtWJIzuoOgiw1FllvMH_hsz4"/>
+</div>
+<div class="flex items-center gap-2 mb-3">
+<div class="flex items-center gap-1 score-mid fact-score-prominent px-3 py-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-sans text-[0.75rem] font-bold tracking-widest uppercase">89</span>
+</div>
+<span class="font-sans text-[0.6rem] text-secondary uppercase tracking-widest">Archival Tech</span>
+</div>
+<h4 class="font-serif text-2xl font-bold text-primary group-hover:text-primary-container transition-colors">Preservation Protocols: Coding the Permanent Record into DNA.</h4>
+</div>
+<!-- Card 5 -->
+<div class="group">
+<div class="aspect-[4/3] bg-surface-container-low mb-6 overflow-hidden">
+<img class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" data-alt="foggy aerial shot of a dense pine forest with a single road cutting through it" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAys1NyoYzx3au06OiXqOVKTNJzWBWJkZVRx1HvA110jtIQCryvPF8P_-3A6ftH7pWKP9u2jkUKxZLKriS-aUiEGvNYDfJDcPlR_cAnWE3Fr6oK9GI46DeDbrPMB0LeOLOyQR_t3d6R7e_PvXvi1bsP14YVepLVBVCNGcXj_kSzS9YdzbWYG2ZOcKm_xFgbPUx8XRebiI_IbbB19dSADv7qxRitaK26HJ3RJLt5h6K3TwGkHS95IFwZ7YKWHzrBG1zPnYjm2iWqhKA"/>
+</div>
+<div class="flex items-center gap-2 mb-3">
+<div class="flex items-center gap-1 score-high fact-score-prominent px-3 py-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-sans text-[0.75rem] font-bold tracking-widest uppercase">96</span>
+</div>
+<span class="font-sans text-[0.6rem] text-secondary uppercase tracking-widest">Ecosystems</span>
+</div>
+<h4 class="font-serif text-2xl font-bold text-primary group-hover:text-primary-container transition-colors">Land Ownership Anomalies in the Siberian Permafrost Thaw Zones.</h4>
+</div>
+</div>
+</div>
+</section>
+<!-- Newsletter / Footer Call to Action -->
+<section class="max-w-6xl mx-auto px-6 py-20 mb-20">
+<div class="bg-primary text-white p-12 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-8 opacity-10 rotate-12">
+<span class="material-symbols-outlined text-[200px]" data-icon="history_edu">history_edu</span>
+</div>
+<div class="relative z-10 max-w-lg">
+<h3 class="font-serif text-4xl font-bold mb-6 italic leading-tight">Join the Curated Ledger.</h3>
+<p class="font-sans text-on-primary-container mb-8 leading-relaxed">
+                        A weekly archival briefing delivered every Sunday morning. No noise, just verified signals and long-form analysis.
+                    </p>
+<form class="flex flex-col sm:flex-row gap-0">
+<input class="flex-1 bg-white/10 border-0 text-white placeholder:text-white/40 focus:ring-0 px-6 py-4 font-sans text-sm outline-none" placeholder="archivist@domain.com" type="email"/>
+<button class="bg-white text-primary px-10 py-4 font-sans text-sm font-bold uppercase tracking-widest hover:bg-surface transition-colors" type="submit">Subscribe</button>
+</form>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white flex justify-around items-center py-4 px-6 border-t border-slate-100 z-50">
+<a class="flex flex-col items-center gap-1 text-[#0D3B3F]" href="#">
+<span class="material-symbols-outlined" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-sans text-[10px] font-bold uppercase tracking-tighter">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-sans text-[10px] font-bold uppercase tracking-tighter">Explore</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined" data-icon="verified">verified</span>
+<span class="font-sans text-[10px] font-bold uppercase tracking-tighter">Verify</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-sans text-[10px] font-bold uppercase tracking-tighter">Account</span>
+</a>
+</nav>
+<!-- FAB (Suppressed based on context rules, but included if needed for primary task action like "Submit Inquiry" on mobile) -->
+<div class="md:hidden fixed bottom-24 right-6">
+<button class="bg-primary-container text-white p-4 shadow-xl flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="history_edu">history_edu</span>
+</button>
+</div>
+</body></html>
