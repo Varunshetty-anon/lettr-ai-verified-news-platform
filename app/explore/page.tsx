@@ -12,13 +12,15 @@ interface PostData {
   category?: string;
   createdAt: string;
   engagement: number;
+  mediaUrl?: string;
+  mediaType?: string;
   author: { name: string; trustScore: number; role: string; isVerifiedAuthor: boolean } | null;
 }
 
 const CATEGORIES = [
-  'World', 'Politics', 'Technology', 'Economy', 'Science', 'Culture',
-  'AI & Tech', 'Startups', 'Crypto', 'Space', 'Health',
-  'Geopolitics', 'Environment', 'Defense', 'Internet Culture'
+  'AI & Tech', 'Startups', 'Finance', 'Crypto', 'Geopolitics',
+  'Defense', 'Space', 'Health', 'Environment', 'Internet Culture',
+  'Science', 'Business', 'Energy'
 ];
 
 function timeAgo(dateStr: string) {
@@ -38,7 +40,6 @@ export default function Explore() {
   const [trending, setTrending] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Load trending on mount
   useEffect(() => {
     fetch('/api/posts?sort=score')
       .then(res => res.json())
@@ -62,7 +63,6 @@ export default function Explore() {
         <p className="font-body text-xs text-on-surface-variant/50 mt-1">Browse verified reporting across categories</p>
       </div>
 
-      {/* Categories */}
       <div className="px-5 py-3 border-b border-outline-variant overflow-x-auto">
         <div className="flex flex-wrap gap-1.5">
           {CATEGORIES.map(cat => (
@@ -74,14 +74,11 @@ export default function Explore() {
                   ? 'bg-primary text-on-primary border-primary'
                   : 'border-outline-variant text-on-surface-variant/60 hover:border-primary/30 hover:text-primary'
               }`}
-            >
-              {cat}
-            </button>
+            >{cat}</button>
           ))}
         </div>
       </div>
 
-      {/* Trending — shown when no category selected */}
       {!activeCategory && trending.length > 0 && (
         <div className="px-5 py-5">
           <div className="flex items-center gap-2 mb-4">
@@ -90,19 +87,13 @@ export default function Explore() {
           </div>
           <div className="flex flex-col gap-2">
             {trending.map((post, i) => (
-              <Link
-                key={post._id}
-                href={`/post/${post._id}`}
-                className="group flex items-center gap-3 p-3 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all"
-              >
+              <Link key={post._id} href={`/post/${post._id}`} className="group flex items-center gap-3 p-3 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all">
                 <span className="font-display text-lg font-black text-on-surface-variant/25 min-w-[24px] text-center">{i + 1}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-body text-sm text-on-surface group-hover:text-primary transition-colors truncate">{post.headline}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="font-label text-[10px] text-on-surface-variant/40">{post.author?.name}</span>
-                    <span className={`font-display text-[10px] font-bold ${post.factScore >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-on-surface-variant/40'}`}>
-                      {post.factScore}
-                    </span>
+                    <span className={`font-display text-[10px] font-bold ${post.factScore >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-on-surface-variant/40'}`}>{post.factScore}</span>
                   </div>
                 </div>
               </Link>
@@ -111,7 +102,6 @@ export default function Explore() {
         </div>
       )}
 
-      {/* No category selected prompt */}
       {!activeCategory && trending.length === 0 && (
         <div className="px-5 py-16 text-center">
           <h2 className="font-display text-lg text-on-surface mb-2">Select a category</h2>
@@ -119,18 +109,11 @@ export default function Explore() {
         </div>
       )}
 
-      {/* Category selected */}
       {activeCategory && (
         <>
           <div className="px-5 py-2.5 flex gap-4 border-b border-outline-variant">
             {(['recent', 'score'] as const).map(s => (
-              <button
-                key={s}
-                onClick={() => setActiveSort(s)}
-                className={`font-label text-[9px] uppercase tracking-[0.12em] pb-2 border-b-2 transition-colors ${
-                  activeSort === s ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant/40 hover:text-on-surface-variant'
-                }`}
-              >
+              <button key={s} onClick={() => setActiveSort(s)} className={`font-label text-[9px] uppercase tracking-[0.12em] pb-2 border-b-2 transition-colors ${activeSort === s ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant/40 hover:text-on-surface-variant'}`}>
                 {s === 'recent' ? 'Latest' : 'Most Verified'}
               </button>
             ))}
@@ -157,11 +140,7 @@ export default function Explore() {
           {!loading && posts.length > 0 && (
             <div className="flex flex-col gap-2 p-4">
               {posts.map(post => (
-                <Link
-                  key={post._id}
-                  href={`/post/${post._id}`}
-                  className="group block p-4 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all animate-fade-in"
-                >
+                <Link key={post._id} href={`/post/${post._id}`} className="group block p-4 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all animate-fade-in">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       {post.author && (
@@ -173,9 +152,7 @@ export default function Explore() {
                       )}
                       <span className="font-label text-[10px] text-on-surface-variant/40">{timeAgo(post.createdAt)}</span>
                     </div>
-                    <div className={`flex items-center gap-1 text-xs font-display font-bold ${
-                      post.factScore >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-on-surface-variant/40'
-                    }`}>
+                    <div className={`flex items-center gap-1 text-xs font-display font-bold ${post.factScore >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-on-surface-variant/40'}`}>
                       <Shield size={10} />{post.factScore}
                     </div>
                   </div>

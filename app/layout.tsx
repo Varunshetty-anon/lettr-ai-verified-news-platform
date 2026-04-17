@@ -19,9 +19,9 @@ const publicSans = Public_Sans({
   weight: ["300", "400", "500", "600"],
 });
 
-import { LeftSidebar } from "./components/layout/LeftSidebar";
-import { RightSidebar } from "./components/layout/RightSidebar";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { SessionProvider } from "./components/SessionProvider";
+import { AppShell } from "./components/layout/AppShell";
 
 export const metadata: Metadata = {
   title: "LETTR - AI Verified News",
@@ -40,15 +40,13 @@ export default function RootLayout({
       className={`${newsreader.variable} ${workSans.variable} ${publicSans.variable} h-full antialiased`}
     >
       <body className="min-h-full font-body bg-surface text-on-surface">
-        <ThemeProvider>
-          <div className="flex flex-col md:flex-row max-w-[1600px] mx-auto min-h-screen">
-            <LeftSidebar />
-            <main className="flex-1 max-w-3xl mx-auto w-full border-r border-outline-variant/8">
+        <SessionProvider>
+          <ThemeProvider>
+            <AppShell>
               {children}
-            </main>
-            <RightSidebar />
-          </div>
-        </ThemeProvider>
+            </AppShell>
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );

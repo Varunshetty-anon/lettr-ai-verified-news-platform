@@ -2,21 +2,27 @@
 
 import React, { useEffect, useState, use } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { ArrowLeft, ExternalLink, Shield, CheckCircle, Heart } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false }) as any;
 
 interface PostDetail {
   _id: string;
   headline: string;
   description: string;
+  body?: string;
   factScore: number;
   reasoning?: string;
   originSource?: string;
   category?: string;
   sourceLink?: string;
   mediaUrl?: string;
+  mediaType?: string;
   engagement: number;
   createdAt: string;
-  author: { name: string; trustScore: number; role: string; totalPosts: number; isVerifiedAuthor: boolean } | null;
+  author: { _id: string; name: string; image?: string; trustScore: number; role: string; totalPosts: number; isVerifiedAuthor: boolean } | null;
 }
 
 interface RelatedPost {
@@ -40,12 +46,15 @@ function timeAgo(dateStr: string) {
 
 export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { data: session } = useSession();
   const [post, setPost] = useState<PostDetail | null>(null);
   const [related, setRelated] = useState<RelatedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     fetch(`/api/posts/${id}`)
       .then(res => res.json())
       .then(data => {
@@ -55,13 +64,31 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
       })
       .catch(() => setLoading(false));
 
-    // Track view
-    fetch('/api/user/interact', {
+    // Track view with session email
+    if (session?.user?.email) {
+      fetch('/api/user/interact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: session.user.email, postId: id, action: 'view' })
+      }).catch(() => {});
+    }
+  }, [id, session]);
+
+  const handleLike = async () => {
+    if (!post || !session?.user?.email) return;
+    const newLiked = !liked;
+    setLiked(newLiked);
+
+    await fetch('/api/user/interact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'demo@lettr.ai', postId: id, action: 'view' })
+      body: JSON.stringify({
+        email: session.user.email,
+        postId: post._id,
+        action: newLiked ? 'like' : 'unlike'
+      })
     }).catch(() => {});
-  }, [id]);
+  };
 
   if (loading) {
     return (
@@ -94,6 +121,9 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   const scoreColor = post.factScore >= 80 ? 'text-emerald-600 dark:text-emerald-400' : post.factScore >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
   const scoreBorder = post.factScore >= 80 ? 'border-emerald-200 dark:border-emerald-800' : post.factScore >= 60 ? 'border-amber-200 dark:border-amber-800' : 'border-red-200 dark:border-red-800';
 
+  // Use body if available, otherwise fall back to description
+  const articleBody = post.body || post.description;
+
   return (
     <div className="w-full min-h-screen animate-fade-in">
       {/* Back bar */}
@@ -113,7 +143,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
             )}
             <span className="font-label text-[10px] text-on-surface-variant/50">{timeAgo(post.createdAt)}</span>
           </div>
-          {/* Fact score badge — small, top-right */}
+          {/* Fact score badge */}
           <div className={`flex items-center gap-1.5 px-2.5 py-1 border ${scoreBorder}`}>
             <Shield size={12} className={scoreColor} />
             <span className={`font-display text-sm font-black ${scoreColor}`}>{post.factScore}</span>
@@ -128,8 +158,12 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         {/* Author bar */}
         {post.author && (
           <div className="flex items-center gap-3 mb-6 pb-5 border-b border-outline-variant">
-            <div className="w-9 h-9 bg-primary/10 text-primary flex items-center justify-center font-display text-base font-bold">
-              {post.author.name.charAt(0)}
+            <div className="w-9 h-9 bg-primary/10 text-primary flex items-center justify-center font-display text-base font-bold overflow-hidden">
+              {post.author.image ? (
+                <img src={post.author.image} alt="" className="w-full h-full object-cover" />
+              ) : (
+                post.author.name.charAt(0)
+              )}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-1.5">
@@ -146,7 +180,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
               </p>
             </div>
             <button
-              onClick={() => setLiked(!liked)}
+              onClick={handleLike}
               className="flex items-center gap-1 text-on-surface-variant/40 hover:text-red-500 transition-colors"
             >
               <Heart size={16} fill={liked ? 'currentColor' : 'none'} className={liked ? 'text-red-500' : ''} />
@@ -155,19 +189,36 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           </div>
         )}
 
+
         {/* Media */}
-        {post.mediaUrl && post.mediaUrl.startsWith('http') && (
+        {post.mediaUrl && post.mediaType === 'image' && (
           <div className="mb-6 overflow-hidden border border-outline-variant">
-            <img src={post.mediaUrl} alt="" className="w-full h-auto object-cover max-h-[360px]" />
+            <img src={post.mediaUrl} alt="" loading="lazy" className="w-full h-auto object-cover max-h-[480px]" />
+          </div>
+        )}
+        {post.mediaUrl && post.mediaType === 'video' && mounted && (
+          <div className="mb-6 overflow-hidden border border-outline-variant relative pt-[56.25%]">
+            <ReactPlayer 
+              url={post.mediaUrl} 
+              controls 
+              width="100%" 
+              height="100%" 
+              className="absolute top-0 left-0"
+            />
           </div>
         )}
 
-        {/* Full description */}
-        <div className="font-body text-base text-on-surface/85 leading-[1.8] mb-6 whitespace-pre-line">
+        {/* Summary */}
+        <div className="font-body text-sm text-on-surface-variant/70 leading-relaxed mb-6 p-4 bg-surface-container-low border border-outline-variant/30 italic">
           {post.description}
         </div>
 
-        {/* AI Verification Card — subdued */}
+        {/* Full article body */}
+        <div className="font-body text-base text-on-surface/85 leading-[1.85] mb-6 whitespace-pre-line">
+          {articleBody}
+        </div>
+
+        {/* AI Verification Card */}
         <div className={`border ${scoreBorder} bg-surface-container-low p-5 mb-6`}>
           <div className="flex items-center gap-2 mb-3">
             <Shield size={14} className={scoreColor} />
@@ -179,6 +230,9 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           </div>
           {post.reasoning && (
             <p className="font-body text-sm text-on-surface-variant/70 mb-3">{post.reasoning}</p>
+          )}
+          {post.originSource && (
+            <p className="font-body text-xs text-on-surface-variant/50 mb-3">{post.originSource}</p>
           )}
           <div className="pt-3 border-t border-outline-variant">
             <p className="font-label text-[9px] text-on-surface-variant/40 uppercase tracking-wider">

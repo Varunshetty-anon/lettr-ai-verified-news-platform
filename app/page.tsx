@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Heart, ExternalLink, Shield, CheckCircle } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { Heart, ExternalLink, Shield, CheckCircle, Image as ImageIcon } from 'lucide-react';
 
 interface PostData {
   _id: string;
@@ -13,6 +15,8 @@ interface PostData {
   originSource?: string;
   category?: string;
   sourceLink?: string;
+  mediaUrl?: string;
+  mediaType?: string;
   engagement: number;
   createdAt: string;
   isLiked?: boolean;
@@ -28,6 +32,10 @@ function timeAgo(dateStr: string) {
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
 }
+
+import useSWR, { mutate } from 'swr';
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 function Skeleton() {
   return (
@@ -48,21 +56,45 @@ function Skeleton() {
 }
 
 export default function Home() {
-  const [posts, setPosts] = useState<PostData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
+  // Redirect new users to onboarding
   useEffect(() => {
-    fetch('/api/posts')
-      .then(res => res.json())
-      .then(data => {
-        const p = data.posts || [];
-        setPosts(p);
-        setLikedIds(new Set(p.filter((x: PostData) => x.isLiked).map((x: PostData) => x._id)));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+    if (status === 'authenticated' && session?.user?.email) {
+      fetch(`/api/user/preferences?email=${encodeURIComponent(session.user.email)}`)
+        .then(r => r.json())
+        .then(data => {
+          if (!data.preferences || data.preferences.length === 0) {
+            router.push('/onboarding/preferences');
+          }
+        })
+        .catch(() => {});
+    }
+  }, [session, status, router]);
+
+  const email = session?.user?.email || '';
+  const apiUrl = status === 'authenticated' && email ? `/api/posts?email=${encodeURIComponent(email)}` : null;
+  
+  const { data, error, isLoading } = useSWR(apiUrl, fetcher, { 
+    refreshInterval: 15000, // Background poll every 15s
+    revalidateOnFocus: true, // Instant update on tab switch
+  });
+
+  const posts: PostData[] = data?.posts || [];
+  const loading = isLoading || status === 'loading';
+
+  // Sync initial liked state
+  useEffect(() => {
+    if (data?.posts) {
+      setLikedIds(prev => {
+        const next = new Set(prev);
+        data.posts.forEach((p: PostData) => { if (p.isLiked) next.add(p._id); });
+        return next;
+      });
+    }
+  }, [data]);
 
   const toggleLike = async (postId: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -72,15 +104,23 @@ export default function Home() {
     if (isLiked) next.delete(postId); else next.add(postId);
     setLikedIds(next);
 
-    // Update engagement count locally
-    setPosts(prev => prev.map(p => p._id === postId ? { ...p, engagement: p.engagement + (isLiked ? -1 : 1) } : p));
+    // Optimistic SWR update
+    if (apiUrl) {
+      mutate(apiUrl, {
+        posts: posts.map(p => p._id === postId ? { ...p, engagement: p.engagement + (isLiked ? -1 : 1) } : p)
+      }, false);
+    }
 
     await fetch('/api/user/interact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'demo@lettr.ai', postId, action: isLiked ? 'unlike' : 'like' })
+      body: JSON.stringify({ email, postId, action: isLiked ? 'unlike' : 'like' })
     }).catch(() => {});
   };
+
+  const firstName = session?.user?.name?.split(' ')[0] || '';
+
+  if (status === 'loading') return <Skeleton />;
 
   return (
     <div className="w-full min-h-screen">
@@ -88,8 +128,14 @@ export default function Home() {
       <div className="px-5 pt-8 pb-4 border-b border-outline-variant">
         <div className="flex items-baseline justify-between">
           <div>
-            <h1 className="font-display text-sm uppercase tracking-[0.2em] text-on-surface-variant font-medium">Your Feed</h1>
-            <p className="font-body text-xs text-on-surface-variant/50 mt-1">AI-verified · Personalized</p>
+            {firstName && (
+              <h1 className="font-display text-xl font-bold text-on-surface mb-0.5">
+                Hello, {firstName}
+              </h1>
+            )}
+            <p className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/50">
+              AI-verified · Personalized Feed
+            </p>
           </div>
           {!loading && <span className="font-label text-[10px] text-on-surface-variant/40 uppercase tracking-wider">{posts.length} articles</span>}
         </div>
@@ -114,6 +160,13 @@ export default function Home() {
               href={`/post/${post._id}`}
               className="group block bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all duration-200 animate-fade-in"
             >
+              {/* Media thumbnail */}
+              {post.mediaUrl && post.mediaType === 'image' && (
+                <div className="w-full h-40 overflow-hidden border-b border-outline-variant/30">
+                  <img src={post.mediaUrl} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
+                </div>
+              )}
+
               <div className="p-5">
                 {/* Top row: author + score badge */}
                 <div className="flex items-center justify-between mb-3">
@@ -157,8 +210,8 @@ export default function Home() {
                   {post.headline}
                 </h3>
 
-                {/* Description */}
-                <p className="font-body text-sm text-on-surface-variant leading-relaxed line-clamp-2 mb-3">
+                {/* Description — show more lines */}
+                <p className="font-body text-sm text-on-surface-variant leading-relaxed line-clamp-3 mb-3">
                   {post.description}
                 </p>
 

@@ -1,61 +1,33 @@
-import { NextResponse } from 'next/server';
+import cron from 'node-cron';
+import dotenv from 'dotenv';
+import path from 'path';
 import crypto from 'crypto';
-import dbConnect from '@/lib/mongodb';
-import { getVerifiedBots } from '@/lib/bot-profiles';
-import { verifyFact } from '@/lib/ai-verification';
-import { Post } from '@/models/Post';
-import { User } from '@/models/User';
+import mongoose from 'mongoose';
 
-// Map bots to their respective sources and categories (matching user preference categories)
+// Load env vars explicitly since this runs outside Next.js
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+
+// Must import these after dotenv
+import dbConnect from './lib/mongodb';
+import { getVerifiedBots, BOT_PROFILES } from './lib/bot-profiles';
+import { verifyFact } from './lib/ai-verification';
+import { Post } from './models/Post';
+import { User } from './models/User';
+import { uploadMediaFromUrl } from './lib/supabase';
+
 const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
-  'TechNews Bot': {
-    sources: ['https://www.reddit.com/r/technology/hot.json?limit=15', 'https://www.reddit.com/r/gadgets/hot.json?limit=15'],
-    category: 'AI & Tech'
-  },
-  'GlobalPolitics Bot': {
-    sources: ['https://www.reddit.com/r/geopolitics/hot.json?limit=15', 'https://www.reddit.com/r/worldnews/hot.json?limit=15'],
-    category: 'Geopolitics'
-  },
-  'Finance Bot': {
-    sources: ['https://www.reddit.com/r/economics/hot.json?limit=15', 'https://www.reddit.com/r/finance/hot.json?limit=15'],
-    category: 'Finance'
-  },
-  'AI Insider Bot': {
-    sources: ['https://www.reddit.com/r/artificial/hot.json?limit=15', 'https://www.reddit.com/r/MachineLearning/hot.json?limit=15'],
-    category: 'AI & Tech'
-  },
-  'WorldNews Bot': {
-    sources: ['https://www.reddit.com/r/worldnews/hot.json?limit=15', 'https://www.reddit.com/r/news/hot.json?limit=15'],
-    category: 'Geopolitics'
-  },
-  'Science Bot': {
-    sources: ['https://www.reddit.com/r/science/hot.json?limit=15', 'https://www.reddit.com/r/EverythingScience/hot.json?limit=15'],
-    category: 'Science'
-  },
-  'Crypto Bot': {
-    sources: ['https://www.reddit.com/r/CryptoCurrency/hot.json?limit=15', 'https://www.reddit.com/r/Bitcoin/hot.json?limit=15'],
-    category: 'Crypto'
-  },
-  'Space Bot': {
-    sources: ['https://www.reddit.com/r/space/hot.json?limit=15', 'https://www.reddit.com/r/spacex/hot.json?limit=15'],
-    category: 'Space'
-  },
-  'Health Bot': {
-    sources: ['https://www.reddit.com/r/Health/hot.json?limit=15', 'https://www.reddit.com/r/medicine/hot.json?limit=15'],
-    category: 'Health'
-  },
-  'Energy Bot': {
-    sources: ['https://www.reddit.com/r/energy/hot.json?limit=15', 'https://www.reddit.com/r/RenewableEnergy/hot.json?limit=15'],
-    category: 'Energy'
-  },
-  'Defense Bot': {
-    sources: ['https://www.reddit.com/r/defense/hot.json?limit=15', 'https://www.reddit.com/r/Military/hot.json?limit=15'],
-    category: 'Defense'
-  },
-  'Startup Bot': {
-    sources: ['https://www.reddit.com/r/startups/hot.json?limit=15', 'https://www.reddit.com/r/Entrepreneur/hot.json?limit=15'],
-    category: 'Startups'
-  },
+  'TechNews Bot': { sources: ['https://www.reddit.com/r/technology/hot.json?limit=15', 'https://www.reddit.com/r/gadgets/hot.json?limit=15'], category: 'AI & Tech' },
+  'GlobalPolitics Bot': { sources: ['https://www.reddit.com/r/geopolitics/hot.json?limit=15', 'https://www.reddit.com/r/worldnews/hot.json?limit=15'], category: 'Geopolitics' },
+  'Finance Bot': { sources: ['https://www.reddit.com/r/economics/hot.json?limit=15', 'https://www.reddit.com/r/finance/hot.json?limit=15'], category: 'Finance' },
+  'AI Insider Bot': { sources: ['https://www.reddit.com/r/artificial/hot.json?limit=15', 'https://www.reddit.com/r/MachineLearning/hot.json?limit=15'], category: 'AI & Tech' },
+  'WorldNews Bot': { sources: ['https://www.reddit.com/r/worldnews/hot.json?limit=15', 'https://www.reddit.com/r/news/hot.json?limit=15'], category: 'Geopolitics' },
+  'Science Bot': { sources: ['https://www.reddit.com/r/science/hot.json?limit=15', 'https://www.reddit.com/r/EverythingScience/hot.json?limit=15'], category: 'Science' },
+  'Crypto Bot': { sources: ['https://www.reddit.com/r/CryptoCurrency/hot.json?limit=15', 'https://www.reddit.com/r/Bitcoin/hot.json?limit=15'], category: 'Crypto' },
+  'Space Bot': { sources: ['https://www.reddit.com/r/space/hot.json?limit=15', 'https://www.reddit.com/r/spacex/hot.json?limit=15'], category: 'Space' },
+  'Health Bot': { sources: ['https://www.reddit.com/r/Health/hot.json?limit=15', 'https://www.reddit.com/r/medicine/hot.json?limit=15'], category: 'Health' },
+  'Energy Bot': { sources: ['https://www.reddit.com/r/energy/hot.json?limit=15', 'https://www.reddit.com/r/RenewableEnergy/hot.json?limit=15'], category: 'Energy' },
+  'Defense Bot': { sources: ['https://www.reddit.com/r/defense/hot.json?limit=15', 'https://www.reddit.com/r/Military/hot.json?limit=15'], category: 'Defense' },
+  'Startup Bot': { sources: ['https://www.reddit.com/r/startups/hot.json?limit=15', 'https://www.reddit.com/r/Entrepreneur/hot.json?limit=15'], category: 'Startups' },
 };
 
 function hashUrl(url: string): string {
@@ -63,6 +35,11 @@ function hashUrl(url: string): string {
 }
 
 function extractMediaFromReddit(data: any): { mediaUrl?: string; mediaType: 'image' | 'video' | 'text' } {
+  // Check for Reddit-hosted video
+  if (data.is_video && data.media?.reddit_video?.fallback_url) {
+    return { mediaUrl: data.media.reddit_video.fallback_url, mediaType: 'video' };
+  }
+
   // Check for direct image
   if (data.url && /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(data.url)) {
     return { mediaUrl: data.url, mediaType: 'image' };
@@ -74,11 +51,6 @@ function extractMediaFromReddit(data: any): { mediaUrl?: string; mediaType: 'ima
     return { mediaUrl: imgUrl, mediaType: 'image' };
   }
 
-  // Check for Reddit-hosted video
-  if (data.is_video && data.media?.reddit_video?.fallback_url) {
-    return { mediaUrl: data.media.reddit_video.fallback_url, mediaType: 'video' };
-  }
-
   // Check for thumbnail
   if (data.thumbnail && data.thumbnail.startsWith('http') && data.thumbnail !== 'self' && data.thumbnail !== 'default' && data.thumbnail !== 'nsfw') {
     return { mediaUrl: data.thumbnail, mediaType: 'image' };
@@ -87,23 +59,22 @@ function extractMediaFromReddit(data: any): { mediaUrl?: string; mediaType: 'ima
   return { mediaType: 'text' };
 }
 
-export async function GET(request: Request) {
-  await dbConnect();
-  
+async function runBotTask() {
+  console.log(`[Daemon] Running bot engine task at ${new Date().toISOString()}...`);
   try {
+    await dbConnect();
+    
     const activeBots = await getVerifiedBots();
     const randomBot = activeBots[Math.floor(Math.random() * activeBots.length)];
     const config = BOT_CONFIG[randomBot.name] || BOT_CONFIG['WorldNews Bot'];
     const sourceUrl = config.sources[Math.floor(Math.random() * config.sources.length)];
 
-    const response = await fetch(sourceUrl, {
-      headers: { 'User-Agent': 'LettrBot/1.0' }
-    });
+    const response = await fetch(sourceUrl, { headers: { 'User-Agent': 'LettrBot/2.0' } });
+    if (!response.ok) throw new Error(`Reddit API failed with status ${response.status}`);
     const redditData = await response.json();
     const posts = redditData.data?.children;
     if (!posts || posts.length === 0) throw new Error("No Reddit data");
 
-    // Try multiple posts to find one that hasn't been posted yet
     const shuffled = posts.sort(() => Math.random() - 0.5);
     let targetContent = null;
 
@@ -117,7 +88,8 @@ export async function GET(request: Request) {
     }
 
     if (!targetContent) {
-      return NextResponse.json({ message: "No new unique content found. All sources already posted." }, { status: 200 });
+      console.log(`[Daemon] All content from ${sourceUrl} already processed. Skipping.`);
+      return;
     }
 
     const rawTitle = targetContent.title;
@@ -127,9 +99,24 @@ export async function GET(request: Request) {
     const urlHash = hashUrl(originalLink);
     
     // Extract media
-    const media = extractMediaFromReddit(targetContent);
+    let media = extractMediaFromReddit(targetContent);
 
-    // 1. REWRITE VIA GROQ — FULL ARTICLE GENERATION
+    // If it's an image, upload to Supabase
+    if (media.mediaUrl && media.mediaType === 'image') {
+      console.log(`[Daemon] Uploading image to Supabase: ${media.mediaUrl}`);
+      const filename = `${crypto.randomBytes(4).toString('hex')}.jpg`;
+      const uploadedUrl = await uploadMediaFromUrl(media.mediaUrl, filename);
+      if (uploadedUrl) {
+        media.mediaUrl = uploadedUrl;
+        console.log(`[Daemon] Successfully uploaded to: ${uploadedUrl}`);
+      } else {
+        console.warn(`[Daemon] Supabase upload failed, falling back to original URL.`);
+      }
+    } else if (media.mediaUrl && media.mediaType === 'video') {
+      console.log(`[Daemon] Using video URL: ${media.mediaUrl}`);
+    }
+
+    // 1. REWRITE VIA GROQ
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) throw new Error("Missing GROQ API Key");
 
@@ -140,13 +127,11 @@ export async function GET(request: Request) {
       sourceNote: ""
     };
 
+    console.log(`[Daemon] Generating article with Groq Llama-3.3 for: "${rawTitle}"`);
     try {
       const rewriteResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
+        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
           messages: [
@@ -193,9 +178,7 @@ Source Note: <A one-line credibility assessment of the source, e.g. "Sourced fro
         if (bodyMatch) rewriteContent.fullBody = bodyMatch[1].trim();
         if (sourceNoteMatch) rewriteContent.sourceNote = sourceNoteMatch[1].trim();
         
-        // Fallback: if no body parsed but there's substantial text after summary
         if (!rewriteContent.fullBody && outputText.length > 200) {
-          // Try to extract everything after Summary
           const afterSummary = outputText.split(/Summary:/i)[1] || '';
           const parts = afterSummary.split('\n\n');
           if (parts.length > 1) {
@@ -204,20 +187,21 @@ Source Note: <A one-line credibility assessment of the source, e.g. "Sourced fro
         }
       }
     } catch (e) {
-      console.error("Groq Rewrite Failed, using raw title.", e);
+      console.error("[Daemon] Groq Rewrite Failed", e);
     }
 
-    // Enforce minimum content length
     if (rewriteContent.cleanSummary.length < 50) {
       rewriteContent.cleanSummary = `${rawTitle}. ${rawText.substring(0, 300)}`;
     }
 
     // 2. FACT VERIFICATION
+    console.log(`[Daemon] Verifying facts for: "${rewriteContent.cleanHeadline}"`);
     const verification = await verifyFact(rewriteContent.cleanHeadline, rewriteContent.cleanSummary, originalLink);
 
     // 3. POST RULES ENFORCEMENT
     if (verification.factScore < 45) {
-      return NextResponse.json({ message: "Content rejected by AI Fact rules.", factScore: verification.factScore }, { status: 200 });
+      console.log(`[Daemon] Rejected by Fact Check (Score: ${verification.factScore}). Skipping.`);
+      return;
     }
 
     // 4. DB INJECTION
@@ -238,13 +222,21 @@ Source Note: <A one-line credibility assessment of the source, e.g. "Sourced fro
       engagement: Math.floor(Math.random() * 80) + 5
     });
 
-    // Update bot post count
     await User.findByIdAndUpdate(randomBot._id, { $inc: { totalPosts: 1 } });
+    
+    console.log(`[Daemon] SUCCESS: Created post "${newPost.headline}" via ${randomBot.name}`);
 
-    return NextResponse.json({ success: true, bot: randomBot.name, post: newPost }, { status: 201 });
-
-  } catch (error: any) {
-    console.error("Bot Engine Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error("[Daemon] Error in task:", error);
   }
 }
+
+// Run immediately on boot
+runBotTask();
+
+// Then run every 6 minutes
+cron.schedule('*/6 * * * *', () => {
+  runBotTask();
+});
+
+console.log("[Daemon] Bot engine started. Running schedule: every 6 minutes.");

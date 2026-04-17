@@ -11,16 +11,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'email, postId, action required' }, { status: 400 });
     }
 
-    // Upsert user on interaction
+    // Fetch post to get its category for affinity tracking
+    const post = await Post.findById(postId).select('category').lean();
+    const postCategory = post?.category || '';
+
     const userUpdate: any = {};
+    
     if (action === 'like') {
       userUpdate.$addToSet = { likedPosts: postId };
       await Post.findByIdAndUpdate(postId, { $inc: { engagement: 1 } });
+      // Increment category affinity by 2 for likes
+      if (postCategory) {
+        userUpdate.$inc = { [`categoryAffinity.${postCategory}`]: 2 };
+      }
     } else if (action === 'unlike') {
       userUpdate.$pull = { likedPosts: postId };
       await Post.findByIdAndUpdate(postId, { $inc: { engagement: -1 } });
+      // Decrement category affinity by 1 for unlikes
+      if (postCategory) {
+        userUpdate.$inc = { [`categoryAffinity.${postCategory}`]: -1 };
+      }
     } else if (action === 'view') {
       userUpdate.$addToSet = { viewedPosts: postId };
+      // Increment category affinity by 1 for views
+      if (postCategory) {
+        userUpdate.$inc = { [`categoryAffinity.${postCategory}`]: 1 };
+      }
     }
 
     await User.findOneAndUpdate(

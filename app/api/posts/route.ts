@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { Post } from '@/models/Post';
 import { User } from '@/models/User';
+import { auth } from '@/auth';
 
 export async function GET(request: Request) {
   await dbConnect();
@@ -17,13 +18,30 @@ export async function GET(request: Request) {
 
     let userPrefs: string[] = [];
     let userLikes: string[] = [];
+    let userViewed: string[] = [];
+    let categoryAffinity: Record<string, number> = {};
+
+    // Try to get user from session or email param
+    let userEmail = email;
+    if (!userEmail) {
+      const session = await auth();
+      userEmail = session?.user?.email || null;
+    }
 
     // Fetch user data for personalization
-    if (email) {
-      const user = await User.findOne({ email }).select('preferences likedPosts viewedPosts').lean();
+    if (userEmail) {
+      const user = await User.findOne({ email: userEmail })
+        .select('preferences likedPosts viewedPosts categoryAffinity')
+        .lean();
       if (user) {
         userPrefs = user.preferences || [];
         userLikes = (user.likedPosts || []).map((id: any) => id.toString());
+        userViewed = (user.viewedPosts || []).map((id: any) => id.toString());
+        categoryAffinity = (user.categoryAffinity as any) || {};
+        // Convert Map to plain object if needed
+        if (categoryAffinity instanceof Map) {
+          categoryAffinity = Object.fromEntries(categoryAffinity);
+        }
       }
     }
 
@@ -39,6 +57,20 @@ export async function GET(request: Request) {
     const authors = await User.find({ _id: { $in: authorIds } }).lean();
     const authorMap = new Map(authors.map(a => [(a._id as any).toString(), a]));
 
+    // Get liked categories from user's liked posts
+    const likedCategorySet = new Set<string>();
+    if (userLikes.length > 0) {
+      const likedPosts = await Post.find({ _id: { $in: userLikes } }).select('category').lean();
+      likedPosts.forEach(p => { if (p.category) likedCategorySet.add(p.category); });
+    }
+
+    // Get viewed categories
+    const viewedCategorySet = new Set<string>();
+    if (userViewed.length > 0 && userViewed.length <= 100) {
+      const viewedPosts = await Post.find({ _id: { $in: userViewed.slice(-50) } }).select('category').lean();
+      viewedPosts.forEach(p => { if (p.category) viewedCategorySet.add(p.category); });
+    }
+
     let hydrated = posts.map(post => {
       const author = authorMap.get(post.authorId?.toString());
       return {
@@ -51,6 +83,7 @@ export async function GET(request: Request) {
         sourceLink: post.sourceLink,
         category: post.category,
         mediaUrl: post.mediaUrl,
+        mediaType: post.mediaType || 'text',
         engagement: post.engagement,
         createdAt: post.createdAt,
         isLiked: userLikes.includes((post._id as any).toString()),
@@ -63,15 +96,40 @@ export async function GET(request: Request) {
       };
     });
 
-    // Personalized ranking if user has preferences and no explicit category filter
+    // Personalized ranking: preferences*5 + likedCategoryMatch*4 + viewedCategoryMatch*3 + factScore*2 + recency
     if (userPrefs.length > 0 && !category && sort === 'recent') {
+      const now = Date.now();
       hydrated.sort((a, b) => {
-        const aBoost = userPrefs.includes(a.category || '') ? 20 : 0;
-        const bBoost = userPrefs.includes(b.category || '') ? 20 : 0;
-        const aLikeBoost = a.isLiked ? 5 : 0;
-        const bLikeBoost = b.isLiked ? 5 : 0;
-        const aScore = aBoost + aLikeBoost + (a.factScore / 10) + (new Date(a.createdAt).getTime() / 1e12);
-        const bScore = bBoost + bLikeBoost + (b.factScore / 10) + (new Date(b.createdAt).getTime() / 1e12);
+        const aCategory = a.category || '';
+        const bCategory = b.category || '';
+
+        // Preference match (5 points)
+        const aPref = userPrefs.includes(aCategory) ? 5 : 0;
+        const bPref = userPrefs.includes(bCategory) ? 5 : 0;
+
+        // Liked category match (4 points)
+        const aLikeCat = likedCategorySet.has(aCategory) ? 4 : 0;
+        const bLikeCat = likedCategorySet.has(bCategory) ? 4 : 0;
+
+        // Viewed/clicked category match (3 points)
+        const aViewCat = viewedCategorySet.has(aCategory) ? 3 : 0;
+        const bViewCat = viewedCategorySet.has(bCategory) ? 3 : 0;
+
+        // Category affinity boost
+        const aAffinity = (categoryAffinity[aCategory] || 0) * 0.5;
+        const bAffinity = (categoryAffinity[bCategory] || 0) * 0.5;
+
+        // Fact score (2 points, normalized)
+        const aFact = (a.factScore / 100) * 2;
+        const bFact = (b.factScore / 100) * 2;
+
+        // Recency (0-1 point, based on how recent)
+        const aRecency = Math.max(0, 1 - (now - new Date(a.createdAt).getTime()) / (7 * 24 * 60 * 60 * 1000));
+        const bRecency = Math.max(0, 1 - (now - new Date(b.createdAt).getTime()) / (7 * 24 * 60 * 60 * 1000));
+
+        const aScore = aPref + aLikeCat + aViewCat + aAffinity + aFact + aRecency;
+        const bScore = bPref + bLikeCat + bViewCat + bAffinity + bFact + bRecency;
+
         return bScore - aScore;
       });
     }
