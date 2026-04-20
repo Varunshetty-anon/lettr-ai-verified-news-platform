@@ -5,8 +5,6 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Shield, CheckCircle, AlertTriangle, FileText, ArrowRight } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-
 export default function VerifyAuthorPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -58,7 +56,7 @@ export default function VerifyAuthorPage() {
     setResult(null);
 
     try {
-      const res = await fetch(`${API_URL}/api/verify-author`, {
+      const res = await fetch(`/api/verify-author`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content })

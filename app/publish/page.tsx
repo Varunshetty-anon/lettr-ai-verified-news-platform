@@ -10,8 +10,6 @@ const CATEGORIES = [
   'Science', 'Business', 'Energy'
 ];
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-
 export default function PublishPage() {
   const { data: session } = useSession();
   const [headline, setHeadline] = useState('');
@@ -26,7 +24,7 @@ export default function PublishPage() {
     setLoading(true);
     setResult(null);
     try {
-      const res = await fetch(`${API_URL}/api/publish`, {
+      const res = await fetch(`/api/publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ headline, description, sourceLink, category, authorEmail: session?.user?.email || '' })

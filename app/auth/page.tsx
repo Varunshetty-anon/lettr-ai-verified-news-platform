@@ -4,8 +4,6 @@ import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-
 export default function AuthPage() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [name, setName] = useState('');
@@ -23,7 +21,7 @@ export default function AuthPage() {
     try {
       if (mode === 'signup') {
         // 1. Create account via API
-        const res = await fetch(`${API_URL}/api/auth/signup`, {
+        const res = await fetch(`/api/auth/signup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password }),

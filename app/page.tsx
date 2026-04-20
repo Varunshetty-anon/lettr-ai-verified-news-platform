@@ -55,8 +55,6 @@ function Skeleton() {
   );
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
-
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -65,7 +63,7 @@ export default function Home() {
   // Redirect new users to onboarding
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.email) {
-      fetch(`${API_URL}/api/user/preferences?email=${encodeURIComponent(session.user.email)}`)
+      fetch(`/api/user/preferences?email=${encodeURIComponent(session.user.email)}`)
         .then(r => r.json())
         .then(data => {
           if (!data.preferences || data.preferences.length === 0) {
@@ -77,7 +75,7 @@ export default function Home() {
   }, [session, status, router]);
 
   const email = session?.user?.email || '';
-  const apiUrl = status === 'authenticated' && email ? `${API_URL}/api/posts?email=${encodeURIComponent(email)}` : null;
+  const apiUrl = status === 'authenticated' && email ? `/api/posts?email=${encodeURIComponent(email)}` : null;
   
   const { data, error, isLoading } = useSWR(apiUrl, fetcher, { 
     refreshInterval: 10000, // Background poll every 10s
@@ -122,7 +120,7 @@ export default function Home() {
       }, false);
     }
 
-    await fetch(`${API_URL}/api/user/interact`, {
+    await fetch(`/api/user/interact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, postId, action: isLiked ? 'unlike' : 'like' })
