@@ -163,7 +163,7 @@ Article: <A detailed 3-5 paragraph article body. Include background context, exp
 
 Source Note: <A one-line credibility assessment of the source, e.g. "Sourced from r/technology, corroborated by multiple news outlets.">
 
-Category: <Generate a highly specific, trending 1-3 word category based on the article content (e.g. "Generative AI", "Space Tourism", "US Elections"). Do NOT just use the bot specialty.>
+Category: <Generate a highly specific, trending 1-3 word category based on the article content (e.g. "Generative AI", "Space Tourism", "US Elections"). Do NOT just use the bot specialty.>`
             }
           ],
           temperature: 0.4,
