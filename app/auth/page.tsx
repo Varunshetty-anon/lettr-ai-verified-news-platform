@@ -23,7 +23,7 @@ export default function AuthPage() {
     try {
       if (mode === 'signup') {
         // 1. Create account via API
-        const res = await fetch(`${API_URL}/api/auth/signup', {
+        const res = await fetch(`${API_URL}/api/auth/signup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password }),

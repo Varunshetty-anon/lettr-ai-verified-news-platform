@@ -43,7 +43,7 @@ export default function OnboardingPreferencesPage() {
     if (selected.length < 3 || !session?.user?.email) return;
     setSaving(true);
 
-    await fetch(`${API_URL}/api/user/preferences', {
+    await fetch(`${API_URL}/api/user/preferences`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: session.user.email, preferences: selected })

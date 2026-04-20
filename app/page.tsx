@@ -113,7 +113,7 @@ export default function Home() {
       }, false);
     }
 
-    await fetch(`${API_URL}/api/user/interact', {
+    await fetch(`${API_URL}/api/user/interact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, postId, action: isLiked ? 'unlike' : 'like' })

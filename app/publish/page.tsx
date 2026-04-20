@@ -26,7 +26,7 @@ export default function PublishPage() {
     setLoading(true);
     setResult(null);
     try {
-      const res = await fetch(`${API_URL}/api/publish', {
+      const res = await fetch(`${API_URL}/api/publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ headline, description, sourceLink, category, authorEmail: session?.user?.email || '' })

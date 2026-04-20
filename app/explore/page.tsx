@@ -43,7 +43,7 @@ export default function Explore() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/posts?sort=score')
+    fetch(`${API_URL}/api/posts?sort=score`)
       .then(res => res.json())
       .then(data => setTrending((data.posts || []).slice(0, 5)))
       .catch(() => {});

@@ -68,7 +68,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
     // Track view with session email
     if (session?.user?.email) {
-      fetch(`${API_URL}/api/user/interact', {
+      fetch(`${API_URL}/api/user/interact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: session.user.email, postId: id, action: 'view' })
@@ -81,7 +81,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
     const newLiked = !liked;
     setLiked(newLiked);
 
-    await fetch(`${API_URL}/api/user/interact', {
+    await fetch(`${API_URL}/api/user/interact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

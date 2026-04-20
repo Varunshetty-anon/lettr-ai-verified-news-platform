@@ -23,7 +23,7 @@ export function RightSidebar() {
   const [affinities, setAffinities] = useState<AffinityEntry[]>([]);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/posts')
+    fetch(`${API_URL}/api/posts`)
       .then(res => res.json())
       .then(data => {
         const authorMap = new Map<string, BotInfo>();
@@ -45,7 +45,7 @@ export function RightSidebar() {
   // Fetch user affinities
   useEffect(() => {
     if (!session?.user?.email) return;
-    fetch(`${API_URL}/api/user/me')
+    fetch(`${API_URL}/api/user/me`)
       .then(res => res.json())
       .then(data => {
         if (data.user?.categoryAffinity) {

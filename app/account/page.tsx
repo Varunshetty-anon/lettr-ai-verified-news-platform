@@ -36,7 +36,7 @@ export default function Account() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_URL}/api/user/me')
+    fetch(`${API_URL}/api/user/me`)
       .then(r => r.json())
       .then(d => { setProfile(d.user); setLoading(false); })
       .catch(() => setLoading(false));
