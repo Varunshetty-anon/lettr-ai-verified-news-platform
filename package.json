@@ -6,7 +6,8 @@
     "dev": "concurrently \"next dev\" \"tsx daemon.ts\"",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "next lint",
+    "worker": "tsx worker/botWorker.ts",
     "daemon": "tsx daemon.ts"
   },
   "dependencies": {
