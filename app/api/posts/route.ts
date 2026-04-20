@@ -49,7 +49,7 @@ export async function GET(request: Request) {
 
     const posts = await Post.find(filter)
       .sort(sortObj)
-      .limit(50)
+      .limit(100)
       .lean();
 
     // Hydrate author info
@@ -136,7 +136,7 @@ export async function GET(request: Request) {
       });
     }
 
-    return NextResponse.json({ posts: hydrated.slice(0, 30) }, { status: 200 });
+    return NextResponse.json({ posts: hydrated }, { status: 200 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
