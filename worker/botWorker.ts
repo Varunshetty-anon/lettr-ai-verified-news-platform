@@ -39,6 +39,15 @@ function extractMediaFromReddit(data: any): { image?: string; video?: string } {
   if (data.is_video && data.media?.reddit_video?.fallback_url) {
     return { video: data.media.reddit_video.fallback_url };
   }
+  if (data.preview?.reddit_video_preview?.fallback_url) {
+    return { video: data.preview.reddit_video_preview.fallback_url };
+  }
+  if (data.secure_media?.reddit_video?.fallback_url) {
+    return { video: data.secure_media.reddit_video.fallback_url };
+  }
+  if (data.url && /\.(mp4|webm|mov)(\?.*)?$/i.test(data.url)) {
+    return { video: data.url };
+  }
   if (data.url && /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(data.url)) {
     return { image: data.url };
   }
@@ -135,12 +144,13 @@ async function runBotTask() {
             },
             {
               role: "user",
-              content: `Rewrite the following raw content into a professional news article. Do NOT copy raw text verbatim. Write original, well-structured content.
+              content: `Rewrite the following raw content into a professional news article. Do NOT copy raw text verbatim. Write original, well-structured content. If the content implies a video or image, verify the facts in context of the described media.
 
 Raw Title: ${rawTitle}
 Raw Text: ${rawText.substring(0, 1200)}
 Source URL: ${originalLink}
 Category: ${config.category}
+Media Presence: ${media.video ? 'Contains Video' : media.image ? 'Contains Image' : 'Text Only'}
 
 Return EXACTLY in this format (use the exact labels):
 

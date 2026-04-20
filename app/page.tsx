@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Heart, ExternalLink, Shield, CheckCircle, Image as ImageIcon } from 'lucide-react';
+import HoverVideoPlayer from '@/app/components/ui/HoverVideoPlayer';
 
 interface PostData {
   _id: string;
@@ -176,11 +177,7 @@ export default function Home() {
                 </div>
               )}
               {post.videoUrl && (
-                <div className="w-full border-b border-outline-variant/30">
-                  <video controls className="w-full rounded-t-lg" style={{ maxHeight: '300px' }}>
-                    <source src={post.videoUrl} />
-                  </video>
-                </div>
+                <HoverVideoPlayer src={post.videoUrl} />
               )}
 
               <div className="p-5">

@@ -67,27 +67,28 @@ function hashUrl(url: string): string {
 }
 
 function extractMediaFromReddit(data: any): { image?: string; video?: string } {
-  // Check for direct image
+  if (data.is_video && data.media?.reddit_video?.fallback_url) {
+    return { video: data.media.reddit_video.fallback_url };
+  }
+  if (data.preview?.reddit_video_preview?.fallback_url) {
+    return { video: data.preview.reddit_video_preview.fallback_url };
+  }
+  if (data.secure_media?.reddit_video?.fallback_url) {
+    return { video: data.secure_media.reddit_video.fallback_url };
+  }
+  if (data.url && /\.(mp4|webm|mov)(\?.*)?$/i.test(data.url)) {
+    return { video: data.url };
+  }
   if (data.url && /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(data.url)) {
     return { image: data.url };
   }
-
-  // Check for Reddit-hosted image
   if (data.preview?.images?.[0]?.source?.url) {
     const imgUrl = data.preview.images[0].source.url.replace(/&amp;/g, '&');
     return { image: imgUrl };
   }
-
-  // Check for Reddit-hosted video
-  if (data.is_video && data.media?.reddit_video?.fallback_url) {
-    return { video: data.media.reddit_video.fallback_url };
-  }
-
-  // Check for thumbnail
   if (data.thumbnail && data.thumbnail.startsWith('http') && data.thumbnail !== 'self' && data.thumbnail !== 'default' && data.thumbnail !== 'nsfw') {
     return { image: data.thumbnail };
   }
-
   return {};
 }
 
@@ -160,12 +161,13 @@ export async function GET(request: Request) {
             },
             {
               role: "user",
-              content: `Rewrite the following raw content into a professional news article. Do NOT copy raw text verbatim. Write original, well-structured content.
+              content: `Rewrite the following raw content into a professional news article. Do NOT copy raw text verbatim. Write original, well-structured content. If the content implies a video or image, verify the facts in context of the described media.
 
 Raw Title: ${rawTitle}
 Raw Text: ${rawText.substring(0, 1200)}
 Source URL: ${originalLink}
 Category: ${config.category}
+Media Presence: ${media.video ? 'Contains Video' : media.image ? 'Contains Image' : 'Text Only'}
 
 Return EXACTLY in this format (use the exact labels):
 
