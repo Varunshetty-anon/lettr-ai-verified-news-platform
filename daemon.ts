@@ -34,29 +34,29 @@ function hashUrl(url: string): string {
   return crypto.createHash('md5').update(url).digest('hex');
 }
 
-function extractMediaFromReddit(data: any): { mediaUrl?: string; mediaType: 'image' | 'video' | 'text' } {
+function extractMediaFromReddit(data: any): { image?: string; video?: string } {
   // Check for Reddit-hosted video
   if (data.is_video && data.media?.reddit_video?.fallback_url) {
-    return { mediaUrl: data.media.reddit_video.fallback_url, mediaType: 'video' };
+    return { video: data.media.reddit_video.fallback_url };
   }
 
   // Check for direct image
   if (data.url && /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(data.url)) {
-    return { mediaUrl: data.url, mediaType: 'image' };
+    return { image: data.url };
   }
 
   // Check for Reddit-hosted image
   if (data.preview?.images?.[0]?.source?.url) {
     const imgUrl = data.preview.images[0].source.url.replace(/&amp;/g, '&');
-    return { mediaUrl: imgUrl, mediaType: 'image' };
+    return { image: imgUrl };
   }
 
   // Check for thumbnail
   if (data.thumbnail && data.thumbnail.startsWith('http') && data.thumbnail !== 'self' && data.thumbnail !== 'default' && data.thumbnail !== 'nsfw') {
-    return { mediaUrl: data.thumbnail, mediaType: 'image' };
+    return { image: data.thumbnail };
   }
 
-  return { mediaType: 'text' };
+  return {};
 }
 
 async function runBotTask() {
@@ -101,19 +101,24 @@ async function runBotTask() {
     // Extract media
     let media = extractMediaFromReddit(targetContent);
 
+    let imageUrl = undefined;
+    let videoUrl = undefined;
+
     // If it's an image, upload to Supabase
-    if (media.mediaUrl && media.mediaType === 'image') {
-      console.log(`[Daemon] Uploading image to Supabase: ${media.mediaUrl}`);
+    if (media.image) {
+      console.log(`[Daemon] Uploading image to Supabase: ${media.image}`);
       const filename = `${crypto.randomBytes(4).toString('hex')}.jpg`;
-      const uploadedUrl = await uploadMediaFromUrl(media.mediaUrl, filename);
+      const uploadedUrl = await uploadMediaFromUrl(media.image, filename);
       if (uploadedUrl) {
-        media.mediaUrl = uploadedUrl;
+        imageUrl = uploadedUrl;
         console.log(`[Daemon] Successfully uploaded to: ${uploadedUrl}`);
       } else {
         console.warn(`[Daemon] Supabase upload failed, falling back to original URL.`);
+        imageUrl = media.image;
       }
-    } else if (media.mediaUrl && media.mediaType === 'video') {
-      console.log(`[Daemon] Using video URL: ${media.mediaUrl}`);
+    } else if (media.video) {
+      console.log(`[Daemon] Using video URL: ${media.video}`);
+      videoUrl = media.video;
     }
 
     // 1. REWRITE VIA GROQ
@@ -214,8 +219,8 @@ Source Note: <A one-line credibility assessment of the source, e.g. "Sourced fro
       sourceHash: urlHash,
       originSource: rewriteContent.sourceNote || originTag,
       category: config.category,
-      mediaUrl: media.mediaUrl,
-      mediaType: media.mediaType,
+      imageUrl,
+      videoUrl,
       factScore: verification.factScore,
       reasoning: verification.reasoning,
       isPublished: true,

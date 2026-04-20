@@ -7,6 +7,9 @@ import { Post } from '@/models/Post';
 import { User } from '@/models/User';
 import { uploadMediaFromUrl } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+
 // Map bots to their respective sources and categories (matching user preference categories)
 const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
   'TechNews Bot': {
