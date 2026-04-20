@@ -25,6 +25,8 @@ const CATEGORIES = [
   { name: 'Energy', icon: Zap },
 ];
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
 export default function OnboardingPreferencesPage() {
   const { data: session } = useSession();
   const [selected, setSelected] = useState<string[]>([]);
@@ -41,7 +43,7 @@ export default function OnboardingPreferencesPage() {
     if (selected.length < 3 || !session?.user?.email) return;
     setSaving(true);
 
-    await fetch('/api/user/preferences', {
+    await fetch(`${API_URL}/api/user/preferences', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: session.user.email, preferences: selected })

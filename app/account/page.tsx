@@ -28,13 +28,15 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
 export default function Account() {
   const { data: session } = useSession();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/user/me')
+    fetch(`${API_URL}/api/user/me')
       .then(r => r.json())
       .then(d => { setProfile(d.user); setLoading(false); })
       .catch(() => setLoading(false));

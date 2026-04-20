@@ -15,13 +15,15 @@ interface AffinityEntry {
   score: number;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
 export function RightSidebar() {
   const { data: session } = useSession();
   const [bots, setBots] = useState<BotInfo[]>([]);
   const [affinities, setAffinities] = useState<AffinityEntry[]>([]);
 
   useEffect(() => {
-    fetch('/api/posts')
+    fetch(`${API_URL}/api/posts')
       .then(res => res.json())
       .then(data => {
         const authorMap = new Map<string, BotInfo>();
@@ -43,7 +45,7 @@ export function RightSidebar() {
   // Fetch user affinities
   useEffect(() => {
     if (!session?.user?.email) return;
-    fetch('/api/user/me')
+    fetch(`${API_URL}/api/user/me')
       .then(res => res.json())
       .then(data => {
         if (data.user?.categoryAffinity) {

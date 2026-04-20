@@ -33,6 +33,8 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
 export default function Explore() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activeSort, setActiveSort] = useState<'recent' | 'score'>('recent');
@@ -41,7 +43,7 @@ export default function Explore() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch('/api/posts?sort=score')
+    fetch(`${API_URL}/api/posts?sort=score')
       .then(res => res.json())
       .then(data => setTrending((data.posts || []).slice(0, 5)))
       .catch(() => {});
@@ -50,7 +52,7 @@ export default function Explore() {
   useEffect(() => {
     if (!activeCategory) return;
     setLoading(true);
-    fetch(`/api/posts?category=${encodeURIComponent(activeCategory)}&sort=${activeSort}`)
+    fetch(`${API_URL}/api/posts?category=${encodeURIComponent(activeCategory)}&sort=${activeSort}`)
       .then(res => res.json())
       .then(data => { setPosts(data.posts || []); setLoading(false); })
       .catch(() => setLoading(false));

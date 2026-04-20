@@ -44,6 +44,8 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
+
 export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data: session } = useSession();
@@ -55,7 +57,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
   useEffect(() => {
     setMounted(true);
-    fetch(`/api/posts/${id}`)
+    fetch(`${API_URL}/api/posts/${id}`)
       .then(res => res.json())
       .then(data => {
         setPost(data.post);
@@ -66,7 +68,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
     // Track view with session email
     if (session?.user?.email) {
-      fetch('/api/user/interact', {
+      fetch(`${API_URL}/api/user/interact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: session.user.email, postId: id, action: 'view' })
@@ -79,7 +81,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
     const newLiked = !liked;
     setLiked(newLiked);
 
-    await fetch('/api/user/interact', {
+    await fetch(`${API_URL}/api/user/interact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
