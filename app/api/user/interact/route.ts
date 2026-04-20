@@ -37,6 +37,8 @@ export async function POST(request: Request) {
       if (postCategory) {
         userUpdate.$inc = { [`categoryAffinity.${postCategory}`]: 1 };
       }
+    } else if (action === 'impress') {
+      userUpdate.$addToSet = { impressedPosts: postId };
     }
 
     await User.findOneAndUpdate(

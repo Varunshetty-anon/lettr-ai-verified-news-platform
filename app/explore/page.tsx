@@ -17,11 +17,7 @@ interface PostData {
   author: { name: string; trustScore: number; role: string; isVerifiedAuthor: boolean } | null;
 }
 
-const CATEGORIES = [
-  'AI & Tech', 'Startups', 'Finance', 'Crypto', 'Geopolitics',
-  'Defense', 'Space', 'Health', 'Environment', 'Internet Culture',
-  'Science', 'Business', 'Energy'
-];
+// Categories fetched dynamically
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -40,10 +36,17 @@ export default function Explore() {
   const [trending, setTrending] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const [categories, setCategories] = useState<string[]>([]);
+
   useEffect(() => {
     fetch(`/api/posts?sort=score`)
       .then(res => res.json())
       .then(data => setTrending((data.posts || []).slice(0, 5)))
+      .catch(() => {});
+
+    fetch('/api/posts/categories')
+      .then(res => res.json())
+      .then(data => setCategories(data.categories || []))
       .catch(() => {});
   }, []);
 
@@ -65,7 +68,7 @@ export default function Explore() {
 
       <div className="px-5 py-3 border-b border-outline-variant overflow-x-auto">
         <div className="flex flex-wrap gap-1.5">
-          {CATEGORIES.map(cat => (
+          {categories.map(cat => (
             <button
               key={cat}
               onClick={() => { setActiveCategory(activeCategory === cat ? null : cat); setPosts([]); }}

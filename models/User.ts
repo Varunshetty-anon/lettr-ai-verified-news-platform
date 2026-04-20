@@ -12,6 +12,7 @@ export interface IUser extends Document {
   preferences: string[];
   likedPosts: mongoose.Types.ObjectId[];
   viewedPosts: mongoose.Types.ObjectId[];
+  impressedPosts: mongoose.Types.ObjectId[];
   savedPosts: mongoose.Types.ObjectId[];
   categoryAffinity: Map<string, number>;
   createdAt: Date;
@@ -30,6 +31,7 @@ const UserSchema: Schema<IUser> = new Schema({
   preferences: [{ type: String }],
   likedPosts: [{ type: Schema.Types.ObjectId, ref: 'Post' }],
   viewedPosts: [{ type: Schema.Types.ObjectId, ref: 'Post' }],
+  impressedPosts: [{ type: Schema.Types.ObjectId, ref: 'Post' }],
   savedPosts: [{ type: Schema.Types.ObjectId, ref: 'Post' }],
   categoryAffinity: { type: Map, of: Number, default: {} }
 }, { timestamps: true });

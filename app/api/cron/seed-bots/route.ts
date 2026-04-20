@@ -142,7 +142,8 @@ export async function GET(request: Request) {
       cleanHeadline: rawTitle,
       cleanSummary: "Live news feed summary.",
       fullBody: "",
-      sourceNote: ""
+      sourceNote: "",
+      dynamicCategory: config.category
     };
 
     try {
@@ -166,7 +167,7 @@ export async function GET(request: Request) {
 Raw Title: ${rawTitle}
 Raw Text: ${rawText.substring(0, 1200)}
 Source URL: ${originalLink}
-Category: ${config.category}
+Bot Specialty: ${config.category}
 Media Presence: ${media.video ? 'Contains Video' : media.image ? 'Contains Image' : 'Text Only'}
 
 Return EXACTLY in this format (use the exact labels):
@@ -177,7 +178,9 @@ Summary: <A comprehensive 5-8 line summary of the key facts. Cover who, what, wh
 
 Article: <A detailed 3-5 paragraph article body. Include background context, expert analysis, implications, and what comes next. Write at least 250 words. Structure with clear paragraphs.>
 
-Source Note: <A one-line credibility assessment of the source, e.g. "Sourced from r/technology, corroborated by multiple news outlets.">`
+Source Note: <A one-line credibility assessment of the source, e.g. "Sourced from r/technology, corroborated by multiple news outlets.">
+
+Category: <Generate a highly specific, trending 1-3 word category based on the article content (e.g. "Generative AI", "Space Tourism", "US Elections"). Do NOT just use the bot specialty.>
             }
           ],
           temperature: 0.4,
@@ -192,12 +195,14 @@ Source Note: <A one-line credibility assessment of the source, e.g. "Sourced fro
         const headMatch = outputText.match(/Headline:\s*(.*)/i);
         const sumMatch = outputText.match(/Summary:\s*([\s\S]*?)(?=\nArticle:)/i);
         const bodyMatch = outputText.match(/Article:\s*([\s\S]*?)(?=\nSource Note:)/i);
-        const sourceNoteMatch = outputText.match(/Source Note:\s*(.*)/i);
+        const sourceNoteMatch = outputText.match(/Source Note:\s*([\s\S]*?)(?=\nCategory:)/i) || outputText.match(/Source Note:\s*(.*)/i);
+        const categoryMatch = outputText.match(/Category:\s*(.*)/i);
         
         if (headMatch) rewriteContent.cleanHeadline = headMatch[1].trim();
         if (sumMatch) rewriteContent.cleanSummary = sumMatch[1].trim();
         if (bodyMatch) rewriteContent.fullBody = bodyMatch[1].trim();
         if (sourceNoteMatch) rewriteContent.sourceNote = sourceNoteMatch[1].trim();
+        if (categoryMatch) rewriteContent.dynamicCategory = categoryMatch[1].trim();
         
         // Fallback: if no body parsed but there's substantial text after summary
         if (!rewriteContent.fullBody && outputText.length > 200) {
@@ -247,7 +252,7 @@ Source Note: <A one-line credibility assessment of the source, e.g. "Sourced fro
       sourceLink: originalLink,
       sourceHash: urlHash,
       originSource: rewriteContent.sourceNote || originTag,
-      category: config.category,
+      category: rewriteContent.dynamicCategory || config.category,
       imageUrl,
       videoUrl,
       factScore: verification.factScore,

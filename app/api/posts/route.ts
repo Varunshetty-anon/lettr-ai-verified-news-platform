@@ -19,6 +19,7 @@ export async function GET(request: Request) {
     let userPrefs: string[] = [];
     let userLikes: string[] = [];
     let userViewed: string[] = [];
+    let userImpressed: string[] = [];
     let categoryAffinity: Record<string, number> = {};
 
     // Try to get user from session or email param
@@ -31,12 +32,13 @@ export async function GET(request: Request) {
     // Fetch user data for personalization
     if (userEmail) {
       const user = await User.findOne({ email: userEmail })
-        .select('preferences likedPosts viewedPosts categoryAffinity')
+        .select('preferences likedPosts viewedPosts impressedPosts categoryAffinity')
         .lean();
       if (user) {
         userPrefs = user.preferences || [];
         userLikes = (user.likedPosts || []).map((id: any) => id.toString());
         userViewed = (user.viewedPosts || []).map((id: any) => id.toString());
+        userImpressed = (user.impressedPosts || []).map((id: any) => id.toString());
         categoryAffinity = (user.categoryAffinity as any) || {};
         // Convert Map to plain object if needed
         if (categoryAffinity instanceof Map) {
@@ -125,12 +127,20 @@ export async function GET(request: Request) {
         const aFact = (a.factScore / 100) * 2;
         const bFact = (b.factScore / 100) * 2;
 
-        // Recency (0-1 point, based on how recent)
-        const aRecency = Math.max(0, 1 - (now - new Date(a.createdAt).getTime()) / (7 * 24 * 60 * 60 * 1000));
-        const bRecency = Math.max(0, 1 - (now - new Date(b.createdAt).getTime()) / (7 * 24 * 60 * 60 * 1000));
+        // Viewed Penalty: -20 points if already read
+        const aViewedPen = userViewed.includes(a._id) ? -20 : 0;
+        const bViewedPen = userViewed.includes(b._id) ? -20 : 0;
 
-        const aScore = aPref + aLikeCat + aViewCat + aAffinity + aFact + aRecency;
-        const bScore = bPref + bLikeCat + bViewCat + bAffinity + bFact + bRecency;
+        // Impressed Penalty: -5 points if scrolled past without clicking
+        const aImpressPen = userImpressed.includes(a._id) ? -5 : 0;
+        const bImpressPen = userImpressed.includes(b._id) ? -5 : 0;
+
+        // Recency (0-10 points, based on how recent, heavily skewed to last 24h)
+        const aRecency = Math.max(0, 10 * (1 - (now - new Date(a.createdAt).getTime()) / (3 * 24 * 60 * 60 * 1000)));
+        const bRecency = Math.max(0, 10 * (1 - (now - new Date(b.createdAt).getTime()) / (3 * 24 * 60 * 60 * 1000)));
+
+        const aScore = aPref + aLikeCat + aViewCat + aAffinity + aFact + aRecency + aViewedPen + aImpressPen;
+        const bScore = bPref + bLikeCat + bViewCat + bAffinity + bFact + bRecency + bViewedPen + bImpressPen;
 
         return bScore - aScore;
       });

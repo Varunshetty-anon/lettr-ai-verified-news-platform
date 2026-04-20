@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Heart, ExternalLink, Shield, CheckCircle, Image as ImageIcon } from 'lucide-react';
 import HoverVideoPlayer from '@/app/components/ui/HoverVideoPlayer';
+import ImpressTracker from '@/app/components/ui/ImpressTracker';
 
 interface PostData {
   _id: string;
@@ -165,11 +166,11 @@ export default function Home() {
       {!loading && posts.length > 0 && (
         <div className="flex flex-col gap-2.5 p-4">
           {posts.map((post) => (
-            <Link
-              key={post._id}
-              href={`/post/${post._id}`}
-              className="group block bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all duration-200 animate-fade-in"
-            >
+            <ImpressTracker key={post._id} postId={post._id}>
+              <Link
+                href={`/post/${post._id}`}
+                className="group block bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all duration-200 animate-fade-in"
+              >
               {/* Media thumbnail */}
               {post.imageUrl && (
                 <div className="w-full overflow-hidden border-b border-outline-variant/30">
@@ -254,6 +255,7 @@ export default function Home() {
                 </div>
               </div>
             </Link>
+          </ImpressTracker>
           ))}
         </div>
       )}
