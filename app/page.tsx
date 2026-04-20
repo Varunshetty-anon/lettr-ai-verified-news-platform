@@ -22,7 +22,7 @@ interface PostData {
   engagement: number;
   createdAt: string;
   isLiked?: boolean;
-  author: { name: string; trustScore: number; role: string; isVerifiedAuthor: boolean } | null;
+  author: { _id: string; name: string; trustScore: number; role: string; isVerifiedAuthor: boolean } | null;
 }
 
 function timeAgo(dateStr: string) {
@@ -187,7 +187,13 @@ export default function Home() {
                   <div className="flex items-center gap-2 flex-wrap">
                     {post.author && (
                       <div className="flex items-center gap-1.5">
-                        <span className="font-label text-xs font-medium text-on-surface">{post.author.name}</span>
+                        <Link 
+                          href={`/author/${post.author._id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="font-label text-xs font-medium text-on-surface hover:text-primary transition-colors hover:underline decoration-outline-variant/30 underline-offset-2"
+                        >
+                          {post.author.name}
+                        </Link>
                         {post.author.role === 'AUTHOR' && (
                           <span className="font-label text-[9px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-sm">Bot</span>
                         )}

@@ -223,7 +223,9 @@ Category: <Generate a highly specific, trending 1-3 word category based on the a
       imageUrl,
       videoUrl,
       factScore: verification.factScore,
-      reasoning: verification.reasoning,
+      factSummary: verification.factSummary,
+      confidence: verification.confidence,
+      sourcesChecked: verification.sourcesChecked,
       isPublished: true,
       engagement: Math.floor(Math.random() * 80) + 5
     });

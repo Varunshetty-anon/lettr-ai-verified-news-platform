@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Shield, CheckCircle, TrendingUp } from 'lucide-react';
+import { Shield, CheckCircle, TrendingUp, Users, ArrowUpRight } from 'lucide-react';
 
 interface PostData {
   _id: string;
@@ -17,7 +17,14 @@ interface PostData {
   author: { name: string; trustScore: number; role: string; isVerifiedAuthor: boolean } | null;
 }
 
-// Categories fetched dynamically
+interface AuthorData {
+  _id: string;
+  name: string;
+  image?: string;
+  followersCount: number;
+  isVerifiedAuthor: boolean;
+  role: string;
+}
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -34,8 +41,8 @@ export default function Explore() {
   const [activeSort, setActiveSort] = useState<'recent' | 'score'>('recent');
   const [posts, setPosts] = useState<PostData[]>([]);
   const [trending, setTrending] = useState<PostData[]>([]);
+  const [topAuthors, setTopAuthors] = useState<AuthorData[]>([]);
   const [loading, setLoading] = useState(false);
-
   const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
@@ -47,6 +54,11 @@ export default function Explore() {
     fetch('/api/posts/categories')
       .then(res => res.json())
       .then(data => setCategories(data.categories || []))
+      .catch(() => {});
+
+    fetch('/api/authors/top')
+      .then(res => res.json())
+      .then(data => setTopAuthors(data.authors || []))
       .catch(() => {});
   }, []);
 
@@ -60,112 +72,144 @@ export default function Explore() {
   }, [activeCategory, activeSort]);
 
   return (
-    <div className="w-full min-h-screen">
-      <div className="px-5 pt-8 pb-4 border-b border-outline-variant">
-        <h1 className="font-display text-sm uppercase tracking-[0.2em] text-on-surface-variant font-medium">Explore</h1>
-        <p className="font-body text-xs text-on-surface-variant/50 mt-1">Browse verified reporting across categories</p>
+    <div className="w-full min-h-screen bg-surface-container-lowest animate-fade-in pb-20">
+      <div className="px-5 pt-10 pb-6 border-b border-outline-variant bg-surface-container-low shadow-sm">
+        <h1 className="font-display text-sm uppercase tracking-[0.3em] text-on-surface font-black">Explore</h1>
+        <p className="font-body text-xs text-on-surface-variant/50 mt-1">Discover verified authors and trending topics</p>
       </div>
 
-      <div className="px-5 py-3 border-b border-outline-variant overflow-x-auto">
-        <div className="flex flex-wrap gap-1.5">
+      <div className="px-5 py-4 border-b border-outline-variant bg-surface-container-low overflow-x-auto no-scrollbar sticky top-0 z-10">
+        <div className="flex gap-2">
           {categories.map(cat => (
             <button
               key={cat}
               onClick={() => { setActiveCategory(activeCategory === cat ? null : cat); setPosts([]); }}
-              className={`font-label text-[9px] uppercase tracking-[0.12em] px-3 py-1.5 border transition-all whitespace-nowrap ${
+              className={`font-label text-[10px] uppercase tracking-[0.15em] px-4 py-2 border transition-all whitespace-nowrap font-bold ${
                 activeCategory === cat
-                  ? 'bg-primary text-on-primary border-primary'
-                  : 'border-outline-variant text-on-surface-variant/60 hover:border-primary/30 hover:text-primary'
+                  ? 'bg-primary text-on-primary border-primary shadow-lg shadow-primary/20'
+                  : 'border-outline-variant text-on-surface-variant/60 hover:border-primary/30 hover:text-primary bg-surface-container-low'
               }`}
             >{cat}</button>
           ))}
         </div>
       </div>
 
-      {!activeCategory && trending.length > 0 && (
-        <div className="px-5 py-5">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp size={14} className="text-primary" />
-            <h3 className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/50">Trending Now</h3>
-          </div>
-          <div className="flex flex-col gap-2">
-            {trending.map((post, i) => (
-              <Link key={post._id} href={`/post/${post._id}`} className="group flex items-center gap-3 p-3 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all">
-                <span className="font-display text-lg font-black text-on-surface-variant/25 min-w-[24px] text-center">{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-body text-sm text-on-surface group-hover:text-primary transition-colors truncate">{post.headline}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="font-label text-[10px] text-on-surface-variant/40">{post.author?.name}</span>
-                    <span className={`font-display text-[10px] font-bold ${post.factScore >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-on-surface-variant/40'}`}>{post.factScore}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+      {!activeCategory && (
+        <div className="max-w-4xl mx-auto px-5 py-10 space-y-12">
+          {/* Trending Section */}
+          {trending.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-6 border-l-4 border-primary pl-4">
+                <TrendingUp size={18} className="text-primary" />
+                <h3 className="font-display text-xs uppercase tracking-[0.2em] text-on-surface font-black">Trending Reports</h3>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                {trending.map((post, i) => (
+                  <Link key={post._id} href={`/post/${post._id}`} className="group flex items-center gap-6 p-5 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all shadow-sm">
+                    <span className="font-display text-3xl font-black text-on-surface-variant/10 min-w-[32px] text-center italic">{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-body text-base font-bold text-on-surface group-hover:text-primary transition-colors leading-snug line-clamp-1">{post.headline}</p>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className="font-label text-[10px] text-on-surface-variant/40 uppercase tracking-widest">{post.author?.name}</span>
+                        <div className={`flex items-center gap-1 font-display text-[10px] font-bold ${post.factScore >= 80 ? 'text-emerald-500' : 'text-on-surface-variant/40'}`}>
+                           <Shield size={10} /> {post.factScore}%
+                        </div>
+                      </div>
+                    </div>
+                    <ArrowUpRight size={16} className="text-on-surface-variant/20 group-hover:text-primary transition-colors" />
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
-      {!activeCategory && trending.length === 0 && (
-        <div className="px-5 py-16 text-center">
-          <h2 className="font-display text-lg text-on-surface mb-2">Select a category</h2>
-          <p className="font-body text-sm text-on-surface-variant/50">Choose a topic above to explore verified articles</p>
+          {/* Discovery Section: Top Authors */}
+          {topAuthors.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-6 border-l-4 border-primary pl-4">
+                <Users size={18} className="text-primary" />
+                <h3 className="font-display text-xs uppercase tracking-[0.2em] text-on-surface font-black">Verified Experts to Follow</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {topAuthors.map((auth) => (
+                  <Link key={auth._id} href={`/author/${auth._id}`} className="group flex items-center gap-4 p-5 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all shadow-sm">
+                    <div className="w-12 h-12 bg-surface-container-high rounded-full overflow-hidden shrink-0 flex items-center justify-center text-primary font-black border border-outline-variant/30">
+                       {auth.image ? <img src={auth.image} className="w-full h-full object-cover" /> : auth.name[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                         <p className="font-body text-sm font-bold text-on-surface group-hover:text-primary transition-colors truncate">{auth.name}</p>
+                         {auth.isVerifiedAuthor && <CheckCircle size={12} className="text-emerald-500" />}
+                      </div>
+                      <p className="font-label text-[10px] text-on-surface-variant/40 uppercase tracking-widest mt-0.5">{auth.followersCount || 0} Followers</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       )}
 
       {activeCategory && (
-        <>
-          <div className="px-5 py-2.5 flex gap-4 border-b border-outline-variant">
+        <div className="max-w-4xl mx-auto px-5 pt-8">
+          <div className="flex gap-6 mb-8 border-b border-outline-variant pb-2">
             {(['recent', 'score'] as const).map(s => (
-              <button key={s} onClick={() => setActiveSort(s)} className={`font-label text-[9px] uppercase tracking-[0.12em] pb-2 border-b-2 transition-colors ${activeSort === s ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant/40 hover:text-on-surface-variant'}`}>
-                {s === 'recent' ? 'Latest' : 'Most Verified'}
+              <button key={s} onClick={() => setActiveSort(s)} className={`font-label text-[10px] uppercase tracking-[0.2em] font-black pb-3 border-b-2 transition-all ${activeSort === s ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant/40 hover:text-on-surface'}`}>
+                {s === 'recent' ? 'Latest Reporting' : 'Highest Fidelity'}
               </button>
             ))}
           </div>
 
           {loading && (
-            <div className="px-5 py-6 space-y-2.5">
+            <div className="space-y-4">
               {[1, 2, 3].map(i => (
-                <div key={i} className="animate-pulse p-4 bg-surface-container-low border border-outline-variant">
-                  <div className="h-4 bg-surface-container-high rounded w-3/4 mb-2" />
-                  <div className="h-3 bg-surface-container-high rounded w-full" />
+                <div key={i} className="animate-pulse p-6 bg-surface-container-low border border-outline-variant shadow-sm">
+                  <div className="h-5 bg-surface-container-high rounded w-3/4 mb-3" />
+                  <div className="h-4 bg-surface-container-high rounded w-full" />
                 </div>
               ))}
             </div>
           )}
 
           {!loading && posts.length === 0 && (
-            <div className="px-5 py-14 text-center">
-              <h3 className="font-display text-base text-on-surface mb-2">No posts in {activeCategory} yet</h3>
-              <p className="font-body text-sm text-on-surface-variant/50">Check back later as bots continue posting.</p>
+            <div className="py-20 text-center border border-dashed border-outline-variant/40">
+              <h3 className="font-display text-base text-on-surface mb-2 font-bold uppercase tracking-widest">No reports in {activeCategory}</h3>
+              <p className="font-body text-sm text-on-surface-variant/40">Our verification bots are currently analyzing new sources.</p>
             </div>
           )}
 
           {!loading && posts.length > 0 && (
-            <div className="flex flex-col gap-2 p-4">
+            <div className="grid grid-cols-1 gap-6">
               {posts.map(post => (
-                <Link key={post._id} href={`/post/${post._id}`} className="group block p-4 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all animate-fade-in">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
+                <Link key={post._id} href={`/post/${post._id}`} className="group block p-6 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all shadow-sm animate-fade-in relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
                       {post.author && (
-                        <div className="flex items-center gap-1">
-                          <span className="font-label text-xs text-on-surface/80">{post.author.name}</span>
-                          {post.author.role === 'AUTHOR' && <span className="font-label text-[8px] px-1 py-0.5 bg-primary/10 text-primary">Bot</span>}
-                          {post.author.isVerifiedAuthor && <CheckCircle size={11} className="text-accent" />}
+                        <div className="flex items-center gap-2">
+                           <div className="w-5 h-5 rounded-full bg-surface-container-high flex items-center justify-center text-[10px] font-black text-primary/40 border border-outline-variant/30">
+                              {post.author.name[0]}
+                           </div>
+                           <span className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-bold">{post.author.name}</span>
+                           {post.author.isVerifiedAuthor && <CheckCircle size={10} className="text-emerald-500" />}
                         </div>
                       )}
-                      <span className="font-label text-[10px] text-on-surface-variant/40">{timeAgo(post.createdAt)}</span>
+                      <span className="font-label text-[10px] text-on-surface-variant/30">{timeAgo(post.createdAt)}</span>
                     </div>
-                    <div className={`flex items-center gap-1 text-xs font-display font-bold ${post.factScore >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-on-surface-variant/40'}`}>
-                      <Shield size={10} />{post.factScore}
+                    <div className={`flex items-center gap-1.5 font-display text-[10px] font-black ${post.factScore >= 80 ? 'text-emerald-500' : 'text-on-surface-variant/40'}`}>
+                      <Shield size={12} /> {post.factScore}%
                     </div>
                   </div>
-                  <h3 className="font-display text-base font-bold text-on-surface leading-snug group-hover:text-primary transition-colors mb-1">{post.headline}</h3>
-                  <p className="font-body text-sm text-on-surface-variant/60 line-clamp-2">{post.description}</p>
+                  <h3 className="font-display text-xl font-bold text-on-surface leading-tight group-hover:text-primary transition-colors mb-2">{post.headline}</h3>
+                  <p className="font-body text-sm text-on-surface-variant/70 line-clamp-2 leading-relaxed mb-4">{post.description}</p>
+                  <div className="inline-flex items-center gap-1.5 font-label text-[9px] uppercase tracking-widest text-primary font-bold">
+                     Read Detailed Portfolio <ArrowUpRight size={10} />
+                  </div>
                 </Link>
               ))}
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

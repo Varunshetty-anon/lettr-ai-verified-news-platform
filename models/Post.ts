@@ -14,6 +14,9 @@ export interface IPost extends Document {
   imageUrl?: string;
   videoUrl?: string;
   factScore: number;
+  factSummary?: string;
+  confidence?: string;
+  sourcesChecked?: number;
   reasoning?: string;
   isPublished: boolean;
   engagement: number;
@@ -35,6 +38,9 @@ const PostSchema: Schema<IPost> = new Schema({
   imageUrl: { type: String },
   videoUrl: { type: String },
   factScore: { type: Number, required: true, default: 0 },
+  factSummary: { type: String },
+  confidence: { type: String },
+  sourcesChecked: { type: Number, default: 0 },
   reasoning: { type: String },
   isPublished: { type: Boolean, default: false },
   engagement: { type: Number, default: 0 }

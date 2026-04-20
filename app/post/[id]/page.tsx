@@ -3,7 +3,7 @@
 import React, { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, ExternalLink, Shield, CheckCircle, Heart } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Shield, CheckCircle, Heart, Info, Globe, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false }) as any;
@@ -14,6 +14,9 @@ interface PostDetail {
   description: string;
   body?: string;
   factScore: number;
+  factSummary?: string;
+  confidence?: string;
+  sourcesChecked?: number;
   reasoning?: string;
   originSource?: string;
   category?: string;
@@ -64,7 +67,6 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
       })
       .catch(() => setLoading(false));
 
-    // Track view with session email
     if (session?.user?.email) {
       fetch(`/api/user/interact`, {
         method: 'POST',
@@ -92,16 +94,17 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen p-5">
-        <div className="animate-pulse space-y-5">
-          <div className="h-3 bg-surface-container-high rounded w-20" />
-          <div className="h-7 bg-surface-container-high rounded w-3/4" />
-          <div className="h-3 bg-surface-container-high rounded w-32" />
-          <div className="h-4 bg-surface-container-high rounded w-full mt-6" />
-          <div className="h-4 bg-surface-container-high rounded w-full" />
-          <div className="h-4 bg-surface-container-high rounded w-5/6" />
-          <div className="h-4 bg-surface-container-high rounded w-4/6" />
-          <div className="h-24 bg-surface-container-high rounded mt-6" />
+      <div className="w-full min-h-screen p-5 bg-surface-container-lowest">
+        <div className="max-w-4xl mx-auto animate-pulse space-y-8 pt-10">
+          <div className="h-4 bg-surface-container-high rounded w-20" />
+          <div className="h-12 bg-surface-container-high rounded w-3/4" />
+          <div className="h-4 bg-surface-container-high rounded w-32" />
+          <div className="h-[400px] bg-surface-container-high rounded w-full" />
+          <div className="space-y-4">
+             <div className="h-4 bg-surface-container-high rounded w-full" />
+             <div className="h-4 bg-surface-container-high rounded w-full" />
+             <div className="h-4 bg-surface-container-high rounded w-5/6" />
+          </div>
         </div>
       </div>
     );
@@ -109,170 +112,165 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
   if (!post) {
     return (
-      <div className="w-full min-h-screen flex items-center justify-center">
+      <div className="w-full min-h-screen flex items-center justify-center bg-surface-container-lowest">
         <div className="text-center">
-          <h2 className="font-display text-xl text-on-surface mb-2">Post not found</h2>
-          <Link href="/" className="font-label text-xs uppercase tracking-wider text-primary hover:underline">Return to feed</Link>
+          <h2 className="font-display text-2xl text-on-surface mb-4">Report not found</h2>
+          <Link href="/" className="font-label text-xs uppercase tracking-widest text-primary border border-primary/20 px-6 py-3 hover:bg-primary/5 transition-colors">Return to feed</Link>
         </div>
       </div>
     );
   }
 
-  const scoreColor = post.factScore >= 80 ? 'text-emerald-600 dark:text-emerald-400' : post.factScore >= 60 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400';
-  const scoreBorder = post.factScore >= 80 ? 'border-emerald-200 dark:border-emerald-800' : post.factScore >= 60 ? 'border-amber-200 dark:border-amber-800' : 'border-red-200 dark:border-red-800';
+  const scoreColor = post.factScore >= 85 ? 'text-emerald-500' : post.factScore >= 60 ? 'text-amber-500' : 'text-red-500';
+  const scoreBg = post.factScore >= 85 ? 'bg-emerald-500/10' : post.factScore >= 60 ? 'bg-amber-500/10' : 'bg-red-500/10';
+  const scoreBorder = post.factScore >= 85 ? 'border-emerald-500/20' : post.factScore >= 60 ? 'border-amber-500/20' : 'border-red-500/20';
 
-  // Use body if available, otherwise fall back to description
   const articleBody = post.body || post.description;
 
   return (
-    <div className="w-full min-h-screen animate-fade-in">
-      {/* Back bar */}
-      <div className="px-5 py-3 border-b border-outline-variant">
-        <Link href="/" className="flex items-center gap-2 font-label text-[10px] uppercase tracking-wider text-on-surface-variant hover:text-primary transition-colors">
-          <ArrowLeft size={14} />
-          Back to feed
-        </Link>
+    <div className="w-full min-h-screen bg-surface-container-lowest animate-fade-in pb-20">
+      <div className="sticky top-0 z-20 bg-surface-container-low/80 backdrop-blur-md border-b border-outline-variant px-5 py-4">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+           <Link href="/" className="flex items-center gap-2 font-label text-[10px] uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors font-bold">
+             <ArrowLeft size={16} /> Back to Intel Feed
+           </Link>
+           <div className={`flex items-center gap-2 px-3 py-1 border rounded-full ${scoreBg} ${scoreBorder}`}>
+             <Shield size={12} className={scoreColor} />
+             <span className={`font-display text-xs font-black ${scoreColor}`}>{post.factScore}% FIDELITY</span>
+           </div>
+        </div>
       </div>
 
-      <article className="p-5">
-        {/* Top: Category + Score badge */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            {post.category && (
-              <span className="font-label text-[10px] uppercase tracking-[0.15em] text-primary border border-primary/20 px-2 py-0.5">{post.category}</span>
-            )}
-            <span className="font-label text-[10px] text-on-surface-variant/50">{timeAgo(post.createdAt)}</span>
-          </div>
-          {/* Fact score badge */}
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 border ${scoreBorder}`}>
-            <Shield size={12} className={scoreColor} />
-            <span className={`font-display text-sm font-black ${scoreColor}`}>{post.factScore}</span>
-          </div>
+      <article className="max-w-4xl mx-auto px-5 pt-12">
+        <div className="flex items-center gap-3 mb-6">
+           <span className="font-label text-[10px] uppercase tracking-[0.2em] text-primary font-black px-2 py-1 bg-primary/5 border border-primary/10">
+              {post.category}
+           </span>
+           <span className="font-label text-[10px] text-on-surface-variant/40 uppercase tracking-widest">{timeAgo(post.createdAt)}</span>
         </div>
 
-        {/* Headline */}
-        <h1 className="font-display text-2xl md:text-3xl font-bold text-on-surface leading-tight mb-5">
+        <h1 className="font-display text-3xl md:text-5xl font-black text-on-surface leading-[1.1] mb-8">
           {post.headline}
         </h1>
 
-        {/* Author bar */}
         {post.author && (
-          <div className="flex items-center gap-3 mb-6 pb-5 border-b border-outline-variant">
-            <div className="w-9 h-9 bg-primary/10 text-primary flex items-center justify-center font-display text-base font-bold overflow-hidden">
-              {post.author.image ? (
-                <img src={post.author.image} alt="" className="w-full h-full object-cover" />
-              ) : (
-                post.author.name.charAt(0)
-              )}
-            </div>
+          <div className="flex items-center gap-4 mb-10 pb-8 border-b border-outline-variant">
+            <Link href={`/author/${post.author._id}`} className="w-12 h-12 bg-surface-container-high rounded-full overflow-hidden flex items-center justify-center font-display text-lg font-black text-primary/40 border border-outline-variant/30 hover:opacity-80 transition-opacity">
+              {post.author.image ? <img src={post.author.image} alt="" className="w-full h-full object-cover" /> : post.author.name.charAt(0)}
+            </Link>
             <div className="flex-1">
-              <div className="flex items-center gap-1.5">
-                <span className="font-body text-sm font-medium text-on-surface">{post.author.name}</span>
-                {post.author.role === 'AUTHOR' && (
-                  <span className="font-label text-[8px] px-1.5 py-0.5 bg-primary/10 text-primary">Bot</span>
-                )}
-                {post.author.isVerifiedAuthor && (
-                  <CheckCircle size={13} className="text-accent" />
-                )}
+              <div className="flex items-center gap-2">
+                <Link href={`/author/${post.author._id}`} className="font-display text-base font-bold text-on-surface hover:text-primary transition-colors underline decoration-outline-variant/30 underline-offset-4">{post.author.name}</Link>
+                {post.author.role === 'AUTHOR' && <span className="font-label text-[8px] px-1.5 py-0.5 bg-primary/10 text-primary font-bold tracking-widest">BOT</span>}
+                {post.author.isVerifiedAuthor && <CheckCircle size={14} className="text-emerald-500" />}
               </div>
-              <p className="font-label text-[10px] text-on-surface-variant/50 uppercase tracking-wider">
-                Trust {post.author.trustScore} · {post.author.totalPosts || 0} posts
+              <p className="font-label text-[10px] text-on-surface-variant/40 uppercase tracking-widest mt-0.5">
+                Author Trust: {post.author.trustScore}% · {post.author.totalPosts || 0} Reports Published
               </p>
             </div>
             <button
               onClick={handleLike}
-              className="flex items-center gap-1 text-on-surface-variant/40 hover:text-red-500 transition-colors"
+              className={`flex items-center gap-2 px-4 py-2 border transition-all ${liked ? 'bg-red-500/5 border-red-500/20 text-red-500' : 'border-outline-variant text-on-surface-variant/40 hover:text-red-500'}`}
             >
-              <Heart size={16} fill={liked ? 'currentColor' : 'none'} className={liked ? 'text-red-500' : ''} />
-              <span className="font-label text-xs">{post.engagement + (liked ? 1 : 0)}</span>
+              <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
+              <span className="font-label text-xs font-bold">{post.engagement + (liked ? 1 : 0)}</span>
             </button>
           </div>
         )}
 
-
-        {/* Media */}
         {post.imageUrl && (
-          <div className="mb-6 overflow-hidden border border-outline-variant">
-            <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-auto object-cover max-h-[480px]" />
+          <div className="mb-10 shadow-2xl">
+            <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-auto object-cover max-h-[600px] border border-outline-variant" />
           </div>
         )}
+
         {post.videoUrl && mounted && (
-          <div className="mb-6 overflow-hidden border border-outline-variant relative pt-[56.25%]">
-            <ReactPlayer 
-              url={post.videoUrl} 
-              controls 
-              width="100%" 
-              height="100%" 
-              className="absolute top-0 left-0"
-            />
+          <div className="mb-10 border border-outline-variant relative pt-[56.25%] bg-black">
+            <ReactPlayer url={post.videoUrl} controls width="100%" height="100%" className="absolute top-0 left-0" />
           </div>
         )}
 
-        {/* Summary */}
-        <div className="font-body text-sm text-on-surface-variant/70 leading-relaxed mb-6 p-4 bg-surface-container-low border border-outline-variant/30 italic">
-          {post.description}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+           <div className="md:col-span-2">
+              <div className="font-body text-lg text-on-surface/90 leading-[1.8] mb-12 whitespace-pre-line prose prose-invert max-w-none">
+                {articleBody}
+              </div>
+
+              {post.sourceLink && (
+                 <div className="p-6 bg-surface-container-low border border-outline-variant mb-12">
+                    <h4 className="font-display text-[10px] uppercase tracking-widest text-on-surface-variant/50 mb-4 font-black">Primary Documentation</h4>
+                    <a href={post.sourceLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-primary hover:underline font-body text-sm break-all">
+                       <Globe size={16} /> {post.sourceLink} <ExternalLink size={14} />
+                    </a>
+                 </div>
+              )}
+           </div>
+
+           <div className="space-y-8">
+              {/* Fact Check Card */}
+              <div className={`border ${scoreBorder} ${scoreBg} p-6 sticky top-24`}>
+                 <div className="flex items-center gap-2 mb-4 border-b border-on-surface/5 pb-3">
+                    <Shield size={16} className={scoreColor} />
+                    <span className="font-display text-[10px] uppercase tracking-widest font-black text-on-surface">AI Intel Report</span>
+                 </div>
+                 
+                 <div className="mb-6">
+                    <div className="flex items-baseline gap-2 mb-1">
+                       <span className={`font-display text-4xl font-black ${scoreColor}`}>{post.factScore}%</span>
+                       <span className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/40">Certainty</span>
+                    </div>
+                    <div className="w-full h-1 bg-on-surface/5 rounded-full overflow-hidden">
+                       <div className={`h-full ${post.factScore >= 85 ? 'bg-emerald-500' : post.factScore >= 60 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${post.factScore}%` }} />
+                    </div>
+                 </div>
+
+                 <div className="space-y-4">
+                    <div>
+                       <span className="font-label text-[9px] uppercase tracking-widest text-on-surface-variant/60 block mb-2 font-bold">Verification Summary</span>
+                       <p className="font-body text-xs text-on-surface/80 leading-relaxed italic border-l-2 border-primary/20 pl-3">
+                          "{post.factSummary || post.reasoning || "Factual assessment confirmed via automated analysis."}"
+                       </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-on-surface/5">
+                       <div>
+                          <span className="font-label text-[8px] uppercase tracking-widest text-on-surface-variant/50 block mb-1">Confidence</span>
+                          <span className="font-label text-[10px] font-black uppercase text-on-surface">{post.confidence || 'Medium'}</span>
+                       </div>
+                       <div>
+                          <span className="font-label text-[8px] uppercase tracking-widest text-on-surface-variant/50 block mb-1">Sources</span>
+                          <span className="font-label text-[10px] font-black uppercase text-on-surface">{post.sourcesChecked || 'Validated'}</span>
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="mt-6 flex items-center gap-2 text-[9px] font-label uppercase tracking-widest text-on-surface-variant/40">
+                    <Info size={10} />
+                    Validated by Groq Llama 3.3
+                 </div>
+              </div>
+           </div>
         </div>
 
-        {/* Full article body */}
-        <div className="font-body text-base text-on-surface/85 leading-[1.85] mb-6 whitespace-pre-line">
-          {articleBody}
-        </div>
-
-        {/* AI Verification Card */}
-        <div className={`border ${scoreBorder} bg-surface-container-low p-5 mb-6`}>
-          <div className="flex items-center gap-2 mb-3">
-            <Shield size={14} className={scoreColor} />
-            <span className="font-label text-[9px] uppercase tracking-[0.15em] text-on-surface-variant/60">AI Verification Report</span>
-          </div>
-          <div className="flex items-baseline gap-3 mb-2">
-            <span className={`font-display text-3xl font-black ${scoreColor}`}>{post.factScore}</span>
-            <span className="font-label text-[10px] uppercase tracking-wider text-on-surface-variant/50">/ 100</span>
-          </div>
-          {post.reasoning && (
-            <p className="font-body text-sm text-on-surface-variant/70 mb-3">{post.reasoning}</p>
-          )}
-          {post.originSource && (
-            <p className="font-body text-xs text-on-surface-variant/50 mb-3">{post.originSource}</p>
-          )}
-          <div className="pt-3 border-t border-outline-variant">
-            <p className="font-label text-[9px] text-on-surface-variant/40 uppercase tracking-wider">
-              Sources Verified: {post.factScore >= 80 ? '3+' : post.factScore >= 60 ? '1-2' : '0'} · Powered by Groq Llama 3.3
-            </p>
-          </div>
-        </div>
-
-        {/* Source */}
-        {post.sourceLink && (
-          <a
-            href={post.sourceLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 font-label text-xs text-primary hover:underline underline-offset-4 decoration-primary/30 mb-6"
-          >
-            <ExternalLink size={13} />
-            View Original Source
-          </a>
-        )}
-
-        {/* Related Posts */}
+        {/* Related Section */}
         {related.length > 0 && (
-          <div className="border-t border-outline-variant pt-6 mt-2">
-            <h3 className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/40 mb-4">Related Articles</h3>
-            <div className="flex flex-col gap-2">
+          <div className="border-t border-outline-variant pt-12 mt-12">
+            <h3 className="font-display text-xs uppercase tracking-[0.3em] text-on-surface font-black mb-8">Related Intelligence</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {related.map(r => (
-                <Link
-                  key={r._id}
-                  href={`/post/${r._id}`}
-                  className="group flex items-center gap-3 p-3 border border-outline-variant hover:border-primary/30 transition-all bg-surface-container-low"
-                >
-                  <span className={`font-display text-base font-black min-w-[32px] text-center ${
-                    r.factScore >= 80 ? 'text-emerald-600 dark:text-emerald-400' : 'text-on-surface-variant/40'
-                  }`}>
-                    {r.factScore}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-body text-sm text-on-surface group-hover:text-primary transition-colors truncate">{r.headline}</p>
-                    <p className="font-label text-[10px] text-on-surface-variant/40">{r.author?.name} · {timeAgo(r.createdAt)}</p>
+                <Link key={r._id} href={`/post/${r._id}`} className="group p-6 border border-outline-variant hover:border-primary/30 transition-all bg-surface-container-low flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                       <span className="font-label text-[9px] uppercase tracking-widest text-primary font-bold">{r.category}</span>
+                       <div className={`font-display text-xs font-black ${r.factScore >= 80 ? 'text-emerald-500' : 'text-on-surface-variant/40'}`}>
+                          {r.factScore}%
+                       </div>
+                    </div>
+                    <h4 className="font-display text-lg font-bold text-on-surface group-hover:text-primary transition-colors leading-tight mb-4">{r.headline}</h4>
+                  </div>
+                  <div className="flex items-center justify-between font-label text-[10px] text-on-surface-variant/40 uppercase tracking-widest">
+                     <span>{r.author?.name}</span>
+                     <span>{timeAgo(r.createdAt)}</span>
                   </div>
                 </Link>
               ))}

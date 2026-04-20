@@ -22,7 +22,7 @@ export async function GET() {
       select: '_id headline category createdAt factScore',
       options: { sort: { createdAt: -1 }, limit: 30 }
     })
-    .select('name email image role isVerifiedAuthor preferences categoryAffinity trustScore totalPosts')
+    .select('name email image role isVerifiedAuthor preferences categoryAffinity trustScore totalPosts following')
     .lean();
 
   if (!user) {
@@ -43,6 +43,7 @@ export async function GET() {
       categoryAffinity: user.categoryAffinity || {},
       trustScore: user.trustScore,
       totalPosts: user.totalPosts,
+      following: (user.following || []).map((id: any) => id.toString()),
     }
   });
 }

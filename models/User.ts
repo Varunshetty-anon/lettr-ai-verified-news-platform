@@ -15,6 +15,8 @@ export interface IUser extends Document {
   impressedPosts: mongoose.Types.ObjectId[];
   savedPosts: mongoose.Types.ObjectId[];
   categoryAffinity: Map<string, number>;
+  following: mongoose.Types.ObjectId[];
+  followersCount: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,7 +35,9 @@ const UserSchema: Schema<IUser> = new Schema({
   viewedPosts: [{ type: Schema.Types.ObjectId, ref: 'Post' }],
   impressedPosts: [{ type: Schema.Types.ObjectId, ref: 'Post' }],
   savedPosts: [{ type: Schema.Types.ObjectId, ref: 'Post' }],
-  categoryAffinity: { type: Map, of: Number, default: {} }
+  categoryAffinity: { type: Map, of: Number, default: {} },
+  following: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  followersCount: { type: Number, default: 0 }
 }, { timestamps: true });
 
 export const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

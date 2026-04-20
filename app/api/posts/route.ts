@@ -20,6 +20,7 @@ export async function GET(request: Request) {
     let userLikes: string[] = [];
     let userViewed: string[] = [];
     let userImpressed: string[] = [];
+    let userFollowing: string[] = [];
     let categoryAffinity: Record<string, number> = {};
 
     // Try to get user from session or email param
@@ -32,13 +33,14 @@ export async function GET(request: Request) {
     // Fetch user data for personalization
     if (userEmail) {
       const user = await User.findOne({ email: userEmail })
-        .select('preferences likedPosts viewedPosts impressedPosts categoryAffinity')
+        .select('preferences likedPosts viewedPosts impressedPosts categoryAffinity following')
         .lean();
       if (user) {
         userPrefs = user.preferences || [];
         userLikes = (user.likedPosts || []).map((id: any) => id.toString());
         userViewed = (user.viewedPosts || []).map((id: any) => id.toString());
         userImpressed = (user.impressedPosts || []).map((id: any) => id.toString());
+        userFollowing = (user.following || []).map((id: any) => id.toString());
         categoryAffinity = (user.categoryAffinity as any) || {};
         // Convert Map to plain object if needed
         if (categoryAffinity instanceof Map) {
@@ -92,13 +94,27 @@ export async function GET(request: Request) {
         createdAt: post.createdAt,
         isLiked: userLikes.includes((post._id as any).toString()),
         author: author ? {
+          _id: (author._id as any).toString(),
           name: author.name,
           trustScore: author.trustScore,
           role: author.role,
           isVerifiedAuthor: author.isVerifiedAuthor,
         } : null,
+        authorId: post.authorId?.toString(),
+        followBoost: 0,
+        factSummary: post.factSummary,
+        confidence: post.confidence,
+        sourcesChecked: post.sourcesChecked,
       };
     });
+
+    if (userFollowing.length > 0) {
+      hydrated.forEach((p: any) => {
+        if (userFollowing.includes(p.authorId)) {
+          p.followBoost = 30;
+        }
+      });
+    }
 
     // Personalized ranking: preferences*5 + likedCategoryMatch*4 + viewedCategoryMatch*3 + factScore*2 + recency
     if (userPrefs.length > 0 && !category && sort === 'recent') {
@@ -139,8 +155,8 @@ export async function GET(request: Request) {
         const aRecency = Math.max(0, 10 * (1 - (now - new Date(a.createdAt).getTime()) / (3 * 24 * 60 * 60 * 1000)));
         const bRecency = Math.max(0, 10 * (1 - (now - new Date(b.createdAt).getTime()) / (3 * 24 * 60 * 60 * 1000)));
 
-        const aScore = aPref + aLikeCat + aViewCat + aAffinity + aFact + aRecency + aViewedPen + aImpressPen;
-        const bScore = bPref + bLikeCat + bViewCat + bAffinity + bFact + bRecency + bViewedPen + bImpressPen;
+        const aScore = aPref + aLikeCat + aViewCat + aAffinity + aFact + aRecency + aViewedPen + aImpressPen + (a.followBoost || 0);
+        const bScore = bPref + bLikeCat + bViewCat + bAffinity + bFact + bRecency + bViewedPen + bImpressPen + (b.followBoost || 0);
 
         return bScore - aScore;
       });

@@ -222,7 +222,9 @@ Source Note: <A one-line credibility assessment of the source, e.g. "Sourced fro
       imageUrl,
       videoUrl,
       factScore: verification.factScore,
-      reasoning: verification.reasoning,
+      factSummary: verification.factSummary,
+      confidence: verification.confidence,
+      sourcesChecked: verification.sourcesChecked,
       isPublished: true,
       engagement: Math.floor(Math.random() * 80) + 5
     });

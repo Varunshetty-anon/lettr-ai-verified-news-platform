@@ -99,7 +99,11 @@ async function runOnce() {
     await Post.create({
       authorId: randomBot._id, headline: cleanHeadline, description: cleanSummary, body: fullBody || cleanSummary,
       sourceLink: originalLink, sourceHash: hashUrl(originalLink), originSource: sourceNote || 'Reddit', category: config.category,
-      imageUrl, videoUrl, factScore: verification.factScore, reasoning: verification.reasoning, isPublished: true, engagement: 15
+      imageUrl, videoUrl, factScore: verification.factScore,
+      factSummary: verification.factSummary,
+      confidence: verification.confidence,
+      sourcesChecked: verification.sourcesChecked,
+      isPublished: true,
     });
     await User.findByIdAndUpdate(randomBot._id, { $inc: { totalPosts: 1 } });
     console.log(`Created: ${cleanHeadline}`);
