@@ -12,8 +12,8 @@ interface PostData {
   category?: string;
   createdAt: string;
   engagement: number;
-  mediaUrl?: string;
-  mediaType?: string;
+  imageUrl?: string;
+  videoUrl?: string;
   author: { name: string; trustScore: number; role: string; isVerifiedAuthor: boolean } | null;
 }
 

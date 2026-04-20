@@ -50,6 +50,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         sourceLink: post.sourceLink,
         mediaUrl: post.mediaUrl,
         mediaType: post.mediaType || 'text',
+        imageUrl: post.imageUrl,
+        videoUrl: post.videoUrl,
         engagement: post.engagement,
         createdAt: post.createdAt,
         author: author ? {

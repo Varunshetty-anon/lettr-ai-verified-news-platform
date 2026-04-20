@@ -15,8 +15,8 @@ interface PostData {
   originSource?: string;
   category?: string;
   sourceLink?: string;
-  mediaUrl?: string;
-  mediaType?: string;
+  imageUrl?: string;
+  videoUrl?: string;
   engagement: number;
   createdAt: string;
   isLiked?: boolean;
@@ -80,9 +80,18 @@ export default function Home() {
   const apiUrl = status === 'authenticated' && email ? `${API_URL}/api/posts?email=${encodeURIComponent(email)}` : null;
   
   const { data, error, isLoading } = useSWR(apiUrl, fetcher, { 
-    refreshInterval: 15000, // Background poll every 15s
+    refreshInterval: 10000, // Background poll every 10s
     revalidateOnFocus: true, // Instant update on tab switch
   });
+
+  // Explicit simple polling requested by user
+  useEffect(() => {
+    if (!apiUrl) return;
+    const interval = setInterval(() => {
+      mutate(apiUrl); // fetchLatestPosts equivalent
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [apiUrl]);
 
   const posts: PostData[] = data?.posts || [];
   const loading = isLoading || status === 'loading';
@@ -163,9 +172,16 @@ export default function Home() {
               className="group block bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all duration-200 animate-fade-in"
             >
               {/* Media thumbnail */}
-              {post.mediaUrl && post.mediaType === 'image' && (
-                <div className="w-full h-40 overflow-hidden border-b border-outline-variant/30">
-                  <img src={post.mediaUrl} alt="" loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300" />
+              {post.imageUrl && (
+                <div className="w-full overflow-hidden border-b border-outline-variant/30">
+                  <img src={post.imageUrl} alt="" loading="lazy" className="rounded-t-lg w-full object-cover group-hover:scale-[1.02] transition-transform duration-300" style={{ maxHeight: '300px' }} />
+                </div>
+              )}
+              {post.videoUrl && (
+                <div className="w-full border-b border-outline-variant/30">
+                  <video controls className="w-full rounded-t-lg" style={{ maxHeight: '300px' }}>
+                    <source src={post.videoUrl} />
+                  </video>
                 </div>
               )}
 

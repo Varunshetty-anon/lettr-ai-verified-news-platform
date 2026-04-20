@@ -18,8 +18,8 @@ interface PostDetail {
   originSource?: string;
   category?: string;
   sourceLink?: string;
-  mediaUrl?: string;
-  mediaType?: string;
+  imageUrl?: string;
+  videoUrl?: string;
   engagement: number;
   createdAt: string;
   author: { _id: string; name: string; image?: string; trustScore: number; role: string; totalPosts: number; isVerifiedAuthor: boolean } | null;
@@ -193,15 +193,15 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
 
         {/* Media */}
-        {post.mediaUrl && post.mediaType === 'image' && (
+        {post.imageUrl && (
           <div className="mb-6 overflow-hidden border border-outline-variant">
-            <img src={post.mediaUrl} alt="" loading="lazy" className="w-full h-auto object-cover max-h-[480px]" />
+            <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-auto object-cover max-h-[480px]" />
           </div>
         )}
-        {post.mediaUrl && post.mediaType === 'video' && mounted && (
+        {post.videoUrl && mounted && (
           <div className="mb-6 overflow-hidden border border-outline-variant relative pt-[56.25%]">
             <ReactPlayer 
-              url={post.mediaUrl} 
+              url={post.videoUrl} 
               controls 
               width="100%" 
               height="100%" 

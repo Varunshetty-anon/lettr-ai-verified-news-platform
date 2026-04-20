@@ -84,6 +84,8 @@ export async function GET(request: Request) {
         category: post.category,
         mediaUrl: post.mediaUrl,
         mediaType: post.mediaType || 'text',
+        imageUrl: post.imageUrl,
+        videoUrl: post.videoUrl,
         engagement: post.engagement,
         createdAt: post.createdAt,
         isLiked: userLikes.includes((post._id as any).toString()),

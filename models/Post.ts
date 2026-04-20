@@ -9,8 +9,10 @@ export interface IPost extends Document {
   sourceHash?: string;
   originSource?: string;
   category?: string;
-  mediaUrl?: string;
-  mediaType?: 'image' | 'video' | 'text';
+  mediaUrl?: string; // Legacy
+  mediaType?: 'image' | 'video' | 'text'; // Legacy
+  imageUrl?: string;
+  videoUrl?: string;
   factScore: number;
   reasoning?: string;
   isPublished: boolean;
@@ -30,6 +32,8 @@ const PostSchema: Schema<IPost> = new Schema({
   category: { type: String, index: true },
   mediaUrl: { type: String },
   mediaType: { type: String, enum: ['image', 'video', 'text'], default: 'text' },
+  imageUrl: { type: String },
+  videoUrl: { type: String },
   factScore: { type: Number, required: true, default: 0 },
   reasoning: { type: String },
   isPublished: { type: Boolean, default: false },

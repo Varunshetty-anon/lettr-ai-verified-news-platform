@@ -5,6 +5,7 @@ import { getVerifiedBots } from '@/lib/bot-profiles';
 import { verifyFact } from '@/lib/ai-verification';
 import { Post } from '@/models/Post';
 import { User } from '@/models/User';
+import { uploadMediaFromUrl } from '@/lib/supabase';
 
 // Map bots to their respective sources and categories (matching user preference categories)
 const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
@@ -62,29 +63,29 @@ function hashUrl(url: string): string {
   return crypto.createHash('md5').update(url).digest('hex');
 }
 
-function extractMediaFromReddit(data: any): { mediaUrl?: string; mediaType: 'image' | 'video' | 'text' } {
+function extractMediaFromReddit(data: any): { image?: string; video?: string } {
   // Check for direct image
   if (data.url && /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(data.url)) {
-    return { mediaUrl: data.url, mediaType: 'image' };
+    return { image: data.url };
   }
 
   // Check for Reddit-hosted image
   if (data.preview?.images?.[0]?.source?.url) {
     const imgUrl = data.preview.images[0].source.url.replace(/&amp;/g, '&');
-    return { mediaUrl: imgUrl, mediaType: 'image' };
+    return { image: imgUrl };
   }
 
   // Check for Reddit-hosted video
   if (data.is_video && data.media?.reddit_video?.fallback_url) {
-    return { mediaUrl: data.media.reddit_video.fallback_url, mediaType: 'video' };
+    return { video: data.media.reddit_video.fallback_url };
   }
 
   // Check for thumbnail
   if (data.thumbnail && data.thumbnail.startsWith('http') && data.thumbnail !== 'self' && data.thumbnail !== 'default' && data.thumbnail !== 'nsfw') {
-    return { mediaUrl: data.thumbnail, mediaType: 'image' };
+    return { image: data.thumbnail };
   }
 
-  return { mediaType: 'text' };
+  return {};
 }
 
 export async function GET(request: Request) {
@@ -220,7 +221,19 @@ Source Note: <A one-line credibility assessment of the source, e.g. "Sourced fro
       return NextResponse.json({ message: "Content rejected by AI Fact rules.", factScore: verification.factScore }, { status: 200 });
     }
 
-    // 4. DB INJECTION
+    // 4. Handle Media Upload
+    let imageUrl = undefined;
+    let videoUrl = undefined;
+    
+    if (media?.image) {
+      const uploaded = await uploadMediaFromUrl(media.image, `bot-img-${Date.now()}.jpg`);
+      imageUrl = uploaded || media.image;
+    }
+    if (media?.video) {
+      videoUrl = media.video;
+    }
+
+    // 5. DB INJECTION
     const newPost = await Post.create({
       authorId: randomBot._id,
       headline: rewriteContent.cleanHeadline,
@@ -230,8 +243,8 @@ Source Note: <A one-line credibility assessment of the source, e.g. "Sourced fro
       sourceHash: urlHash,
       originSource: rewriteContent.sourceNote || originTag,
       category: config.category,
-      mediaUrl: media.mediaUrl,
-      mediaType: media.mediaType,
+      imageUrl,
+      videoUrl,
       factScore: verification.factScore,
       reasoning: verification.reasoning,
       isPublished: true,
