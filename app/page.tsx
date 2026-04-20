@@ -75,7 +75,7 @@ export default function Home() {
   }, [session, status, router]);
 
   const email = session?.user?.email || '';
-  const apiUrl = status === 'authenticated' && email ? `/api/posts?email=${encodeURIComponent(email)}` : null;
+  const apiUrl = `/api/posts${email ? `?email=${encodeURIComponent(email)}` : ''}`;
   
   const { data, error, isLoading } = useSWR(apiUrl, fetcher, { 
     refreshInterval: 10000, // Background poll every 10s
