@@ -3,6 +3,7 @@ export interface VerificationResult {
   factSummary: string;
   confidence: string;
   sourcesChecked: number;
+  keyIssues?: string[];
 }
 
 export async function verifyFact(
@@ -17,7 +18,8 @@ export async function verifyFact(
       factScore: 50, 
       factSummary: "Verification skipped: Service unavailable.", 
       confidence: "Low", 
-      sourcesChecked: 0 
+      sourcesChecked: 0,
+      keyIssues: []
     };
   }
 
@@ -32,11 +34,14 @@ export async function verifyFact(
             role: "system",
             content: `You are an elite journalistic fact-checker. Analyze the news content, sources, and media context.
             
-            Return output exactly as:
-            Fact Score: <0-100>
-            Fact Summary: <A 2-3 sentence explanation>
-            Confidence: <Low | Medium | High>
-            Sources Checked: <number>`
+            Return output exactly as a JSON object with no markdown formatting.
+            {
+              "factScore": <0-100>,
+              "factSummary": "<A 3-5 line explanation of accuracy and factual basis>",
+              "confidence": "<Low | Medium | High>",
+              "sourcesChecked": <number>,
+              "keyIssues": ["<issue 1>", "<issue 2>"] // Leave empty array if no issues
+            }`
           },
           {
             role: "user",
@@ -48,24 +53,33 @@ export async function verifyFact(
             `
           }
         ],
-        temperature: 0.1
+        temperature: 0.1,
+        response_format: { type: "json_object" }
       })
     });
 
     const data = await response.json();
-    const outputText = data.choices[0]?.message.content || "";
+    const outputText = data.choices[0]?.message.content || "{}";
     
-    const scoreMatch = outputText.match(/Fact Score:\s*(\d+)/i);
-    const summaryMatch = outputText.match(/Fact Summary:\s*([\s\S]*?)(?=\nConfidence:)/i) || outputText.match(/Fact Summary:\s*(.*)/i);
-    const confidenceMatch = outputText.match(/Confidence:\s*(.*)/i);
-    const sourcesMatch = outputText.match(/Sources Checked:\s*(\d+)/i);
-
-    return { 
-      factScore: scoreMatch ? parseInt(scoreMatch[1], 10) : 50,
-      factSummary: summaryMatch ? summaryMatch[1].trim() : "Analysis complete.",
-      confidence: confidenceMatch ? confidenceMatch[1].trim() : "Medium",
-      sourcesChecked: sourcesMatch ? parseInt(sourcesMatch[1], 10) : 1
-    };
+    try {
+      const parsed = JSON.parse(outputText);
+      return { 
+        factScore: parsed.factScore ?? 50,
+        factSummary: parsed.factSummary || "Analysis complete.",
+        confidence: parsed.confidence || "Medium",
+        sourcesChecked: parsed.sourcesChecked ?? 1,
+        keyIssues: parsed.keyIssues || []
+      };
+    } catch (parseError) {
+      console.error("Fact verification JSON parse error:", parseError);
+      return { 
+        factScore: 50,
+        factSummary: "Analysis complete (fallback formatting).",
+        confidence: "Medium",
+        sourcesChecked: 1,
+        keyIssues: []
+      };
+    }
 
   } catch (error) {
     console.error("Fact verification Error (Groq):", error);

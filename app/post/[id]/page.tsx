@@ -208,44 +208,44 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
            <div className="space-y-8">
               {/* Fact Check Card */}
-              <div className={`border ${scoreBorder} ${scoreBg} p-6 sticky top-24`}>
-                 <div className="flex items-center gap-2 mb-4 border-b border-on-surface/5 pb-3">
-                    <Shield size={16} className={scoreColor} />
-                    <span className="font-display text-[10px] uppercase tracking-widest font-black text-on-surface">AI Intel Report</span>
+              <div className={`border ${scoreBorder} ${scoreBg} p-6 sticky top-24 rounded-sm`}>
+                 <div className="flex items-center gap-2 mb-5 border-b border-on-surface/10 pb-4">
+                    <Shield size={18} className={scoreColor} />
+                    <span className="font-display text-[11px] uppercase tracking-[0.2em] font-black text-on-surface">AI Intel Report</span>
                  </div>
                  
                  <div className="mb-6">
-                    <div className="flex items-baseline gap-2 mb-1">
-                       <span className={`font-display text-4xl font-black ${scoreColor}`}>{post.factScore}%</span>
-                       <span className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/40">Certainty</span>
+                    <div className="flex items-baseline gap-2 mb-2">
+                       <span className={`font-display text-5xl font-black ${scoreColor}`}>{post.factScore}%</span>
+                       <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/50">Certainty</span>
                     </div>
-                    <div className="w-full h-1 bg-on-surface/5 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-on-surface/10 rounded-full overflow-hidden">
                        <div className={`h-full ${post.factScore >= 85 ? 'bg-emerald-500' : post.factScore >= 60 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${post.factScore}%` }} />
                     </div>
                  </div>
 
-                 <div className="space-y-4">
+                 <div className="space-y-5">
                     <div>
-                       <span className="font-label text-[9px] uppercase tracking-widest text-on-surface-variant/60 block mb-2 font-bold">Verification Summary</span>
-                       <p className="font-body text-xs text-on-surface/80 leading-relaxed italic border-l-2 border-primary/20 pl-3">
-                          "{post.factSummary || post.reasoning || "Factual assessment confirmed via automated analysis."}"
+                       <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/60 block mb-2 font-bold">Verification Summary</span>
+                       <p className="font-body text-sm text-on-surface/90 leading-relaxed border-l-2 border-primary/30 pl-4 py-1">
+                          {post.factSummary || post.reasoning || "Automated analysis completed. Detailed summary unavailable for this report."}
                        </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-on-surface/5">
+                    <div className="grid grid-cols-2 gap-4 pt-5 border-t border-on-surface/10">
                        <div>
-                          <span className="font-label text-[8px] uppercase tracking-widest text-on-surface-variant/50 block mb-1">Confidence</span>
-                          <span className="font-label text-[10px] font-black uppercase text-on-surface">{post.confidence || 'Medium'}</span>
+                          <span className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/50 block mb-1.5">Confidence</span>
+                          <span className="font-label text-[11px] font-black uppercase text-on-surface tracking-widest">{post.confidence || 'Medium'}</span>
                        </div>
                        <div>
-                          <span className="font-label text-[8px] uppercase tracking-widest text-on-surface-variant/50 block mb-1">Sources</span>
-                          <span className="font-label text-[10px] font-black uppercase text-on-surface">{post.sourcesChecked || 'Validated'}</span>
+                          <span className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/50 block mb-1.5">Sources</span>
+                          <span className="font-label text-[11px] font-black uppercase text-on-surface tracking-widest">{post.sourcesChecked || 'Validated'}</span>
                        </div>
                     </div>
                  </div>
 
-                 <div className="mt-6 flex items-center gap-2 text-[9px] font-label uppercase tracking-widest text-on-surface-variant/40">
-                    <Info size={10} />
+                 <div className="mt-8 pt-4 border-t border-on-surface/5 flex items-center gap-2 text-[10px] font-label uppercase tracking-[0.2em] text-on-surface-variant/40">
+                    <Info size={12} />
                     Validated by Groq Llama 3.3
                  </div>
               </div>

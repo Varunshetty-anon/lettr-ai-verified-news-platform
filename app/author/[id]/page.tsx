@@ -158,45 +158,42 @@ export default function AuthorProfilePage({ params }: { params: { id: string } }
                   <span className="font-label text-[10px] text-on-surface-variant/40">{posts.length} ARTICLES</span>
                </div>
 
-               <div className="space-y-12">
+               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {posts.length > 0 ? posts.map((post) => (
-                    <article key={post._id} className="group relative">
-                       <div className="flex flex-col md:flex-row gap-6">
-                          {post.imageUrl && (
-                             <div className="w-full md:w-48 h-32 bg-surface-container-high shrink-0 overflow-hidden">
-                                <img src={post.imageUrl} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-100" alt="" />
-                             </div>
-                          )}
-                          <div className="flex-1">
-                             <div className="flex items-center gap-3 mb-2">
-                                <span className="font-label text-[9px] uppercase tracking-widest text-primary font-bold">{post.category}</span>
-                                <span className="w-1 h-1 bg-outline-variant rounded-full" />
-                                <span className="font-label text-[9px] uppercase tracking-widest text-on-surface-variant/40">
-                                   {new Date(post.createdAt).toLocaleDateString()}
+                    <Link href={`/post/${post._id}`} prefetch={true} key={post._id} className="group relative block w-full aspect-[4/5] overflow-hidden bg-surface-container-high border border-outline-variant hover:border-primary/50 transition-colors">
+                       {/* Media Background */}
+                       {post.imageUrl ? (
+                          <img src={post.imageUrl} className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-100" alt="" />
+                       ) : (
+                          <div className="absolute inset-0 w-full h-full flex flex-col justify-center items-center text-on-surface-variant/10">
+                            <span className="font-display text-4xl font-black">LETTR</span>
+                          </div>
+                       )}
+
+                       {/* Vignette Overlay */}
+                       <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a]/95 via-[#0a0a0a]/50 to-transparent group-hover:from-[#0a0a0a]/90 transition-colors" />
+
+                       {/* Content Overlay */}
+                       <div className="absolute inset-0 p-5 flex flex-col justify-end">
+                          <div className="flex items-center gap-2 mb-3">
+                             <div className="flex items-center gap-1 px-1.5 py-0.5 bg-black/50 backdrop-blur-md rounded border border-white/10">
+                                <Shield size={10} className={post.factScore >= 80 ? 'text-emerald-400' : 'text-amber-400'} />
+                                <span className={`font-display text-[10px] font-black ${post.factScore >= 80 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                  {post.factScore}%
                                 </span>
                              </div>
-                             <Link href={`/post/${post._id}`}>
-                                <h3 className="font-display text-xl font-bold text-on-surface group-hover:text-primary transition-colors leading-tight mb-3">
-                                   {post.headline}
-                                </h3>
-                             </Link>
-                             <p className="font-body text-sm text-on-surface-variant/70 line-clamp-2 leading-relaxed mb-4">
-                                {post.description}
-                             </p>
-                             <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/5 border border-emerald-500/10 rounded-sm">
-                                   <Shield size={10} className="text-emerald-500" />
-                                   <span className="font-label text-[9px] font-bold text-emerald-600">{post.factScore}% FACT SCORE</span>
-                                </div>
-                                <Link href={`/post/${post._id}`} className="font-label text-[9px] uppercase tracking-widest text-on-surface-variant/40 hover:text-primary transition-colors flex items-center gap-1">
-                                   READ FULL REPORT <ExternalLink size={10} />
-                                </Link>
-                             </div>
+                             <span className="font-label text-[9px] uppercase tracking-widest text-white/70">
+                                {post.category}
+                             </span>
                           </div>
+                          
+                          <h3 className="font-display text-lg font-bold text-white/90 group-hover:text-white transition-colors leading-snug line-clamp-4">
+                             {post.headline}
+                          </h3>
                        </div>
-                    </article>
+                    </Link>
                   )) : (
-                     <div className="py-20 text-center border border-dashed border-outline-variant/40 rounded-sm">
+                     <div className="col-span-full py-20 text-center border border-dashed border-outline-variant/40 rounded-sm">
                         <p className="font-body text-sm text-on-surface-variant/40">This author hasn't published any reports yet.</p>
                      </div>
                   )}

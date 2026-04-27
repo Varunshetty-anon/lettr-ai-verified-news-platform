@@ -79,18 +79,27 @@ export default function Home() {
   const email = session?.user?.email || '';
   const apiUrl = `/api/posts${email ? `?email=${encodeURIComponent(email)}` : ''}`;
   
-  const { data, error, isLoading } = useSWR(apiUrl, fetcher, { 
-    refreshInterval: 15000, // Background poll every 15s for smoother experience
-    revalidateOnFocus: true, // Instant update on tab switch
-    keepPreviousData: true, // Prevent UI flashing during background updates
+  const { data, error, isLoading, mutate } = useSWR(apiUrl, fetcher, { 
+    refreshInterval: 0, // Disabled auto background refresh to prevent jumpy UX
+    revalidateOnFocus: true, 
+    keepPreviousData: true, 
   });
 
-  const posts: PostData[] = data?.posts || [];
-  const loading = isLoading || status === 'loading';
+  const [displayPosts, setDisplayPosts] = useState<PostData[]>([]);
+  const [hasNewPosts, setHasNewPosts] = useState(false);
 
-  // Sync initial liked state
   useEffect(() => {
     if (data?.posts) {
+      if (displayPosts.length === 0) {
+        setDisplayPosts(data.posts);
+      } else {
+        const currentTopId = displayPosts[0]?._id;
+        const newTopId = data.posts[0]?._id;
+        if (currentTopId && newTopId && currentTopId !== newTopId) {
+          setHasNewPosts(true);
+        }
+      }
+
       setLikedIds(prev => {
         const next = new Set(prev);
         data.posts.forEach((p: PostData) => { if (p.isLiked) next.add(p._id); });
@@ -98,6 +107,17 @@ export default function Home() {
       });
     }
   }, [data]);
+
+  const loadNewPosts = () => {
+    if (data?.posts) {
+      setDisplayPosts(data.posts);
+      setHasNewPosts(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const posts = displayPosts;
+  const loading = isLoading && displayPosts.length === 0;
 
   const toggleLike = async (postId: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -108,10 +128,13 @@ export default function Home() {
     setLikedIds(next);
 
     // Optimistic SWR update
+    setDisplayPosts(posts.map(p => p._id === postId ? { ...p, engagement: p.engagement + (isLiked ? -1 : 1) } : p));
+    
     if (apiUrl) {
-      mutate(apiUrl, {
+      mutate({
+        ...data,
         posts: posts.map(p => p._id === postId ? { ...p, engagement: p.engagement + (isLiked ? -1 : 1) } : p)
-      }, false);
+      }, { revalidate: false });
     }
 
     await fetch(`/api/user/interact`, {
@@ -144,6 +167,17 @@ export default function Home() {
         </div>
       </div>
 
+      {hasNewPosts && (
+        <div className="sticky top-[104px] z-30 flex justify-center mt-4 -mb-2">
+          <button 
+            onClick={loadNewPosts}
+            className="px-4 py-2 bg-primary text-on-primary font-label text-[10px] uppercase tracking-widest font-bold shadow-lg shadow-primary/20 rounded-full hover:scale-105 transition-transform"
+          >
+            New Posts Available ↑
+          </button>
+        </div>
+      )}
+
       {loading && <Skeleton />}
 
       {!loading && posts.length === 0 && (
@@ -161,6 +195,7 @@ export default function Home() {
             <ImpressTracker key={post._id} postId={post._id}>
               <Link
                 href={`/post/${post._id}`}
+                prefetch={true}
                 className="group block bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all duration-200 animate-fade-in"
               >
               {/* Media thumbnail */}
@@ -181,6 +216,7 @@ export default function Home() {
                       <div className="flex items-center gap-1.5">
                         <Link 
                           href={`/author/${post.author._id}`}
+                          prefetch={true}
                           onClick={(e) => e.stopPropagation()}
                           className="font-label text-xs font-medium text-on-surface hover:text-primary transition-colors hover:underline decoration-outline-variant/30 underline-offset-2"
                         >

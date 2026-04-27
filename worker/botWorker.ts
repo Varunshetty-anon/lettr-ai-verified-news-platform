@@ -155,7 +155,7 @@ Media Presence: ${media.video ? 'Contains Video' : media.image ? 'Contains Image
 
 Return EXACTLY in this format (use the exact labels):
 
-Headline: <A strong, clear, professional news headline. Max 15 words.>
+Headline: <A strong, clear, professional news headline. MUST BE <= 120 CHARACTERS and max 15 words.>
 
 Summary: <A comprehensive 5-8 line summary of the key facts. Cover who, what, when, where, why, and the significance. Each line should add new information.>
 
@@ -163,7 +163,7 @@ Article: <A detailed 3-5 paragraph article body. Include background context, exp
 
 Source Note: <A one-line credibility assessment of the source, e.g. "Sourced from r/technology, corroborated by multiple news outlets.">
 
-Category: <Generate a highly specific, trending 1-3 word category based on the article content (e.g. "Generative AI", "Space Tourism", "US Elections"). Do NOT just use the bot specialty.>`
+Category: <Generate a highly specific, trending 1-3 word category based on the article content (e.g. "Indian Economy", "Tech India", "Generative AI", "Space Tourism"). Do NOT just use the bot specialty.>`
             }
           ],
           temperature: 0.4,
