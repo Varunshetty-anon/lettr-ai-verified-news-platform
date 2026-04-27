@@ -42,6 +42,17 @@ export async function GET(request: Request) {
         userImpressed = (user.impressedPosts || []).map((id: any) => id.toString());
         userFollowing = (user.following || []).map((id: any) => id.toString());
         categoryAffinity = (user.categoryAffinity as any) || {};
+        
+        // Exclude viewed and liked posts from the database query to guarantee fresh content
+        const hiddenIds = [
+          ...(user.viewedPosts || []),
+          ...(user.impressedPosts || [])
+        ].map((id: any) => new mongoose.Types.ObjectId(id));
+        
+        if (hiddenIds.length > 0) {
+          filter._id = { $nin: hiddenIds };
+        }
+
         // Convert Map to plain object if needed
         if (categoryAffinity instanceof Map) {
           categoryAffinity = Object.fromEntries(categoryAffinity);
@@ -143,20 +154,12 @@ export async function GET(request: Request) {
         const aFact = (a.factScore / 100) * 2;
         const bFact = (b.factScore / 100) * 2;
 
-        // Viewed Penalty: -20 points if already read
-        const aViewedPen = userViewed.includes(a._id) ? -20 : 0;
-        const bViewedPen = userViewed.includes(b._id) ? -20 : 0;
-
-        // Impressed Penalty: -5 points if scrolled past without clicking
-        const aImpressPen = userImpressed.includes(a._id) ? -5 : 0;
-        const bImpressPen = userImpressed.includes(b._id) ? -5 : 0;
-
         // Recency (0-10 points, based on how recent, heavily skewed to last 24h)
         const aRecency = Math.max(0, 10 * (1 - (now - new Date(a.createdAt).getTime()) / (3 * 24 * 60 * 60 * 1000)));
         const bRecency = Math.max(0, 10 * (1 - (now - new Date(b.createdAt).getTime()) / (3 * 24 * 60 * 60 * 1000)));
 
-        const aScore = aPref + aLikeCat + aViewCat + aAffinity + aFact + aRecency + aViewedPen + aImpressPen + (a.followBoost || 0);
-        const bScore = bPref + bLikeCat + bViewCat + bAffinity + bFact + bRecency + bViewedPen + bImpressPen + (b.followBoost || 0);
+        const aScore = aPref + aLikeCat + aViewCat + aAffinity + aFact + aRecency + (a.followBoost || 0);
+        const bScore = bPref + bLikeCat + bViewCat + bAffinity + bFact + bRecency + (b.followBoost || 0);
 
         return bScore - aScore;
       });

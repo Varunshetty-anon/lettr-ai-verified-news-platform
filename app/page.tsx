@@ -80,18 +80,10 @@ export default function Home() {
   const apiUrl = `/api/posts${email ? `?email=${encodeURIComponent(email)}` : ''}`;
   
   const { data, error, isLoading } = useSWR(apiUrl, fetcher, { 
-    refreshInterval: 10000, // Background poll every 10s
+    refreshInterval: 15000, // Background poll every 15s for smoother experience
     revalidateOnFocus: true, // Instant update on tab switch
+    keepPreviousData: true, // Prevent UI flashing during background updates
   });
-
-  // Explicit simple polling requested by user
-  useEffect(() => {
-    if (!apiUrl) return;
-    const interval = setInterval(() => {
-      mutate(apiUrl); // fetchLatestPosts equivalent
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [apiUrl]);
 
   const posts: PostData[] = data?.posts || [];
   const loading = isLoading || status === 'loading';
@@ -174,7 +166,7 @@ export default function Home() {
               {/* Media thumbnail */}
               {post.imageUrl && (
                 <div className="w-full overflow-hidden border-b border-outline-variant/30">
-                  <img src={post.imageUrl} alt="" loading="lazy" className="rounded-t-lg w-full object-cover group-hover:scale-[1.02] transition-transform duration-300" style={{ maxHeight: '300px' }} />
+                  <img src={post.imageUrl} alt="" loading="lazy" className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-300" style={{ maxHeight: '300px' }} />
                 </div>
               )}
               {post.videoUrl && (
