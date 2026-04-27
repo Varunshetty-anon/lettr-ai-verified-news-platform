@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { LeftSidebar } from './LeftSidebar';
 import { RightSidebar } from './RightSidebar';
+import { MobileNav } from './MobileNav';
 
 const NO_SHELL_ROUTES = ['/auth', '/onboarding'];
 
@@ -34,7 +35,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col md:flex-row max-w-[1600px] mx-auto min-h-screen">
       <LeftSidebar />
-      <main className="flex-1 max-w-3xl mx-auto w-full border-r border-outline-variant/8">
+      <MobileNav />
+      <main className="flex-1 max-w-3xl mx-auto w-full border-x border-outline-variant/8 pb-20 md:pb-0">
         {children}
       </main>
       <RightSidebar />
