@@ -70,7 +70,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
       fetch(`/api/user/interact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: session.user.email, postId: id, action: 'view' })
+        body: JSON.stringify({ postId: id, action: 'view' })
       }).catch(() => {});
     }
   }, [id, session]);
@@ -84,7 +84,6 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: session.user.email,
         postId: post._id,
         action: newLiked ? 'like' : 'unlike'
       })

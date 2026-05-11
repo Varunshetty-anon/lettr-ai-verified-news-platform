@@ -44,7 +44,7 @@ export default function OnboardingPreferencesPage() {
     await fetch(`/api/user/preferences`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: session.user.email, preferences: selected })
+      body: JSON.stringify({ preferences: selected })
     });
 
     router.push('/');

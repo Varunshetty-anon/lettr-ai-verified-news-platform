@@ -1,14 +1,22 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import { User } from '@/models/User';
 import { Post } from '@/models/Post';
 
 export async function POST(request: Request) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const email = session.user.email;
+
   await dbConnect();
   try {
-    const { email, postId, action } = await request.json();
-    if (!email || !postId || !action) {
-      return NextResponse.json({ error: 'email, postId, action required' }, { status: 400 });
+    const { postId, action } = await request.json();
+    if (!postId || !action) {
+      return NextResponse.json({ error: 'postId, action required' }, { status: 400 });
     }
 
     // Fetch post to get its category for affinity tracking
