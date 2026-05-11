@@ -1,14 +1,22 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import { User } from '@/models/User';
 
 // Save user preferences
 export async function POST(request: Request) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const email = session.user.email;
+
   await dbConnect();
   try {
-    const { email, preferences } = await request.json();
-    if (!email || !preferences) {
-      return NextResponse.json({ error: 'email and preferences required' }, { status: 400 });
+    const { preferences } = await request.json();
+    if (!preferences) {
+      return NextResponse.json({ error: 'preferences required' }, { status: 400 });
     }
     // Upsert — create user if not exists
     const user = await User.findOneAndUpdate(
@@ -23,12 +31,16 @@ export async function POST(request: Request) {
 }
 
 // Get user preferences
-export async function GET(request: Request) {
+export async function GET() {
+  const session = await auth();
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const email = session.user.email;
+
   await dbConnect();
   try {
-    const { searchParams } = new URL(request.url);
-    const email = searchParams.get('email');
-    if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 });
     const user = await User.findOne({ email }).select('preferences likedPosts viewedPosts').lean();
     if (!user) return NextResponse.json({ preferences: [], likedPosts: [], viewedPosts: [] });
     return NextResponse.json({

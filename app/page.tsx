@@ -65,7 +65,7 @@ export default function Home() {
   // Redirect new users to onboarding
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.email) {
-      fetch(`/api/user/preferences?email=${encodeURIComponent(session.user.email)}`)
+      fetch(`/api/user/preferences`)
         .then(r => r.json())
         .then(data => {
           if (!data.preferences || data.preferences.length === 0) {
@@ -76,8 +76,7 @@ export default function Home() {
     }
   }, [session, status, router]);
 
-  const email = session?.user?.email || '';
-  const apiUrl = `/api/posts${email ? `?email=${encodeURIComponent(email)}` : ''}`;
+  const apiUrl = `/api/posts`;
   
   const { data, error, isLoading, mutate } = useSWR(apiUrl, fetcher, { 
     refreshInterval: 0, // Disabled auto background refresh to prevent jumpy UX
@@ -140,7 +139,7 @@ export default function Home() {
     await fetch(`/api/user/interact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, postId, action: isLiked ? 'unlike' : 'like' })
+      body: JSON.stringify({ postId, action: isLiked ? 'unlike' : 'like' })
     }).catch(() => {});
   };
 

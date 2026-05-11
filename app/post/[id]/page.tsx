@@ -27,6 +27,31 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   const { data: post, error, isLoading } = useSWR(`/api/posts/${postId}`, fetcher);
 
   if (isLoading) {
+    if (session?.user?.email) {
+      fetch(`/api/user/interact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: id, action: 'view' })
+      }).catch(() => {});
+    }
+  }, [id, session]);
+
+  const handleLike = async () => {
+    if (!post || !session?.user?.email) return;
+    const newLiked = !liked;
+    setLiked(newLiked);
+
+    await fetch(`/api/user/interact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        postId: post._id,
+        action: newLiked ? 'like' : 'unlike'
+      })
+    }).catch(() => {});
+  };
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
