@@ -33,10 +33,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col md:flex-row max-w-[1600px] mx-auto min-h-screen">
+    <div className="flex flex-col md:flex-row justify-center max-w-[1265px] mx-auto min-h-screen">
       <LeftSidebar />
       <MobileNav />
-      <main className="flex-1 max-w-3xl mx-auto w-full border-x border-outline-variant/8 pb-20 md:pb-0">
+      <main className="flex-1 w-full max-w-[600px] border-x border-outline-variant min-h-screen pb-20 md:pb-0">
         {children}
       </main>
       <RightSidebar />
