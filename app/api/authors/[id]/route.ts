@@ -14,7 +14,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'Invalid Author ID' }, { status: 400 });
     }
 
-    const author = await User.findById(authorId).select('name image trustScore followersCount isVerifiedAuthor role createdAt').lean();
+    const author = await User.findById(authorId).select('name image email trustScore followersCount isVerifiedAuthor role createdAt').lean();
     if (!author) {
       return NextResponse.json({ error: 'Author not found' }, { status: 404 });
     }

@@ -6,7 +6,10 @@ import { Shield, Users, Award, Calendar, ExternalLink, ArrowLeft } from 'lucide-
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-export default function AuthorProfilePage({ params }: { params: { id: string } }) {
+export default function AuthorProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const unwrappedParams = React.use(params);
+  const authorId = unwrappedParams.id;
+  
   const { data: session } = useSession();
   const router = useRouter();
   const [author, setAuthor] = useState<any>(null);
@@ -18,7 +21,7 @@ export default function AuthorProfilePage({ params }: { params: { id: string } }
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch(`/api/authors/${params.id}`);
+        const res = await fetch(`/api/authors/${authorId}`);
         const data = await res.json();
         if (res.ok) {
           setAuthor(data.author);
@@ -29,7 +32,7 @@ export default function AuthorProfilePage({ params }: { params: { id: string } }
              const userRes = await fetch(`/api/user/me`);
              const userData = await userRes.json();
              if (userData.user && userData.user.following) {
-                setIsFollowing(userData.user.following.includes(params.id));
+                setIsFollowing(userData.user.following.includes(authorId));
              }
           }
         }
@@ -40,7 +43,7 @@ export default function AuthorProfilePage({ params }: { params: { id: string } }
       }
     }
     fetchData();
-  }, [params.id, session]);
+  }, [authorId, session]);
 
   const handleFollow = async () => {
     if (!session) {
@@ -52,7 +55,7 @@ export default function AuthorProfilePage({ params }: { params: { id: string } }
       const res = await fetch(`/api/user/follow`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorId: params.id })
+        body: JSON.stringify({ authorId: authorId })
       });
       const data = await res.json();
       if (data.success) {

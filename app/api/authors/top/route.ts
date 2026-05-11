@@ -25,7 +25,7 @@ export async function GET() {
     })
     .sort({ followersCount: -1 })
     .limit(10)
-    .select('name image followersCount trustScore role')
+    .select('name image followersCount trustScore role isVerifiedAuthor')
     .lean();
 
     return NextResponse.json({ 
