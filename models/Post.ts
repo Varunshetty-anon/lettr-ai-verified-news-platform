@@ -18,6 +18,7 @@ export interface IPost extends Document {
   confidence?: string;
   sourcesChecked?: number;
   reasoning?: string;
+  issues?: string[];
   isPublished: boolean;
   engagement: number;
   createdAt: Date;
@@ -42,6 +43,7 @@ const PostSchema: Schema<IPost> = new Schema({
   confidence: { type: String },
   sourcesChecked: { type: Number, default: 0 },
   reasoning: { type: String },
+  issues: [{ type: String }],
   isPublished: { type: Boolean, default: false },
   engagement: { type: Number, default: 0 }
 }, { timestamps: true });

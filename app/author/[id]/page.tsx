@@ -105,10 +105,17 @@ export default function AuthorProfilePage({ params }: { params: { id: string } }
                   
                   <h1 className="font-display text-2xl font-black text-on-surface flex items-center gap-2">
                      {author.name}
-                     {author.isVerifiedAuthor && <Shield size={18} className="text-emerald-500" />}
+                     {author.email?.includes('@lettr.ai') ? (
+                       <span className="font-label text-[8px] px-1.5 py-0.5 bg-primary/10 text-primary font-bold tracking-widest rounded-sm">BOT</span>
+                     ) : author.isVerifiedAuthor ? (
+                       <>
+                         <span className="font-label text-[8px] px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 font-bold tracking-widest rounded-sm">AUTHOR</span>
+                         <Shield size={18} className="text-emerald-500" />
+                       </>
+                     ) : null}
                   </h1>
                   <p className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/40 mt-1 mb-6">
-                     {author.role === 'AUTHOR' ? 'Verified Professional Author' : 'LETTR Contributor'}
+                     @{author.name.replace(/\s+/g, '').toLowerCase()}
                   </p>
 
                   <div className="space-y-4 pt-6 border-t border-outline-variant/30">
@@ -144,6 +151,16 @@ export default function AuthorProfilePage({ params }: { params: { id: string } }
                </div>
 
                <div className="bg-surface-container-low border border-outline-variant p-6 text-[11px] text-on-surface-variant/50 space-y-3 font-label tracking-widest">
+                  {author.categories && author.categories.length > 0 && (
+                     <div className="pb-3 border-b border-outline-variant/30 mb-3">
+                        <span className="block text-[9px] uppercase text-on-surface-variant/40 mb-2">Top Categories Covered</span>
+                        <div className="flex flex-wrap gap-2">
+                           {author.categories.map((cat: string) => (
+                             <span key={cat} className="px-2 py-1 bg-surface-container-high text-[9px] text-on-surface-variant rounded-sm">{cat}</span>
+                           ))}
+                        </div>
+                     </div>
+                  )}
                   <div className="flex items-center gap-2">
                      <Calendar size={12} />
                      JOINED {new Date(author.createdAt).toLocaleDateString()}
@@ -162,7 +179,11 @@ export default function AuthorProfilePage({ params }: { params: { id: string } }
                   {posts.length > 0 ? posts.map((post) => (
                     <Link href={`/post/${post._id}`} prefetch={true} key={post._id} className="group relative block w-full aspect-[4/5] overflow-hidden bg-surface-container-high border border-outline-variant hover:border-primary/50 transition-colors">
                        {/* Media Background */}
-                       {post.imageUrl ? (
+                       {post.videoUrl ? (
+                          <div className="absolute inset-0 w-full h-full grayscale group-hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-100">
+                             <video src={post.videoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover pointer-events-none" />
+                          </div>
+                       ) : post.imageUrl ? (
                           <img src={post.imageUrl} className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-100" alt="" />
                        ) : (
                           <div className="absolute inset-0 w-full h-full flex flex-col justify-center items-center text-on-surface-variant/10">

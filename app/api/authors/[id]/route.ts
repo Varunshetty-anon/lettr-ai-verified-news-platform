@@ -29,11 +29,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const totalScore = posts.reduce((acc, p) => acc + (p.factScore || 0), 0);
     const avgScore = posts.length > 0 ? Math.round(totalScore / posts.length) : 0;
 
+    // Aggregate categories
+    const categoryCounts: Record<string, number> = {};
+    posts.forEach(p => {
+      if (p.category) {
+        categoryCounts[p.category] = (categoryCounts[p.category] || 0) + 1;
+      }
+    });
+    const topCategories = Object.entries(categoryCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(entry => entry[0])
+      .slice(0, 3);
+
     return NextResponse.json({
       author: {
         ...author,
         _id: (author._id as any).toString(),
-        avgScore
+        avgScore,
+        categories: topCategories,
+        totalPosts: posts.length
       },
       posts: posts.map(p => ({
         ...p,

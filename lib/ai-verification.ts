@@ -3,7 +3,7 @@ export interface VerificationResult {
   factSummary: string;
   confidence: string;
   sourcesChecked: number;
-  keyIssues?: string[];
+  issues?: string[];
 }
 
 export async function verifyFact(
@@ -19,7 +19,7 @@ export async function verifyFact(
       factSummary: "Verification skipped: Service unavailable.", 
       confidence: "Low", 
       sourcesChecked: 0,
-      keyIssues: []
+      issues: []
     };
   }
 
@@ -33,14 +33,12 @@ export async function verifyFact(
           {
             role: "system",
             content: `You are an elite journalistic fact-checker. Analyze the news content, sources, and media context.
-            
             Return output exactly as a JSON object with no markdown formatting.
             {
               "factScore": <0-100>,
-              "factSummary": "<A 3-5 line explanation of accuracy and factual basis>",
+              "summary": "<Explain exactly why this score was given based on the facts and sources. Note any missing context or biased framing.>",
               "confidence": "<Low | Medium | High>",
-              "sourcesChecked": <number>,
-              "keyIssues": ["<issue 1>", "<issue 2>"] // Leave empty array if no issues
+              "issues": ["<issue 1>", "<issue 2>"] // Leave empty array if no issues
             }`
           },
           {
@@ -65,10 +63,10 @@ export async function verifyFact(
       const parsed = JSON.parse(outputText);
       return { 
         factScore: parsed.factScore ?? 50,
-        factSummary: parsed.factSummary || "Analysis complete.",
+        factSummary: parsed.summary || parsed.factSummary || "Analysis complete.",
         confidence: parsed.confidence || "Medium",
         sourcesChecked: parsed.sourcesChecked ?? 1,
-        keyIssues: parsed.keyIssues || []
+        issues: parsed.issues || parsed.keyIssues || []
       };
     } catch (parseError) {
       console.error("Fact verification JSON parse error:", parseError);
@@ -77,7 +75,7 @@ export async function verifyFact(
         factSummary: "Analysis complete (fallback formatting).",
         confidence: "Medium",
         sourcesChecked: 1,
-        keyIssues: []
+        issues: []
       };
     }
 

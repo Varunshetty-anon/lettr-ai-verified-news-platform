@@ -108,6 +108,7 @@ export async function GET(request: Request) {
         author: author ? {
           _id: (author._id as any).toString(),
           name: author.name,
+          email: author.email,
           trustScore: author.trustScore,
           role: author.role,
           isVerifiedAuthor: author.isVerifiedAuthor,

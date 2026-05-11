@@ -47,11 +47,15 @@ export async function POST(request: Request) {
       }, { status: 200 });
     }
 
+    // Strip URLs from body text to prevent messy formatting
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const cleanBody = body.replace(urlRegex, '').trim();
+
     const newPost = await Post.create({
       authorId: author._id,
       headline,
-      description: body.substring(0, 200), // Summary for feed
-      body,
+      description: cleanBody.substring(0, 200), // Summary for feed
+      body: cleanBody,
       sourceLink,
       originSource: 'User Submitted',
       category: category || 'General',
@@ -61,6 +65,7 @@ export async function POST(request: Request) {
       factSummary: verification.factSummary,
       confidence: verification.confidence,
       sourcesChecked: verification.sourcesChecked,
+      issues: verification.issues || [],
       isPublished: true,
       engagement: 0
     });

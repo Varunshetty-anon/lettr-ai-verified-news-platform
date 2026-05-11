@@ -172,11 +172,11 @@ Media Presence: ${media.video ? 'Contains Video' : media.image ? 'Contains Image
 
 Return EXACTLY in this format (use the exact labels):
 
-Headline: <A strong, clear, professional news headline. MUST BE <= 120 CHARACTERS and max 15 words.>
+Headline: <A strong, clear, professional news headline. Maximum 12 words and strictly under 100 characters. Do not summarize the entire article. No paragraph formatting.>
 
 Summary: <A comprehensive 5-8 line summary of the key facts. Cover who, what, when, where, why, and the significance. Each line should add new information.>
 
-Article: <A detailed 3-5 paragraph article body. Include background context, expert analysis, implications, and what comes next. Write at least 250 words. Structure with clear paragraphs.>
+Article: <A detailed 3-5 paragraph article body. Include background context, expert analysis, implications, and what comes next. Write at least 250 words. Structure with clear paragraphs. DO NOT include any URLs, links, or sources inside the Article body.>
 
 Source Note: <A one-line credibility assessment of the source, e.g. "Sourced from r/technology, corroborated by multiple news outlets.">
 
@@ -259,6 +259,7 @@ Category: <Generate a highly specific, trending 1-3 word category based on the a
       factSummary: verification.factSummary,
       confidence: verification.confidence,
       sourcesChecked: verification.sourcesChecked,
+      issues: verification.issues || [],
       isPublished: true,
       engagement: Math.floor(Math.random() * 80) + 5
     });

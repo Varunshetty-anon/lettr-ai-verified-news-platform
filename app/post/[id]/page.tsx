@@ -4,9 +4,7 @@ import React, { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { ArrowLeft, ExternalLink, Shield, CheckCircle, Heart, Info, Globe, Users } from 'lucide-react';
-import dynamic from 'next/dynamic';
-
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false }) as any;
+import HoverVideoPlayer from '@/app/components/ui/HoverVideoPlayer';
 
 interface PostDetail {
   _id: string;
@@ -18,6 +16,7 @@ interface PostDetail {
   confidence?: string;
   sourcesChecked?: number;
   reasoning?: string;
+  issues?: string[];
   originSource?: string;
   category?: string;
   sourceLink?: string;
@@ -25,7 +24,7 @@ interface PostDetail {
   videoUrl?: string;
   engagement: number;
   createdAt: string;
-  author: { _id: string; name: string; image?: string; trustScore: number; role: string; totalPosts: number; isVerifiedAuthor: boolean } | null;
+  author: { _id: string; name: string; email?: string; image?: string; trustScore: number; role: string; totalPosts: number; isVerifiedAuthor: boolean } | null;
 }
 
 interface RelatedPost {
@@ -161,8 +160,14 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <Link href={`/author/${post.author._id}`} className="font-display text-base font-bold text-on-surface hover:text-primary transition-colors underline decoration-outline-variant/30 underline-offset-4">{post.author.name}</Link>
-                {post.author.role === 'AUTHOR' && <span className="font-label text-[8px] px-1.5 py-0.5 bg-primary/10 text-primary font-bold tracking-widest">BOT</span>}
-                {post.author.isVerifiedAuthor && <CheckCircle size={14} className="text-emerald-500" />}
+                {post.author.email?.includes('@lettr.ai') ? (
+                  <span className="font-label text-[8px] px-1.5 py-0.5 bg-primary/10 text-primary font-bold tracking-widest">BOT</span>
+                ) : post.author.isVerifiedAuthor ? (
+                  <>
+                    <span className="font-label text-[8px] px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 font-bold tracking-widest">AUTHOR</span>
+                    <CheckCircle size={14} className="text-emerald-500" />
+                  </>
+                ) : null}
               </div>
               <p className="font-label text-[10px] text-on-surface-variant/40 uppercase tracking-widest mt-0.5">
                 Author Trust: {post.author.trustScore}% · {post.author.totalPosts || 0} Reports Published
@@ -185,8 +190,8 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         )}
 
         {post.videoUrl && mounted && (
-          <div className="mb-10 border border-outline-variant relative pt-[56.25%] bg-black">
-            <ReactPlayer url={post.videoUrl} controls width="100%" height="100%" className="absolute top-0 left-0" />
+          <div className="mb-10 shadow-2xl">
+            <HoverVideoPlayer src={post.videoUrl} mode="full" />
           </div>
         )}
 
@@ -226,10 +231,21 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
                  <div className="space-y-5">
                     <div>
-                       <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/60 block mb-2 font-bold">Verification Summary</span>
-                       <p className="font-body text-sm text-on-surface/90 leading-relaxed border-l-2 border-primary/30 pl-4 py-1">
+                       <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/60 block mb-2 font-bold">Why this score?</span>
+                       <p className="font-body text-sm text-on-surface/90 leading-relaxed border-l-2 border-primary/30 pl-4 py-1 mb-4">
                           {post.factSummary || post.reasoning || "Automated analysis completed. Detailed summary unavailable for this report."}
                        </p>
+                       
+                       {post.issues && post.issues.length > 0 && (
+                          <div className="mt-4">
+                            <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/60 block mb-2 font-bold text-red-400">Identified Issues</span>
+                            <ul className="list-disc pl-4 space-y-1">
+                              {post.issues.map((issue: string, idx: number) => (
+                                <li key={idx} className="font-body text-xs text-on-surface-variant/80">{issue}</li>
+                              ))}
+                            </ul>
+                          </div>
+                       )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 pt-5 border-t border-on-surface/10">

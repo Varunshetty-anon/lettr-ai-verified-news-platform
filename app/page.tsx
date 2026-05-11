@@ -22,7 +22,7 @@ interface PostData {
   engagement: number;
   createdAt: string;
   isLiked?: boolean;
-  author: { _id: string; name: string; trustScore: number; role: string; isVerifiedAuthor: boolean } | null;
+  author: { _id: string; name: string; email?: string; trustScore: number; role: string; isVerifiedAuthor: boolean } | null;
 }
 
 function timeAgo(dateStr: string) {
@@ -222,12 +222,14 @@ export default function Home() {
                         >
                           {post.author.name}
                         </Link>
-                        {post.author.role === 'AUTHOR' && (
-                          <span className="font-label text-[9px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-sm">Bot</span>
-                        )}
-                        {post.author.isVerifiedAuthor && (
-                          <CheckCircle size={12} className="text-accent" />
-                        )}
+                        {post.author.email?.includes('@lettr.ai') ? (
+                          <span className="font-label text-[8px] px-1.5 py-0.5 bg-primary/10 text-primary font-bold tracking-widest rounded-sm">BOT</span>
+                        ) : post.author.isVerifiedAuthor ? (
+                          <>
+                            <span className="font-label text-[8px] px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 font-bold tracking-widest rounded-sm">AUTHOR</span>
+                            <CheckCircle size={12} className="text-emerald-500" />
+                          </>
+                        ) : null}
                       </div>
                     )}
                     <span className="text-outline-variant">·</span>

@@ -1,27 +1,44 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
+import 'plyr/dist/plyr.css';
+
+const Plyr = dynamic(() => import('plyr-react').then(mod => mod.Plyr), { ssr: false });
 
 interface HoverVideoPlayerProps {
   src: string;
   poster?: string;
+  mode?: 'preview' | 'full';
 }
 
-export default function HoverVideoPlayer({ src, poster }: HoverVideoPlayerProps) {
+export default function HoverVideoPlayer({ src, poster, mode = 'preview' }: HoverVideoPlayerProps) {
+  const isPreview = mode === 'preview';
+
+  const plyrOptions = {
+    controls: isPreview ? [] : ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
+    autoplay: isPreview,
+    muted: isPreview,
+    loop: { active: isPreview },
+    clickToPlay: !isPreview,
+    keyboard: { focused: !isPreview, global: !isPreview },
+  };
+
   return (
-    <div className="relative w-full overflow-hidden bg-black/5 border-b border-outline-variant/30 flex items-center justify-center">
-      <video
-        src={src}
-        poster={poster}
-        controls
-        playsInline
-        preload="metadata"
-        className="w-full object-contain"
-        style={{ maxHeight: '400px', backgroundColor: '#000' }}
-      >
-        <source src={src} type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+    <div className={`relative w-full overflow-hidden bg-black flex items-center justify-center ${isPreview ? 'pointer-events-none' : ''}`}>
+      <Plyr
+        source={{
+          type: 'video',
+          sources: [
+            {
+              src: src,
+              provider: 'html5',
+            },
+          ],
+          poster: poster,
+        }}
+        options={plyrOptions}
+      />
     </div>
   );
 }
