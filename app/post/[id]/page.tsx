@@ -1,298 +1,203 @@
 "use client";
 
-import React, { useEffect, useState, use } from 'react';
+import React, { use } from 'react';
+import useSWR from 'swr';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
-import { ArrowLeft, ExternalLink, Shield, CheckCircle, Heart, Info, Globe, Users } from 'lucide-react';
-import HoverVideoPlayer from '@/app/components/ui/HoverVideoPlayer';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Shield, ExternalLink, MessageCircle, Heart, Share, BarChart2 } from 'lucide-react';
+import { DynamicPlayer } from '@/app/components/ui/HoverVideoPlayer';
 
-interface PostDetail {
-  _id: string;
-  headline: string;
-  description: string;
-  body?: string;
-  factScore: number;
-  factSummary?: string;
-  confidence?: string;
-  sourcesChecked?: number;
-  reasoning?: string;
-  issues?: string[];
-  originSource?: string;
-  category?: string;
-  sourceLink?: string;
-  imageUrl?: string;
-  videoUrl?: string;
-  engagement: number;
-  createdAt: string;
-  author: { _id: string; name: string; email?: string; image?: string; trustScore: number; role: string; totalPosts: number; isVerifiedAuthor: boolean } | null;
-}
-
-interface RelatedPost {
-  _id: string;
-  headline: string;
-  factScore: number;
-  category?: string;
-  createdAt: string;
-  author: { name: string } | null;
-}
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return `${mins}m`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return `${hrs}h`;
+  return `${Math.floor(hrs / 24)}d`;
 }
 
 export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const { data: session } = useSession();
-  const [post, setPost] = useState<PostDetail | null>(null);
-  const [related, setRelated] = useState<RelatedPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [liked, setLiked] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const router = useRouter();
+  const resolvedParams = use(params);
+  const postId = resolvedParams.id;
 
-  useEffect(() => {
-    setMounted(true);
-    fetch(`/api/posts/${id}`)
-      .then(res => res.json())
-      .then(data => {
-        setPost(data.post);
-        setRelated(data.related || []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+  const { data: post, error, isLoading } = useSWR(`/api/posts/${postId}`, fetcher);
 
-    if (session?.user?.email) {
-      fetch(`/api/user/interact`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: session.user.email, postId: id, action: 'view' })
-      }).catch(() => {});
-    }
-  }, [id, session]);
-
-  const handleLike = async () => {
-    if (!post || !session?.user?.email) return;
-    const newLiked = !liked;
-    setLiked(newLiked);
-
-    await fetch(`/api/user/interact`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: session.user.email,
-        postId: post._id,
-        action: newLiked ? 'like' : 'unlike'
-      })
-    }).catch(() => {});
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="w-full min-h-screen p-5 bg-surface-container-lowest">
-        <div className="max-w-4xl mx-auto animate-pulse space-y-8 pt-10">
-          <div className="h-4 bg-surface-container-high rounded w-20" />
-          <div className="h-12 bg-surface-container-high rounded w-3/4" />
-          <div className="h-4 bg-surface-container-high rounded w-32" />
-          <div className="h-[400px] bg-surface-container-high rounded w-full" />
-          <div className="space-y-4">
-             <div className="h-4 bg-surface-container-high rounded w-full" />
-             <div className="h-4 bg-surface-container-high rounded w-full" />
-             <div className="h-4 bg-surface-container-high rounded w-5/6" />
-          </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  if (!post) {
+  if (error || !post) {
     return (
-      <div className="w-full min-h-screen flex items-center justify-center bg-surface-container-lowest">
-        <div className="text-center">
-          <h2 className="font-display text-2xl text-on-surface mb-4">Report not found</h2>
-          <Link href="/" className="font-label text-xs uppercase tracking-widest text-primary border border-primary/20 px-6 py-3 hover:bg-primary/5 transition-colors">Return to feed</Link>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-on-surface-variant">Post not found.</p>
       </div>
     );
   }
-
-  const scoreColor = post.factScore >= 85 ? 'text-emerald-500' : post.factScore >= 60 ? 'text-amber-500' : 'text-red-500';
-  const scoreBg = post.factScore >= 85 ? 'bg-emerald-500/10' : post.factScore >= 60 ? 'bg-amber-500/10' : 'bg-red-500/10';
-  const scoreBorder = post.factScore >= 85 ? 'border-emerald-500/20' : post.factScore >= 60 ? 'border-amber-500/20' : 'border-red-500/20';
-
-  const articleBody = post.body || post.description;
 
   return (
-    <div className="w-full min-h-screen bg-surface-container-lowest animate-fade-in pb-20">
-      <div className="sticky top-0 z-20 bg-surface-container-low/80 backdrop-blur-md border-b border-outline-variant px-5 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-           <Link href="/" className="flex items-center gap-2 font-label text-[10px] uppercase tracking-widest text-on-surface-variant hover:text-primary transition-colors font-bold">
-             <ArrowLeft size={16} /> Back to Intel Feed
-           </Link>
-           <div className={`flex items-center gap-2 px-3 py-1 border rounded-full ${scoreBg} ${scoreBorder}`}>
-             <Shield size={12} className={scoreColor} />
-             <span className={`font-display text-xs font-black ${scoreColor}`}>{post.factScore}% FIDELITY</span>
-           </div>
-        </div>
+    <div className="w-full min-h-screen pb-20">
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-surface/80 backdrop-blur-md flex items-center gap-6 px-4 h-[53px] border-b border-outline-variant/50">
+        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-surface-variant transition-colors">
+          <ArrowLeft size={20} className="text-on-surface" />
+        </button>
+        <h1 className="text-xl font-bold text-on-surface">Post</h1>
       </div>
 
-      <article className="max-w-4xl mx-auto px-5 pt-12">
-        <div className="flex items-center gap-3 mb-6">
-           <span className="font-label text-[10px] uppercase tracking-[0.2em] text-primary font-black px-2 py-1 bg-primary/5 border border-primary/10">
-              {post.category}
-           </span>
-           <span className="font-label text-[10px] text-on-surface-variant/40 uppercase tracking-widest">{timeAgo(post.createdAt)}</span>
-        </div>
-
-        <h1 className="font-display text-3xl md:text-5xl font-black text-on-surface leading-[1.1] mb-8">
-          {post.headline}
-        </h1>
-
-        {post.author && (
-          <div className="flex items-center gap-4 mb-10 pb-8 border-b border-outline-variant">
-            <Link href={`/author/${post.author._id}`} className="w-12 h-12 bg-surface-container-high rounded-full overflow-hidden flex items-center justify-center font-display text-lg font-black text-primary/40 border border-outline-variant/30 hover:opacity-80 transition-opacity">
-              {post.author.image ? <img src={post.author.image} alt="" className="w-full h-full object-cover" /> : post.author.name.charAt(0)}
-            </Link>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <Link href={`/author/${post.author._id}`} className="font-display text-base font-bold text-on-surface hover:text-primary transition-colors underline decoration-outline-variant/30 underline-offset-4">{post.author.name}</Link>
-                {post.author.email?.includes('@lettr.ai') ? (
-                  <span className="font-label text-[8px] px-1.5 py-0.5 bg-primary/10 text-primary font-bold tracking-widest">BOT</span>
-                ) : post.author.isVerifiedAuthor ? (
-                  <>
-                    <span className="font-label text-[8px] px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 font-bold tracking-widest">AUTHOR</span>
-                    <CheckCircle size={14} className="text-emerald-500" />
-                  </>
-                ) : null}
-              </div>
-              <p className="font-label text-[10px] text-on-surface-variant/40 uppercase tracking-widest mt-0.5">
-                Author Trust: {post.author.trustScore}% · {post.author.totalPosts || 0} Reports Published
-              </p>
-            </div>
-            <button
-              onClick={handleLike}
-              className={`flex items-center gap-2 px-4 py-2 border transition-all ${liked ? 'bg-red-500/5 border-red-500/20 text-red-500' : 'border-outline-variant text-on-surface-variant/40 hover:text-red-500'}`}
-            >
-              <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
-              <span className="font-label text-xs font-bold">{post.engagement + (liked ? 1 : 0)}</span>
-            </button>
-          </div>
-        )}
-
-        {post.imageUrl && (
-          <div className="mb-10 shadow-2xl">
-            <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-auto object-cover max-h-[600px] border border-outline-variant" />
-          </div>
-        )}
-
-        {post.videoUrl && mounted && (
-          <div className="mb-10 shadow-2xl">
-            <HoverVideoPlayer src={post.videoUrl} mode="full" />
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-           <div className="md:col-span-2">
-              <div className="font-body text-lg text-on-surface/90 leading-[1.8] mb-12 whitespace-pre-line prose prose-invert max-w-none">
-                {articleBody}
-              </div>
-
-              {post.sourceLink && (
-                 <div className="p-6 bg-surface-container-low border border-outline-variant mb-12">
-                    <h4 className="font-display text-[10px] uppercase tracking-widest text-on-surface-variant/50 mb-4 font-black">Primary Documentation</h4>
-                    <a href={post.sourceLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-primary hover:underline font-body text-sm break-all">
-                       <Globe size={16} /> {post.sourceLink} <ExternalLink size={14} />
-                    </a>
-                 </div>
+      {/* Post Content */}
+      <article className="px-4 pt-3 pb-4 border-b border-outline-variant/50">
+        {/* Author Row */}
+        <div className="flex items-center gap-3 mb-3">
+          <Link href={`/author/${post.author?._id}`} className="shrink-0">
+            <div className="w-10 h-10 rounded-full bg-surface-variant overflow-hidden flex items-center justify-center">
+              {post.author ? (
+                 <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">{post.author.name?.charAt(0)}</div>
+              ) : (
+                 <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">?</div>
               )}
-           </div>
+            </div>
+          </Link>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1">
+              <Link href={`/author/${post.author?._id}`} className="font-bold text-[15px] text-on-surface hover:underline">
+                {post.author?.name || 'Unknown'}
+              </Link>
+              {post.author?.isVerifiedAuthor && (
+                <svg viewBox="0 0 24 24" aria-label="Verified account" className="w-[18px] h-[18px] fill-primary"><g><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.918-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.337 2.25c-.416-.165-.866-.25-1.336-.25-2.21 0-3.918 1.792-3.918 4 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.46.74 2.746 1.865 3.45-.164.446-.252.93-.252 1.45 0 2.21 1.71 4 3.918 4 .503 0 .984-.095 1.428-.266 1.053 1.252 2.628 2.066 4.34 2.066 1.714 0 3.287-.814 4.34-2.066.445.17.925.265 1.428.265 2.21 0 3.918-1.792 3.918-4 0-.52-.088-1.004-.252-1.45 1.125-.705 1.865-1.99 1.865-3.45zm-10.153 6.015l-4.5-4.5 1.815-1.815 2.685 2.685 7.185-7.185 1.815 1.815-9 9z"></path></g></svg>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-[15px] text-on-surface-variant">
+                @{post.author?.name?.toLowerCase().replace(/\s+/g, '')}
+              </span>
+              {post.author?.email?.includes('@lettr.ai') && (
+                <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold rounded">BOT</span>
+              )}
+            </div>
+          </div>
+        </div>
 
-           <div className="space-y-8">
-              {/* Fact Check Card */}
-              <div className={`border ${scoreBorder} ${scoreBg} p-6 sticky top-24 rounded-sm`}>
-                 <div className="flex items-center gap-2 mb-5 border-b border-on-surface/10 pb-4">
-                    <Shield size={18} className={scoreColor} />
-                    <span className="font-display text-[11px] uppercase tracking-[0.2em] font-black text-on-surface">AI Intel Report</span>
-                 </div>
-                 
-                 <div className="mb-6">
-                    <div className="flex items-baseline gap-2 mb-2">
-                       <span className={`font-display text-5xl font-black ${scoreColor}`}>{post.factScore}%</span>
-                       <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/50">Certainty</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-on-surface/10 rounded-full overflow-hidden">
-                       <div className={`h-full ${post.factScore >= 85 ? 'bg-emerald-500' : post.factScore >= 60 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${post.factScore}%` }} />
-                    </div>
-                 </div>
+        {/* Text Content */}
+        <h2 className="text-[17px] sm:text-[19px] font-bold text-on-surface leading-snug mb-2">
+          {post.headline}
+        </h2>
 
-                 <div className="space-y-5">
-                    <div>
-                       <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/60 block mb-2 font-bold">Why this score?</span>
-                       <p className="font-body text-sm text-on-surface/90 leading-relaxed border-l-2 border-primary/30 pl-4 py-1 mb-4">
-                          {post.factSummary || post.reasoning || "Automated analysis completed. Detailed summary unavailable for this report."}
-                       </p>
-                       
-                       {post.issues && post.issues.length > 0 && (
-                          <div className="mt-4">
-                            <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/60 block mb-2 font-bold text-red-400">Identified Issues</span>
-                            <ul className="list-disc pl-4 space-y-1">
-                              {post.issues.map((issue: string, idx: number) => (
-                                <li key={idx} className="font-body text-xs text-on-surface-variant/80">{issue}</li>
-                              ))}
-                            </ul>
-                          </div>
-                       )}
-                    </div>
+        {/* Full Article Body */}
+        <div className="text-[15px] sm:text-[17px] text-on-surface leading-normal mb-4 whitespace-pre-wrap">
+          {post.content || post.description}
+        </div>
 
-                    <div className="grid grid-cols-2 gap-4 pt-5 border-t border-on-surface/10">
-                       <div>
-                          <span className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/50 block mb-1.5">Confidence</span>
-                          <span className="font-label text-[11px] font-black uppercase text-on-surface tracking-widest">{post.confidence || 'Medium'}</span>
-                       </div>
-                       <div>
-                          <span className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/50 block mb-1.5">Sources</span>
-                          <span className="font-label text-[11px] font-black uppercase text-on-surface tracking-widest">{post.sourcesChecked || 'Validated'}</span>
-                       </div>
-                    </div>
-                 </div>
+        {/* Media */}
+        {(post.imageUrl || post.videoUrl) && (
+          <div className="mb-4 rounded-2xl overflow-hidden border border-outline-variant/50 relative bg-surface-container-low max-h-[600px] flex items-center justify-center">
+            {post.imageUrl && !post.videoUrl && (
+              <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-full object-contain max-h-[600px]" />
+            )}
+            {post.videoUrl && (
+              <div className="w-full relative">
+                <DynamicPlayer src={post.videoUrl} />
+              </div>
+            )}
+          </div>
+        )}
 
-                 <div className="mt-8 pt-4 border-t border-on-surface/5 flex items-center gap-2 text-[10px] font-label uppercase tracking-[0.2em] text-on-surface-variant/40">
-                    <Info size={12} />
-                    Validated by Groq Llama 3.3
+        {/* Community Note Integration */}
+        <div className="mb-4 bg-surface-container-high rounded-xl p-4 border border-outline-variant/30">
+           <div className="flex items-start gap-3">
+              <Shield size={20} className={post.factScore >= 80 ? 'text-emerald-500 mt-1' : post.factScore >= 60 ? 'text-amber-500 mt-1' : 'text-red-500 mt-1'} />
+              <div className="flex-1">
+                 <p className="text-[15px] font-bold text-on-surface mb-1">
+                   Readers added context they thought people might want to know
+                 </p>
+                 <p className="text-[14px] text-on-surface leading-relaxed mb-3">
+                   {post.reasoning}
+                 </p>
+                 {post.issues && post.issues.length > 0 && (
+                    <div className="mb-4">
+                       <p className="text-[13px] font-bold text-on-surface-variant mb-2">Key Issues Identified:</p>
+                       <ul className="list-disc pl-5 space-y-1">
+                          {post.issues.map((issue: string, idx: number) => (
+                             <li key={idx} className="text-[13px] text-on-surface-variant">{issue}</li>
+                          ))}
+                       </ul>
+                    </div>
+                 )}
+                 <div className="flex items-center gap-3 border-t border-outline-variant/30 pt-3">
+                    <span className="text-[13px] text-on-surface-variant/80 font-medium">
+                      AI Fact Score: <span className="font-bold">{post.factScore}/100</span>
+                    </span>
+                    <span className="text-[13px] text-on-surface-variant">·</span>
+                    <span className={`text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${post.factScore >= 85 ? 'bg-emerald-500/10 text-emerald-500' : post.factScore >= 60 ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'}`}>
+                      {post.confidence || 'Medium'} Confidence
+                    </span>
                  </div>
               </div>
            </div>
         </div>
 
-        {/* Related Section */}
-        {related.length > 0 && (
-          <div className="border-t border-outline-variant pt-12 mt-12">
-            <h3 className="font-display text-xs uppercase tracking-[0.3em] text-on-surface font-black mb-8">Related Intelligence</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {related.map(r => (
-                <Link key={r._id} href={`/post/${r._id}`} className="group p-6 border border-outline-variant hover:border-primary/30 transition-all bg-surface-container-low flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                       <span className="font-label text-[9px] uppercase tracking-widest text-primary font-bold">{r.category}</span>
-                       <div className={`font-display text-xs font-black ${r.factScore >= 80 ? 'text-emerald-500' : 'text-on-surface-variant/40'}`}>
-                          {r.factScore}%
-                       </div>
-                    </div>
-                    <h4 className="font-display text-lg font-bold text-on-surface group-hover:text-primary transition-colors leading-tight mb-4">{r.headline}</h4>
-                  </div>
-                  <div className="flex items-center justify-between font-label text-[10px] text-on-surface-variant/40 uppercase tracking-widest">
-                     <span>{r.author?.name}</span>
-                     <span>{timeAgo(r.createdAt)}</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
+        {/* Source Link */}
+        {post.sourceLink && (
+          <div className="mb-4 text-[15px] text-on-surface-variant">
+             <a href={post.sourceLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1.5 truncate">
+               <ExternalLink size={16} />
+               <span className="truncate">{post.sourceLink.replace(/^https?:\/\//, '')}</span>
+             </a>
           </div>
         )}
+
+        {/* Timestamp */}
+        <div className="flex items-center gap-1 text-[15px] text-on-surface-variant mb-4 border-b border-outline-variant/50 pb-4">
+          <span>{new Date(post.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+          <span>·</span>
+          <span>{new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+          <span>·</span>
+          <span className="font-bold text-on-surface">12.5K</span> <span>Views</span>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center justify-around text-on-surface-variant pb-2">
+          <button className="flex items-center gap-2 group/btn transition-colors">
+            <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+              <MessageCircle size={22} />
+            </div>
+            <span className="text-[15px] group-hover/btn:text-primary">12</span>
+          </button>
+
+          <button className="flex items-center gap-2 group/btn transition-colors">
+            <div className="p-2 rounded-full group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 transition-colors">
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="w-[22px] h-[22px] fill-current"><g><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"></path></g></svg>
+            </div>
+            <span className="text-[15px] group-hover/btn:text-emerald-500">4</span>
+          </button>
+
+          <button className="flex items-center gap-2 group/btn transition-colors">
+            <div className="p-2 rounded-full group-hover/btn:bg-rose-500/10 group-hover/btn:text-rose-500 transition-colors">
+              <Heart size={22} />
+            </div>
+            <span className="text-[15px] group-hover/btn:text-rose-500">{post.engagement}</span>
+          </button>
+
+          <button className="flex items-center gap-2 group/btn transition-colors">
+            <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+              <BarChart2 size={22} />
+            </div>
+            <span className="text-[15px] group-hover/btn:text-primary">12.5K</span>
+          </button>
+
+          <button className="flex items-center gap-2 group/btn transition-colors">
+            <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+              <Share size={22} />
+            </div>
+          </button>
+        </div>
       </article>
     </div>
   );

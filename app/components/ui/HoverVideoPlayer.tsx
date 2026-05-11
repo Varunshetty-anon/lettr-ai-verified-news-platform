@@ -42,3 +42,7 @@ export default function HoverVideoPlayer({ src, poster, mode = 'preview' }: Hove
     </div>
   );
 }
+
+export function DynamicPlayer({ src, poster }: { src: string, poster?: string }) {
+  return <HoverVideoPlayer src={src} poster={poster} mode="full" />;
+}

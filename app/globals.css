@@ -49,23 +49,23 @@
 
 /* ===== DARK MODE ===== */
 .dark {
-  --surface: #0b0f14;
-  --surface-container-low: #121821;
-  --surface-container-lowest: #161d28;
-  --surface-container-high: #1c2333;
-  --surface-container-highest: #232a3a;
-  --surface-variant: #1a2030;
+  --surface: #000000;
+  --surface-container-low: #000000;
+  --surface-container-lowest: #000000;
+  --surface-container-high: #0f1419;
+  --surface-container-highest: #16181c;
+  --surface-variant: #16181c;
   
-  --on-surface: #e5e7eb;
-  --on-surface-variant: #9ca3af;
-  --outline-variant: #1f2937;
+  --on-surface: #e7e9ea;
+  --on-surface-variant: #71767b;
+  --outline-variant: #2f3336;
   
-  --primary: #7ec8d0;
-  --primary-container: #1a3a40;
-  --on-primary: #0b0f14;
-  --on-primary-container: #a0d5db;
+  --primary: #1d9bf0;
+  --primary-container: #1da1f2;
+  --on-primary: #ffffff;
+  --on-primary-container: #ffffff;
   
-  --secondary: #8ab0be;
+  --secondary: #8b98a5;
 }
 
 body {

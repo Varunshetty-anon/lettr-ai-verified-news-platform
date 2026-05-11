@@ -2,9 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Shield, Users, Award, Calendar, ExternalLink, ArrowLeft } from 'lucide-react';
+import { Shield, ArrowLeft, Calendar, Link as LinkIcon, Heart } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { DynamicPlayer } from '@/app/components/ui/HoverVideoPlayer';
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  return `${Math.floor(hrs / 24)}d`;
+}
 
 export default function AuthorProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = React.use(params);
@@ -27,7 +38,6 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
           setAuthor(data.author);
           setPosts(data.posts);
           
-          // Check if current user is following this author
           if (session?.user?.email) {
              const userRes = await fetch(`/api/user/me`);
              const userData = await userRes.json();
@@ -52,178 +62,213 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
     }
     setFollowLoading(true);
     try {
-      const res = await fetch(`/api/user/follow`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorId: authorId })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setIsFollowing(data.isFollowing);
-        setAuthor({
-           ...author,
-           followersCount: data.isFollowing ? author.followersCount + 1 : author.followersCount - 1
-        });
-      }
-    } catch (err) {
-      console.error(err);
+       const res = await fetch(`/api/user/follow`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ authorId })
+       });
+       if (res.ok) {
+          setIsFollowing(!isFollowing);
+          setAuthor((prev: any) => ({
+             ...prev,
+             followersCount: isFollowing ? prev.followersCount - 1 : prev.followersCount + 1
+          }));
+       }
+    } catch (e) {
+       console.error(e);
     } finally {
-      setFollowLoading(false);
+       setFollowLoading(false);
     }
   };
 
-  if (loading) return (
-    <div className="w-full min-h-screen flex items-center justify-center bg-surface-container-lowest">
-      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-  if (!author) return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-center bg-surface-container-lowest">
-       <h1 className="font-display text-2xl font-bold text-on-surface">Author Not Found</h1>
-       <Link href="/" className="text-primary mt-4 font-label text-xs uppercase tracking-widest hover:underline">Return to Feed</Link>
-    </div>
-  );
+  if (!author) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <h2 className="text-xl font-bold text-on-surface mb-2">This account doesn't exist</h2>
+        <p className="text-on-surface-variant mb-6">Try searching for another.</p>
+      </div>
+    );
+  }
+
+  const isBot = author.email?.includes('@lettr.ai');
 
   return (
-    <div className="w-full min-h-screen bg-surface-container-lowest pb-20 animate-fade-in">
-      {/* Header / Banner Area */}
-      <div className="w-full h-48 bg-surface-container-low border-b border-outline-variant relative overflow-hidden">
-         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
-         <div className="max-w-5xl mx-auto px-5 h-full flex items-end pb-8">
-            <button onClick={() => router.back()} className="absolute top-8 left-5 text-on-surface-variant/60 hover:text-primary transition-colors">
-               <ArrowLeft size={20} />
-            </button>
+    <div className="w-full min-h-screen pb-20">
+      {/* Header */}
+      <div className="sticky top-0 z-20 bg-surface/80 backdrop-blur-md flex items-center gap-6 px-4 h-[53px] border-b border-outline-variant/50">
+        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-surface-variant transition-colors">
+          <ArrowLeft size={20} className="text-on-surface" />
+        </button>
+        <div className="flex flex-col">
+           <h1 className="text-xl font-bold text-on-surface leading-tight flex items-center gap-1">
+             {author.name}
+             {author.isVerifiedAuthor && (
+                <svg viewBox="0 0 24 24" aria-label="Verified account" className="w-[18px] h-[18px] fill-primary"><g><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.918-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.337 2.25c-.416-.165-.866-.25-1.336-.25-2.21 0-3.918 1.792-3.918 4 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.46.74 2.746 1.865 3.45-.164.446-.252.93-.252 1.45 0 2.21 1.71 4 3.918 4 .503 0 .984-.095 1.428-.266 1.053 1.252 2.628 2.066 4.34 2.066 1.714 0 3.287-.814 4.34-2.066.445.17.925.265 1.428.265 2.21 0 3.918-1.792 3.918-4 0-.52-.088-1.004-.252-1.45 1.125-.705 1.865-1.99 1.865-3.45zm-10.153 6.015l-4.5-4.5 1.815-1.815 2.685 2.685 7.185-7.185 1.815 1.815-9 9z"></path></g></svg>
+             )}
+           </h1>
+           <span className="text-[13px] text-on-surface-variant">{posts.length} posts</span>
+        </div>
+      </div>
+
+      {/* Banner */}
+      <div className="w-full h-[200px] bg-surface-variant/80">
+         {/* Could add a banner image here later */}
+      </div>
+
+      {/* Profile Info */}
+      <div className="px-4 pb-4 border-b border-outline-variant/50 relative">
+        {/* Avatar and Follow Button Row */}
+        <div className="flex justify-between items-start mb-3">
+          <div className="w-[134px] h-[134px] rounded-full border-4 border-surface bg-surface-container-high overflow-hidden -mt-[67px] flex items-center justify-center relative z-10">
+             {author.image ? (
+                <img src={author.image} alt={author.name} className="w-full h-full object-cover" />
+             ) : (
+                <div className="w-full h-full font-bold text-4xl text-on-surface flex items-center justify-center">{author.name?.charAt(0)}</div>
+             )}
+          </div>
+          <div className="pt-3">
+             <button
+               onClick={handleFollow}
+               disabled={followLoading}
+               className={`px-4 py-1.5 rounded-full font-bold text-[15px] transition-colors ${
+                 isFollowing
+                   ? 'bg-transparent border border-outline-variant text-on-surface hover:border-red-500 hover:text-red-500 hover:bg-red-500/10'
+                   : 'bg-on-surface text-surface hover:bg-on-surface/90'
+               }`}
+             >
+               {isFollowing ? 'Following' : 'Follow'}
+             </button>
+          </div>
+        </div>
+
+        {/* Bio Section */}
+        <div className="mb-3">
+           <h1 className="text-xl font-bold text-on-surface flex items-center gap-1">
+             {author.name}
+             {author.isVerifiedAuthor && (
+                <svg viewBox="0 0 24 24" aria-label="Verified account" className="w-[18px] h-[18px] fill-primary"><g><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.918-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.337 2.25c-.416-.165-.866-.25-1.336-.25-2.21 0-3.918 1.792-3.918 4 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.46.74 2.746 1.865 3.45-.164.446-.252.93-.252 1.45 0 2.21 1.71 4 3.918 4 .503 0 .984-.095 1.428-.266 1.053 1.252 2.628 2.066 4.34 2.066 1.714 0 3.287-.814 4.34-2.066.445.17.925.265 1.428.265 2.21 0 3.918-1.792 3.918-4 0-.52-.088-1.004-.252-1.45 1.125-.705 1.865-1.99 1.865-3.45zm-10.153 6.015l-4.5-4.5 1.815-1.815 2.685 2.685 7.185-7.185 1.815 1.815-9 9z"></path></g></svg>
+             )}
+           </h1>
+           <p className="text-[15px] text-on-surface-variant flex items-center gap-1">
+              @{author.name?.toLowerCase().replace(/\s+/g, '')}
+              {isBot && (
+                <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold rounded">BOT</span>
+              )}
+           </p>
+        </div>
+
+        <p className="text-[15px] text-on-surface mb-3 whitespace-pre-wrap">
+           {isBot
+             ? `Automated intelligence gathering. Focused on ${posts[0]?.category || 'News'}.`
+             : `Independent Journalist & Researcher.`}
+        </p>
+
+        <div className="flex items-center gap-4 text-[15px] text-on-surface-variant mb-4">
+           {author.createdAt && (
+             <div className="flex items-center gap-1">
+               <Calendar size={16} />
+               <span>Joined {new Date(author.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+             </div>
+           )}
+        </div>
+
+        <div className="flex items-center gap-5 text-[15px]">
+           <div className="flex items-center gap-1 hover:underline cursor-pointer">
+              <span className="font-bold text-on-surface">123</span>
+              <span className="text-on-surface-variant">Following</span>
+           </div>
+           <div className="flex items-center gap-1 hover:underline cursor-pointer">
+              <span className="font-bold text-on-surface">{author.followersCount || 0}</span>
+              <span className="text-on-surface-variant">Followers</span>
+           </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-outline-variant/50">
+         <div className="flex-1 text-center py-4 hover:bg-surface-variant/30 cursor-pointer relative">
+            <span className="font-bold text-[15px] text-on-surface">Posts</span>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-primary rounded-full" />
+         </div>
+         <div className="flex-1 text-center py-4 hover:bg-surface-variant/30 cursor-pointer">
+            <span className="font-medium text-[15px] text-on-surface-variant">Replies</span>
+         </div>
+         <div className="flex-1 text-center py-4 hover:bg-surface-variant/30 cursor-pointer">
+            <span className="font-medium text-[15px] text-on-surface-variant">Media</span>
          </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-5 -mt-12">
-         <div className="flex flex-col md:flex-row gap-8 items-start">
-            {/* Sidebar / Profile Info */}
-            <div className="w-full md:w-80 shrink-0 space-y-6">
-               <div className="bg-surface-container-low border border-outline-variant p-8 shadow-sm">
-                  <div className="w-24 h-24 bg-surface-container-high rounded-full border-4 border-surface-container-lowest mb-6 flex items-center justify-center text-3xl font-display font-black text-primary/40 overflow-hidden">
-                     {author.image ? <img src={author.image} alt="" className="w-full h-full object-cover" /> : author.name[0]}
+      {/* Feed */}
+      <div className="flex flex-col">
+         {posts.map((post) => (
+            <Link
+                key={post._id}
+                href={`/post/${post._id}`}
+                prefetch={true}
+                className="group block bg-surface border-b border-outline-variant/50 hover:bg-surface-variant/20 transition-colors duration-200 p-4"
+              >
+              <div className="flex gap-3">
+                {/* Avatar */}
+                <div className="w-10 h-10 shrink-0 rounded-full bg-surface-variant overflow-hidden flex items-center justify-center">
+                   <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">{author.name?.charAt(0)}</div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  {/* Top row */}
+                  <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                    <span className="font-bold text-[15px] text-on-surface hover:underline">
+                      {author.name}
+                    </span>
+                    {author.isVerifiedAuthor && (
+                        <svg viewBox="0 0 24 24" aria-label="Verified account" className="w-[16px] h-[16px] fill-primary shrink-0"><g><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.918-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.337 2.25c-.416-.165-.866-.25-1.336-.25-2.21 0-3.918 1.792-3.918 4 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.46.74 2.746 1.865 3.45-.164.446-.252.93-.252 1.45 0 2.21 1.71 4 3.918 4 .503 0 .984-.095 1.428-.266 1.053 1.252 2.628 2.066 4.34 2.066 1.714 0 3.287-.814 4.34-2.066.445.17.925.265 1.428.265 2.21 0 3.918-1.792 3.918-4 0-.52-.088-1.004-.252-1.45 1.125-.705 1.865-1.99 1.865-3.45zm-10.153 6.015l-4.5-4.5 1.815-1.815 2.685 2.685 7.185-7.185 1.815 1.815-9 9z"></path></g></svg>
+                    )}
+                    <span className="text-[15px] text-on-surface-variant truncate max-w-[100px] sm:max-w-[200px]">
+                      @{author.name?.toLowerCase().replace(/\s+/g, '')}
+                    </span>
+                    <span className="text-[15px] text-on-surface-variant">·</span>
+                    <span className="text-[15px] text-on-surface-variant hover:underline">{timeAgo(post.createdAt)}</span>
                   </div>
-                  
-                  <h1 className="font-display text-2xl font-black text-on-surface flex items-center gap-2">
-                     {author.name}
-                     {author.email?.includes('@lettr.ai') ? (
-                       <span className="font-label text-[8px] px-1.5 py-0.5 bg-primary/10 text-primary font-bold tracking-widest rounded-sm">BOT</span>
-                     ) : author.isVerifiedAuthor ? (
-                       <>
-                         <span className="font-label text-[8px] px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 font-bold tracking-widest rounded-sm">AUTHOR</span>
-                         <Shield size={18} className="text-emerald-500" />
-                       </>
-                     ) : null}
-                  </h1>
-                  <p className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/40 mt-1 mb-6">
-                     @{author.name.replace(/\s+/g, '').toLowerCase()}
+
+                  {/* Headline and Body */}
+                  <h3 className="text-[15px] font-bold text-on-surface leading-snug mb-1">
+                    {post.headline}
+                  </h3>
+                  <p className="text-[15px] text-on-surface leading-normal mb-3 whitespace-pre-wrap">
+                    {post.description}
                   </p>
 
-                  <div className="space-y-4 pt-6 border-t border-outline-variant/30">
-                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-on-surface-variant/60">
-                           <Users size={14} />
-                           <span className="font-label text-xs">Followers</span>
+                  {/* Media */}
+                  {(post.imageUrl || post.videoUrl) && (
+                    <div className="mt-2 mb-3 rounded-2xl overflow-hidden border border-outline-variant/50 relative bg-surface-container-low max-h-[400px]">
+                      {post.imageUrl && !post.videoUrl && (
+                        <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+                      )}
+                      {post.videoUrl && (
+                        <div className="w-full relative h-full pointer-events-none">
+                           <DynamicPlayer src={post.videoUrl} />
                         </div>
-                        <span className="font-display font-bold text-on-surface">{author.followersCount || 0}</span>
-                     </div>
-                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-on-surface-variant/60">
-                           <Award size={14} />
-                           <span className="font-label text-xs">Credibility</span>
-                        </div>
-                        <span className={`font-display font-bold ${author.avgScore > 80 ? 'text-emerald-500' : 'text-primary'}`}>
-                           {author.avgScore}%
-                        </span>
-                     </div>
-                  </div>
-
-                  <button 
-                    onClick={handleFollow}
-                    disabled={followLoading || (session?.user as any)?.email === author.email}
-                    className={`w-full mt-8 h-12 font-label text-[10px] uppercase tracking-[0.2em] font-bold transition-all shadow-md ${
-                       isFollowing 
-                       ? 'border border-outline-variant text-on-surface-variant hover:bg-surface-container-high' 
-                       : 'bg-primary text-on-primary hover:bg-primary/90 shadow-primary/10'
-                    } disabled:opacity-50`}
-                  >
-                     {followLoading ? '...' : isFollowing ? 'Unfollow' : 'Follow Author'}
-                  </button>
-               </div>
-
-               <div className="bg-surface-container-low border border-outline-variant p-6 text-[11px] text-on-surface-variant/50 space-y-3 font-label tracking-widest">
-                  {author.categories && author.categories.length > 0 && (
-                     <div className="pb-3 border-b border-outline-variant/30 mb-3">
-                        <span className="block text-[9px] uppercase text-on-surface-variant/40 mb-2">Top Categories Covered</span>
-                        <div className="flex flex-wrap gap-2">
-                           {author.categories.map((cat: string) => (
-                             <span key={cat} className="px-2 py-1 bg-surface-container-high text-[9px] text-on-surface-variant rounded-sm">{cat}</span>
-                           ))}
-                        </div>
-                     </div>
+                      )}
+                    </div>
                   )}
-                  <div className="flex items-center gap-2">
-                     <Calendar size={12} />
-                     JOINED {new Date(author.createdAt).toLocaleDateString()}
+
+                   {/* Bottom Actions */}
+                  <div className="flex items-center justify-between text-on-surface-variant max-w-md mt-1">
+                     <div className="flex items-center gap-2 group/btn"><div className="p-2"><Shield size={16} className={post.factScore >= 80 ? 'text-emerald-500' : 'text-amber-500'}/></div><span className="text-[13px]">{post.factScore}</span></div>
+                     <div className="flex items-center gap-2 group/btn"><div className="p-2"><Heart size={16} /></div><span className="text-[13px]">{post.engagement || 0}</span></div>
                   </div>
-               </div>
-            </div>
-
-            {/* Main Content / Posts */}
-            <div className="flex-1 w-full space-y-10">
-               <div className="border-b border-outline-variant pb-4 flex items-center justify-between">
-                  <h2 className="font-display text-sm uppercase tracking-[0.3em] text-on-surface font-black">Published Reports</h2>
-                  <span className="font-label text-[10px] text-on-surface-variant/40">{posts.length} ARTICLES</span>
-               </div>
-
-               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {posts.length > 0 ? posts.map((post) => (
-                    <Link href={`/post/${post._id}`} prefetch={true} key={post._id} className="group relative block w-full aspect-[4/5] overflow-hidden bg-surface-container-high border border-outline-variant hover:border-primary/50 transition-colors">
-                       {/* Media Background */}
-                       {post.videoUrl ? (
-                          <div className="absolute inset-0 w-full h-full grayscale group-hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-100">
-                             <video src={post.videoUrl} autoPlay loop muted playsInline className="w-full h-full object-cover pointer-events-none" />
-                          </div>
-                       ) : post.imageUrl ? (
-                          <img src={post.imageUrl} className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 scale-105 group-hover:scale-100" alt="" />
-                       ) : (
-                          <div className="absolute inset-0 w-full h-full flex flex-col justify-center items-center text-on-surface-variant/10">
-                            <span className="font-display text-4xl font-black">LETTR</span>
-                          </div>
-                       )}
-
-                       {/* Vignette Overlay */}
-                       <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a]/95 via-[#0a0a0a]/50 to-transparent group-hover:from-[#0a0a0a]/90 transition-colors" />
-
-                       {/* Content Overlay */}
-                       <div className="absolute inset-0 p-5 flex flex-col justify-end">
-                          <div className="flex items-center gap-2 mb-3">
-                             <div className="flex items-center gap-1 px-1.5 py-0.5 bg-black/50 backdrop-blur-md rounded border border-white/10">
-                                <Shield size={10} className={post.factScore >= 80 ? 'text-emerald-400' : 'text-amber-400'} />
-                                <span className={`font-display text-[10px] font-black ${post.factScore >= 80 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                                  {post.factScore}%
-                                </span>
-                             </div>
-                             <span className="font-label text-[9px] uppercase tracking-widest text-white/70">
-                                {post.category}
-                             </span>
-                          </div>
-                          
-                          <h3 className="font-display text-lg font-bold text-white/90 group-hover:text-white transition-colors leading-snug line-clamp-4">
-                             {post.headline}
-                          </h3>
-                       </div>
-                    </Link>
-                  )) : (
-                     <div className="col-span-full py-20 text-center border border-dashed border-outline-variant/40 rounded-sm">
-                        <p className="font-body text-sm text-on-surface-variant/40">This author hasn't published any reports yet.</p>
-                     </div>
-                  )}
-               </div>
-            </div>
-         </div>
+                </div>
+              </div>
+            </Link>
+         ))}
       </div>
     </div>
   );
