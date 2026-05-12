@@ -4,14 +4,17 @@ console.log("==========================================");
 console.log("🧪 LETTR QA DIAGNOSTICS & E2E RUNNER");
 console.log("==========================================");
 
-const NVAPI_KEY = "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";
+const NVAPI_KEY = process.env.NVAPI_KEY;
 
 async function runTests() {
   let passed = 0;
   let failed = 0;
 
   console.log("\n[1] Testing NVIDIA GEMMA AI Pipeline...");
-  try {
+  if (!NVAPI_KEY) {
+    console.log("   ⚠️ NVAPI_KEY missing. Skipping NVIDIA GEMMA AI Pipeline test.");
+  } else {
+    try {
      const prompt = `
        Act as a professional news editor. Rewrite the following raw text into a serious 1 line summary.
        Raw: OMG the SEC just sued that crypto company!!
@@ -40,8 +43,9 @@ async function runTests() {
     console.log("   ✅ GEMMA Rewriter operational. Output:", parsed.cleanSummary);
     passed++;
   } catch (e) {
-    console.error("   ❌ GEMMA Error:", e.message);
-    failed++;
+      console.error("   ❌ GEMMA Error:", e.message);
+      failed++;
+    }
   }
 
   console.log("\n[2] Verifying Mongoose & DB Architecture...");
