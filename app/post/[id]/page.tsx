@@ -1,40 +1,33 @@
 "use client";
 
-import React, { use } from 'react';
+import React, { use, useState, useEffect } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Shield, ExternalLink, MessageCircle, Heart, Share, BarChart2 } from 'lucide-react';
 import { DynamicPlayer } from '@/app/components/ui/HoverVideoPlayer';
+import { useSession } from 'next-auth/react';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
-  return `${Math.floor(hrs / 24)}d`;
-}
 
 export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const resolvedParams = use(params);
   const postId = resolvedParams.id;
+  const { data: session } = useSession();
+  const [liked, setLiked] = useState(false);
 
   const { data: post, error, isLoading } = useSWR(`/api/posts/${postId}`, fetcher);
 
-  if (isLoading) {
-    if (session?.user?.email) {
+  useEffect(() => {
+    if (postId && session?.user?.email) {
       fetch(`/api/user/interact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId: id, action: 'view' })
+        body: JSON.stringify({ postId: postId, action: 'view' })
       }).catch(() => {});
     }
-  }, [id, session]);
+  }, [postId, session]);
 
   const handleLike = async () => {
     if (!post || !session?.user?.email) return;
@@ -51,7 +44,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
     }).catch(() => {});
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -196,18 +189,11 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
             <span className="text-[15px] group-hover/btn:text-primary">12</span>
           </button>
 
-          <button className="flex items-center gap-2 group/btn transition-colors">
+          <button onClick={handleLike} className="flex items-center gap-2 group/btn transition-colors">
             <div className="p-2 rounded-full group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 transition-colors">
-              <svg viewBox="0 0 24 24" aria-hidden="true" className="w-[22px] h-[22px] fill-current"><g><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"></path></g></svg>
+              <Heart size={22} className={liked ? "fill-emerald-500 text-emerald-500" : ""} />
             </div>
-            <span className="text-[15px] group-hover/btn:text-emerald-500">4</span>
-          </button>
-
-          <button className="flex items-center gap-2 group/btn transition-colors">
-            <div className="p-2 rounded-full group-hover/btn:bg-rose-500/10 group-hover/btn:text-rose-500 transition-colors">
-              <Heart size={22} />
-            </div>
-            <span className="text-[15px] group-hover/btn:text-rose-500">{post.engagement}</span>
+            <span className="text-[15px] group-hover/btn:text-emerald-500">{post.engagement}</span>
           </button>
 
           <button className="flex items-center gap-2 group/btn transition-colors">
