@@ -11,6 +11,10 @@
     "daemon": "tsx daemon.ts"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/lora": "^5.2.8",
+    "@fontsource/merriweather": "^5.2.11",
+    "@fontsource/playfair-display": "^5.2.8",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.103.3",
     "@types/bcryptjs": "^2.4.6",

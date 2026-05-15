@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-display: var(--font-newsreader);
-  --font-body: var(--font-work-sans);
-  --font-label: var(--font-public-sans);
+  --font-display: var(--font-playfair);
+  --font-body: var(--font-lora);
+  --font-label: var(--font-inter);
 
   /* Color tokens — will be overridden by dark class */
   --color-surface: var(--surface);
@@ -23,63 +23,63 @@
   --color-on-primary-container: var(--on-primary-container);
   
   --color-secondary: var(--secondary);
-  --color-accent: #22c55e;
+  --color-accent: #b91c1c; /* a classic deep red accent */
 }
 
-/* ===== LIGHT MODE (DEFAULT) ===== */
+/* ===== LIGHT MODE (Vintage NYT / Magazine) ===== */
 :root {
-  --surface: #fafbfc;
-  --surface-container-low: #f4f5f7;
+  --surface: #fdfbf7;
+  --surface-container-low: #f5f3ee;
   --surface-container-lowest: #ffffff;
-  --surface-container-high: #ebedef;
-  --surface-container-highest: #e2e4e6;
-  --surface-variant: #e8eaec;
+  --surface-container-high: #eae8e1;
+  --surface-container-highest: #dfddd4;
+  --surface-variant: #e6e4dc;
   
-  --on-surface: #141718;
-  --on-surface-variant: #4a5055;
-  --outline-variant: #d1d5db;
+  --on-surface: #1a1a1a;
+  --on-surface-variant: #4a4a4a;
+  --outline-variant: #d1cfc8;
   
-  --primary: #0a2e33;
-  --primary-container: #143d42;
+  --primary: #111111;
+  --primary-container: #222222;
   --on-primary: #ffffff;
-  --on-primary-container: #88b5bb;
+  --on-primary-container: #aaaaaa;
   
-  --secondary: #4b6570;
+  --secondary: #5a5a5a;
 }
 
-/* ===== DARK MODE ===== */
+/* ===== DARK MODE (Elegant Dark Magazine) ===== */
 .dark {
-  --surface: #0b0f14;
-  --surface-container-low: #121821;
-  --surface-container-lowest: #161d28;
-  --surface-container-high: #1c2333;
-  --surface-container-highest: #232a3a;
-  --surface-variant: #1a2030;
+  --surface: #121212;
+  --surface-container-low: #181818;
+  --surface-container-lowest: #0a0a0a;
+  --surface-container-high: #242424;
+  --surface-container-highest: #2a2a2a;
+  --surface-variant: #2a2a2a;
   
-  --on-surface: #e5e7eb;
-  --on-surface-variant: #9ca3af;
-  --outline-variant: #1f2937;
+  --on-surface: #e4e2dd;
+  --on-surface-variant: #a1a1aa;
+  --outline-variant: #3f3f46;
   
-  --primary: #7ec8d0;
-  --primary-container: #1a3a40;
-  --on-primary: #0b0f14;
-  --on-primary-container: #a0d5db;
+  --primary: #e4e2dd;
+  --primary-container: #ffffff;
+  --on-primary: #121212;
+  --on-primary-container: #121212;
   
-  --secondary: #8ab0be;
+  --secondary: #a1a1aa;
 }
 
 body {
   background: var(--surface);
   color: var(--on-surface);
-  font-family: var(--font-body), system-ui, sans-serif;
+  font-family: var(--font-body), system-ui, serif;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-::selection { background: rgba(10, 46, 51, 0.15); }
-.dark ::selection { background: rgba(126, 200, 208, 0.25); }
+::selection { background: rgba(17, 17, 17, 0.15); }
+.dark ::selection { background: rgba(228, 226, 221, 0.25); }
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }

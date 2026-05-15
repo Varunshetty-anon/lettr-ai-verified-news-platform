@@ -219,7 +219,7 @@ export default function PublishPage() {
 
                 <div className="p-5 bg-surface-container-high border border-outline-variant/40">
                   <p className="font-label text-[9px] text-primary uppercase tracking-widest block mb-3 font-bold">AI Verification Summary</p>
-                  <p className="font-body text-sm text-on-surface-variant italic leading-relaxed">"{result.factSummary}"</p>
+                  <p className="font-body text-sm text-on-surface-variant italic leading-relaxed">&quot;{result.factSummary}&quot;</p>
                 </div>
 
                 <button 
@@ -241,7 +241,7 @@ export default function PublishPage() {
                    <span className="font-label text-[9px] uppercase tracking-widest text-red-600/60 block mb-1">Fact Score</span>
                    <span className="font-display text-3xl font-black text-red-500">{result.factScore}%</span>
                 </div>
-                <p className="font-body text-sm text-on-surface-variant/80 italic leading-relaxed">"{result.factSummary}"</p>
+                <p className="font-body text-sm text-on-surface-variant/80 italic leading-relaxed">&quot;{result.factSummary}&quot;</p>
                 <p className="text-xs text-on-surface-variant/60">Journalistic integrity threshold not met. Please review your sources and try again.</p>
               </div>
             )}

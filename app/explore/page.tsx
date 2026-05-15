@@ -64,7 +64,7 @@ export default function Explore() {
 
   useEffect(() => {
     if (!activeCategory) return;
-    setLoading(true);
+    setTimeout(() => setLoading(true), 0);
     fetch(`/api/posts?category=${encodeURIComponent(activeCategory)}&sort=${activeSort}`)
       .then(res => res.json())
       .then(data => { setPosts(data.posts || []); setLoading(false); })
@@ -180,9 +180,9 @@ export default function Explore() {
           )}
 
           {!loading && posts.length > 0 && (
-            <div className="grid grid-cols-1 gap-6">
+            <div className="columns-1 sm:columns-2 gap-4 space-y-4 pb-4">
               {posts.map(post => (
-                <Link key={post._id} href={`/post/${post._id}`} className="group block p-6 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all shadow-sm animate-fade-in relative overflow-hidden">
+                <Link key={post._id} href={`/post/${post._id}`} className="group block p-6 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all shadow-sm animate-fade-in relative overflow-hidden rounded-sm break-inside-avoid">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       {post.author && (

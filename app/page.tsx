@@ -65,7 +65,7 @@ export default function Home() {
   // Redirect new users to onboarding
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.email) {
-      fetch(`/api/user/preferences?email=${encodeURIComponent(session.user.email)}`)
+      fetch(`/api/user/preferences`)
         .then(r => r.json())
         .then(data => {
           if (!data.preferences || data.preferences.length === 0) {
@@ -76,8 +76,7 @@ export default function Home() {
     }
   }, [session, status, router]);
 
-  const email = session?.user?.email || '';
-  const apiUrl = `/api/posts${email ? `?email=${encodeURIComponent(email)}` : ''}`;
+  const apiUrl = `/api/posts`;
   
   const { data, error, isLoading, mutate } = useSWR(apiUrl, fetcher, { 
     refreshInterval: 0, // Disabled auto background refresh to prevent jumpy UX
@@ -91,26 +90,26 @@ export default function Home() {
   useEffect(() => {
     if (data?.posts) {
       if (displayPosts.length === 0) {
-        setDisplayPosts(data.posts);
+        setTimeout(() => setDisplayPosts(data.posts), 0);
       } else {
         const currentTopId = displayPosts[0]?._id;
         const newTopId = data.posts[0]?._id;
         if (currentTopId && newTopId && currentTopId !== newTopId) {
-          setHasNewPosts(true);
+          setTimeout(() => setHasNewPosts(true), 0);
         }
       }
 
-      setLikedIds(prev => {
+      setTimeout(() => setLikedIds(prev => {
         const next = new Set(prev);
         data.posts.forEach((p: PostData) => { if (p.isLiked) next.add(p._id); });
         return next;
-      });
+      }), 0);
     }
   }, [data]);
 
   const loadNewPosts = () => {
     if (data?.posts) {
-      setDisplayPosts(data.posts);
+      setTimeout(() => setDisplayPosts(data.posts), 0);
       setHasNewPosts(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -140,7 +139,7 @@ export default function Home() {
     await fetch(`/api/user/interact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, postId, action: isLiked ? 'unlike' : 'like' })
+      body: JSON.stringify({ postId, action: isLiked ? 'unlike' : 'like' })
     }).catch(() => {});
   };
 
@@ -190,108 +189,131 @@ export default function Home() {
       )}
 
       {!loading && posts.length > 0 && (
-        <div className="flex flex-col gap-2.5 p-4">
+        <div className="columns-1 sm:columns-2 gap-4 space-y-4 pb-4">
           {posts.map((post) => (
             <ImpressTracker key={post._id} postId={post._id}>
               <Link
                 href={`/post/${post._id}`}
                 prefetch={true}
-                className="group block bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all duration-200 animate-fade-in"
+                className="group block bg-surface border border-outline-variant hover:border-primary/30 hover:shadow-md transition-all duration-300 animate-fade-in p-5 rounded-sm break-inside-avoid"
               >
-              {/* Media thumbnail */}
-              {post.imageUrl && (
-                <div className="w-full overflow-hidden border-b border-outline-variant/30">
-                  <img src={post.imageUrl} alt="" loading="lazy" className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-300" style={{ maxHeight: '300px' }} />
+              <div className="flex gap-3">
+                {/* Left side: Avatar */}
+                <div className="w-8 h-8 shrink-0 rounded-sm bg-surface-variant overflow-hidden flex items-center justify-center border border-outline-variant/50">
+                  {post.author ? (
+                     <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">{post.author.name?.charAt(0)}</div>
+                  ) : (
+                     <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">?</div>
+                  )}
                 </div>
-              )}
-              {post.videoUrl && (
-                <HoverVideoPlayer src={post.videoUrl} />
-              )}
 
-              <div className="p-5">
-                {/* Top row: author + score badge */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 flex-wrap">
+                {/* Right side: Content */}
+                <div className="flex-1 min-w-0">
+                  {/* Top row: Name, Handle, Time, Badges */}
+                  <div className="flex items-center gap-2 flex-wrap mb-3 border-b border-outline-variant/30 pb-2">
                     {post.author && (
-                      <div className="flex items-center gap-1.5">
-                        <Link 
-                          href={`/author/${post.author._id}`}
-                          prefetch={true}
-                          onClick={(e) => e.stopPropagation()}
-                          className="font-label text-xs font-medium text-on-surface hover:text-primary transition-colors hover:underline decoration-outline-variant/30 underline-offset-2"
-                        >
-                          {post.author.name}
-                        </Link>
-                        {post.author.email?.includes('@lettr.ai') ? (
-                          <span className="font-label text-[8px] px-1.5 py-0.5 bg-primary/10 text-primary font-bold tracking-widest rounded-sm">BOT</span>
-                        ) : post.author.isVerifiedAuthor ? (
-                          <>
-                            <span className="font-label text-[8px] px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 font-bold tracking-widest rounded-sm">AUTHOR</span>
-                            <CheckCircle size={12} className="text-emerald-500" />
-                          </>
-                        ) : null}
+                      <a href={`/author/${post.author._id}`} onClick={(e) => e.stopPropagation()} className="font-bold text-[15px] text-on-surface hover:underline">{post.author.name}</a>
+                    )}
+                    {post.author?.isVerifiedAuthor && (
+                        <svg viewBox="0 0 24 24" aria-label="Verified account" className="w-[16px] h-[16px] fill-primary shrink-0"><g><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.918-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.337 2.25c-.416-.165-.866-.25-1.336-.25-2.21 0-3.918 1.792-3.918 4 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.46.74 2.746 1.865 3.45-.164.446-.252.93-.252 1.45 0 2.21 1.71 4 3.918 4 .503 0 .984-.095 1.428-.266 1.053 1.252 2.628 2.066 4.34 2.066 1.714 0 3.287-.814 4.34-2.066.445.17.925.265 1.428.265 2.21 0 3.918-1.792 3.918-4 0-.52-.088-1.004-.252-1.45 1.125-.705 1.865-1.99 1.865-3.45zm-10.153 6.015l-4.5-4.5 1.815-1.815 2.685 2.685 7.185-7.185 1.815 1.815-9 9z"></path></g></svg>
+                    )}
+                    {post.author && (
+                      <span className="text-[15px] text-on-surface-variant truncate max-w-[100px] sm:max-w-[200px]">
+                        @{post.author.name?.toLowerCase().replace(/\s+/g, '')}
+                      </span>
+                    )}
+                    <span className="text-[15px] text-on-surface-variant">·</span>
+                    <span className="text-[15px] text-on-surface-variant hover:underline">{timeAgo(post.createdAt)}</span>
+
+                    {post.author?.email?.includes('@lettr.ai') && (
+                        <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold rounded">BOT</span>
+                    )}
+                  </div>
+
+                  {/* Content: Headline and Body */}
+                  <h3 className="font-display text-2xl font-black text-on-surface leading-tight mb-2 group-hover:text-primary transition-colors">
+                    {post.headline}
+                  </h3>
+                  <p className="font-body text-base text-on-surface-variant/90 leading-relaxed mb-4 whitespace-pre-wrap">
+                    {post.description}
+                  </p>
+
+                  {/* Media */}
+                  {(post.imageUrl || post.videoUrl) && (
+                    <div className="mt-4 mb-4 overflow-hidden border border-outline-variant/50 relative bg-surface-container-low max-h-[400px]">
+                      {post.imageUrl && !post.videoUrl && (
+                        <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+                      )}
+                      {post.videoUrl && (
+                        <div className="w-full relative h-full">
+                           <HoverVideoPlayer src={post.videoUrl} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Community Note Integration */}
+                  <div className="mt-4 mb-4 bg-surface-container-low p-4 border-l-4 border-l-primary/40 relative">
+                     <div className="flex items-start gap-2">
+                        <Shield size={16} className={post.factScore >= 80 ? 'text-emerald-500 mt-0.5' : post.factScore >= 60 ? 'text-amber-500 mt-0.5' : 'text-red-500 mt-0.5'} />
+                        <div className="flex-1">
+                           <p className="text-[13px] font-bold text-on-surface mb-0.5">
+                             Readers added context they thought people might want to know
+                           </p>
+                           {post.reasoning && (
+                             <p className="text-[13px] text-on-surface-variant leading-relaxed">
+                               {post.reasoning}
+                             </p>
+                           )}
+                           <div className="mt-2 flex items-center justify-between">
+                              <span className="text-[12px] text-on-surface-variant/70 font-medium border border-outline-variant/50 rounded-full px-2 py-0.5">
+                                AI Fact Score: {post.factScore}/100
+                              </span>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Bottom Actions */}
+                  <div className="flex items-center justify-between text-on-surface-variant max-w-md mt-1">
+                    <button className="flex items-center gap-2 group/btn transition-colors">
+                      <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><g><path d="M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01zm8.005-6c-3.317 0-6.005 2.69-6.005 6 0 3.37 2.77 6.08 6.138 6.01l.351-.01h1.761v2.3l5.087-2.81c1.951-1.08 3.163-3.13 3.163-5.36 0-3.39-2.744-6.13-6.129-6.13H9.756z"></path></g></svg>
                       </div>
-                    )}
-                    <span className="text-outline-variant">·</span>
-                    <span className="font-label text-[10px] text-on-surface-variant/50">{timeAgo(post.createdAt)}</span>
-                    {post.category && (
-                      <>
-                        <span className="text-outline-variant">·</span>
-                        <span className="font-label text-[10px] text-primary/60 uppercase tracking-wider">{post.category}</span>
-                      </>
-                    )}
-                  </div>
+                      <span className="text-[13px] group-hover/btn:text-primary">12</span>
+                    </button>
 
-                  {/* Small fact score badge */}
-                  <div className={`flex items-center gap-1 px-2 py-1 border text-xs font-bold font-display ${
-                    post.factScore >= 80 
-                      ? 'border-emerald-300/30 text-emerald-600 dark:text-emerald-400 dark:border-emerald-700/30' 
-                      : post.factScore >= 60 
-                        ? 'border-amber-300/30 text-amber-600 dark:text-amber-400 dark:border-amber-700/30' 
-                        : 'border-red-300/30 text-red-600 dark:text-red-400 dark:border-red-700/30'
-                  }`}>
-                    <Shield size={10} />
-                    {post.factScore}
-                  </div>
-                </div>
+                    <button className="flex items-center gap-2 group/btn transition-colors">
+                      <div className="p-2 rounded-full group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 transition-colors">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><g><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"></path></g></svg>
+                      </div>
+                      <span className="text-[13px] group-hover/btn:text-emerald-500">4</span>
+                    </button>
 
-                {/* Headline */}
-                <h3 className="font-display text-lg font-bold text-on-surface leading-snug mb-2 group-hover:text-primary transition-colors">
-                  {post.headline}
-                </h3>
-
-                {/* Description — show more lines */}
-                <p className="font-body text-sm text-on-surface-variant leading-relaxed line-clamp-3 mb-3">
-                  {post.description}
-                </p>
-
-                {/* Bottom row: actions */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {post.reasoning && (
-                      <span className="font-body text-[10px] text-on-surface-variant/40 italic truncate max-w-[220px]">
-                        AI: {post.reasoning}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {post.sourceLink && (
-                      <span className="font-label text-[10px] text-primary/50 flex items-center gap-1">
-                        <ExternalLink size={10} /> Source
-                      </span>
-                    )}
                     <button
                       onClick={(e) => toggleLike(post._id, e)}
-                      className="flex items-center gap-1 text-on-surface-variant/40 hover:text-red-500 transition-colors"
+                      className={`flex items-center gap-2 group/btn transition-colors ${likedIds.has(post._id) ? 'text-rose-500' : ''}`}
                     >
-                      <Heart size={14} fill={likedIds.has(post._id) ? 'currentColor' : 'none'} className={likedIds.has(post._id) ? 'text-red-500' : ''} />
-                      <span className="font-label text-[10px]">{post.engagement}</span>
+                      <div className="p-2 rounded-full group-hover/btn:bg-rose-500/10 group-hover/btn:text-rose-500 transition-colors">
+                        {likedIds.has(post._id) ? (
+                           <Heart size={20} fill="currentColor" className="text-rose-500" />
+                        ) : (
+                           <Heart size={20} />
+                        )}
+                      </div>
+                      <span className={`text-[13px] ${likedIds.has(post._id) ? '' : 'group-hover/btn:text-rose-500'}`}>{post.engagement}</span>
+                    </button>
+
+                    <button className="flex items-center gap-2 group/btn transition-colors">
+                      <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+                        <ExternalLink size={20} />
+                      </div>
                     </button>
                   </div>
                 </div>
               </div>
             </Link>
-          </ImpressTracker>
+            </ImpressTracker>
           ))}
         </div>
       )}
