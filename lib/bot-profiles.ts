@@ -28,7 +28,7 @@ export async function getVerifiedBots(): Promise<IUser[]> {
         dbBot = await User.create({
             name: bot.name,
             email: bot.email,
-            role: bot.role,
+            role: bot.role as 'READER' | 'AUTHOR',
             trustScore: bot.trustScore,
             isVerifiedAuthor: bot.isVerifiedAuthor,
             totalPosts: 0
