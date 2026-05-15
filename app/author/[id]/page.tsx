@@ -107,7 +107,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
         <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-surface-variant transition-colors">
           <ArrowLeft size={20} className="text-on-surface" />
         </button>
-        <div className="columns-1 sm:columns-2 gap-4 space-y-4 pb-4 px-4 pt-4">
+        <div className="flex flex-col">
            <h1 className="text-xl font-bold text-on-surface leading-tight flex items-center gap-1">
              {author.name}
              {author.isVerifiedAuthor && (

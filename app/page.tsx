@@ -35,7 +35,7 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-import useSWR, { mutate } from 'swr';
+import useSWR from 'swr';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -212,7 +212,14 @@ export default function Home() {
                   {/* Top row: Name, Handle, Time, Badges */}
                   <div className="flex items-center gap-2 flex-wrap mb-3 border-b border-outline-variant/30 pb-2">
                     {post.author && (
-                      <a href={`/author/${post.author._id}`} onClick={(e) => e.stopPropagation()} className="font-bold text-[15px] text-on-surface hover:underline">{post.author.name}</a>
+                      <Link
+                        href={`/author/${post.author._id}`}
+                        prefetch={true}
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-bold text-[15px] text-on-surface hover:underline"
+                      >
+                        {post.author.name}
+                      </Link>
                     )}
                     {post.author?.isVerifiedAuthor && (
                         <svg viewBox="0 0 24 24" aria-label="Verified account" className="w-[16px] h-[16px] fill-primary shrink-0"><g><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.918-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.337 2.25c-.416-.165-.866-.25-1.336-.25-2.21 0-3.918 1.792-3.918 4 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.46.74 2.746 1.865 3.45-.164.446-.252.93-.252 1.45 0 2.21 1.71 4 3.918 4 .503 0 .984-.095 1.428-.266 1.053 1.252 2.628 2.066 4.34 2.066 1.714 0 3.287-.814 4.34-2.066.445.17.925.265 1.428.265 2.21 0 3.918-1.792 3.918-4 0-.52-.088-1.004-.252-1.45 1.125-.705 1.865-1.99 1.865-3.45zm-10.153 6.015l-4.5-4.5 1.815-1.815 2.685 2.685 7.185-7.185 1.815 1.815-9 9z"></path></g></svg>

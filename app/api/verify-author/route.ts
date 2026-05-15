@@ -42,8 +42,9 @@ export async function POST(req: Request) {
       isVerified
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Verification Error:", error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ error: errorMessage || 'Internal Server Error' }, { status: 500 });
   }
 }

@@ -1,14 +1,22 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import { User } from '@/models/User';
 import { Post } from '@/models/Post';
 
 export async function POST(request: Request) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const email = session.user.email;
+
   await dbConnect();
   try {
-    const { email, postId, action } = await request.json();
-    if (!email || !postId || !action) {
-      return NextResponse.json({ error: 'email, postId, action required' }, { status: 400 });
+    const { postId, action } = await request.json();
+    if (!postId || !action) {
+      return NextResponse.json({ error: 'postId, action required' }, { status: 400 });
     }
 
     // Fetch post to get its category for affinity tracking
@@ -48,7 +56,8 @@ export async function POST(request: Request) {
     );
 
     return NextResponse.json({ success: true });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : "An unknown error occurred";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

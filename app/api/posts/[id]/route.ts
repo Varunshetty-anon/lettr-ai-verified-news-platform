@@ -25,8 +25,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .limit(3)
       .lean();
 
-    const relatedHydrated = await Promise.all(related.map(async (r) => {
-      const rAuthor = await User.findById(r.authorId).lean();
+    const relatedAuthorIds = [...new Set(related.map(r => r.authorId?.toString()))].filter(Boolean);
+    const relatedAuthors = await User.find({ _id: { $in: relatedAuthorIds } }).lean();
+    const relatedAuthorMap = new Map(relatedAuthors.map(a => [(a._id as any).toString(), a]));
+
+    const relatedHydrated = related.map((r) => {
+      const rAuthor = relatedAuthorMap.get(r.authorId?.toString());
       return {
         _id: (r._id as any).toString(),
         headline: r.headline,
@@ -35,7 +39,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         createdAt: r.createdAt,
         author: rAuthor ? { name: rAuthor.name } : null,
       };
-    }));
+    });
 
     return NextResponse.json({
       post: {
@@ -71,7 +75,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       },
       related: relatedHydrated,
     }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

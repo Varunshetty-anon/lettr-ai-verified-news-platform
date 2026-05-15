@@ -12,7 +12,6 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
     const sort = searchParams.get('sort') || 'recent';
-    const email = searchParams.get('email');
 
     const filter: any = { isPublished: true };
     if (category) filter.category = category;
@@ -24,12 +23,9 @@ export async function GET(request: Request) {
     let userFollowing: string[] = [];
     let categoryAffinity: Record<string, number> = {};
 
-    // Try to get user from session or email param
-    let userEmail = email;
-    if (!userEmail) {
-      const session = await auth();
-      userEmail = session?.user?.email || null;
-    }
+    // Strictly get user from session
+    const session = await auth();
+    const userEmail = session?.user?.email || null;
 
     // Fetch user data for personalization
     if (userEmail) {
@@ -168,7 +164,8 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ posts: hydrated }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

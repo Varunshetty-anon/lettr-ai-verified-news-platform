@@ -199,8 +199,8 @@ Category: <Generate a highly specific, trending 1-3 word category based on the a
         const categoryMatch = outputText.match(/Category:\s*(.*)/i);
         
         if (headMatch) rewriteContent.cleanHeadline = headMatch[1].trim();
-        if (sumMatch) rewriteContent.cleanSummary = sumMatch[1].trim();
-        if (bodyMatch) rewriteContent.fullBody = bodyMatch[1].trim();
+        if (sumMatch) rewriteContent.cleanSummary = sumMatch[1].replace(/https?:\/\/[^\s]+/g, '').trim();
+        if (bodyMatch) rewriteContent.fullBody = bodyMatch[1].replace(/https?:\/\/[^\s]+/g, '').trim();
         if (sourceNoteMatch) rewriteContent.sourceNote = sourceNoteMatch[1].trim();
         if (categoryMatch) rewriteContent.dynamicCategory = categoryMatch[1].trim();
         
@@ -269,8 +269,9 @@ Category: <Generate a highly specific, trending 1-3 word category based on the a
 
     return NextResponse.json({ success: true, bot: randomBot.name, post: newPost }, { status: 201 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Bot Engine Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

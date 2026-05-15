@@ -1,14 +1,22 @@
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 import dbConnect from '@/lib/mongodb';
 import { User } from '@/models/User';
 
 // Save user preferences
 export async function POST(request: Request) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const email = session.user.email;
+
   await dbConnect();
   try {
-    const { email, preferences } = await request.json();
-    if (!email || !preferences) {
-      return NextResponse.json({ error: 'email and preferences required' }, { status: 400 });
+    const { preferences } = await request.json();
+    if (!preferences) {
+      return NextResponse.json({ error: 'preferences required' }, { status: 400 });
     }
     // Upsert — create user if not exists
     const user = await User.findOneAndUpdate(
@@ -17,18 +25,23 @@ export async function POST(request: Request) {
       { new: true, upsert: true }
     );
     return NextResponse.json({ success: true, preferences: user.preferences });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : "An unknown error occurred";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
 // Get user preferences
-export async function GET(request: Request) {
+export async function GET() {
+  const session = await auth();
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const email = session.user.email;
+
   await dbConnect();
   try {
-    const { searchParams } = new URL(request.url);
-    const email = searchParams.get('email');
-    if (!email) return NextResponse.json({ error: 'email required' }, { status: 400 });
     const user = await User.findOne({ email }).select('preferences likedPosts viewedPosts').lean();
     if (!user) return NextResponse.json({ preferences: [], likedPosts: [], viewedPosts: [] });
     return NextResponse.json({
@@ -36,7 +49,8 @@ export async function GET(request: Request) {
       likedPosts: (user.likedPosts || []).map((id: any) => id.toString()),
       viewedPosts: (user.viewedPosts || []).map((id: any) => id.toString()),
     });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : "An unknown error occurred";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
