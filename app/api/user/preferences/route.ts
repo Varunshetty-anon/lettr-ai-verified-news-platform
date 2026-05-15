@@ -25,8 +25,9 @@ export async function POST(request: Request) {
       { new: true, upsert: true }
     );
     return NextResponse.json({ success: true, preferences: user.preferences });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : "An unknown error occurred";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -48,7 +49,8 @@ export async function GET() {
       likedPosts: (user.likedPosts || []).map((id: any) => id.toString()),
       viewedPosts: (user.viewedPosts || []).map((id: any) => id.toString()),
     });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : "An unknown error occurred";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       isFollowing: !isFollowing 
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Follow Error:", error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

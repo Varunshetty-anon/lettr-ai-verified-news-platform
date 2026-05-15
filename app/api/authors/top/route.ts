@@ -35,7 +35,7 @@ export async function GET() {
       }))
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Top Authors Error:", error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

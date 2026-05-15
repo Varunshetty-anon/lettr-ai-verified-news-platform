@@ -55,7 +55,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       }))
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Author Fetch Error:", error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
