@@ -1,6 +1,6 @@
 import { test, describe, afterEach } from 'node:test';
 import assert from 'node:assert';
-import { verifyFact } from './ai-verification.ts';
+import { verifyFact } from './ai-verification';
 
 // Set up environment variable for testing
 process.env.GROQ_API_KEY = 'test-key';

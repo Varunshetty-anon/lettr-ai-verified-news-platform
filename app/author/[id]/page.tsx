@@ -92,7 +92,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
   if (!author) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <h2 className="text-xl font-bold text-on-surface mb-2">This account doesn't exist</h2>
+        <h2 className="text-xl font-bold text-on-surface mb-2">This account doesn&apos;t exist</h2>
         <p className="text-on-surface-variant mb-6">Try searching for another.</p>
       </div>
     );
@@ -119,7 +119,8 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* Banner */}
-      <div className="w-full h-[200px] bg-surface-variant/80">
+      <div className="w-full h-[250px] bg-primary/5 border-b border-outline-variant flex items-end justify-start px-8 pb-8 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/aged-paper.png')]" />
          {/* Could add a banner image here later */}
       </div>
 
@@ -127,7 +128,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
       <div className="px-4 pb-4 border-b border-outline-variant/50 relative">
         {/* Avatar and Follow Button Row */}
         <div className="flex justify-between items-start mb-3">
-          <div className="w-[134px] h-[134px] rounded-full border-4 border-surface bg-surface-container-high overflow-hidden -mt-[67px] flex items-center justify-center relative z-10">
+          <div className="w-[120px] h-[120px] border-4 border-surface bg-surface-container-high overflow-hidden -mt-[60px] flex items-center justify-center relative z-10 shadow-lg">
              {author.image ? (
                 <img src={author.image} alt={author.name} className="w-full h-full object-cover" />
              ) : (
@@ -151,7 +152,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
 
         {/* Bio Section */}
         <div className="mb-3">
-           <h1 className="text-xl font-bold text-on-surface flex items-center gap-1">
+           <h1 className="font-display text-4xl font-black text-on-surface flex items-center gap-2 tracking-tight">
              {author.name}
              {author.isVerifiedAuthor && (
                 <svg viewBox="0 0 24 24" aria-label="Verified account" className="w-[18px] h-[18px] fill-primary"><g><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.918-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.337 2.25c-.416-.165-.866-.25-1.336-.25-2.21 0-3.918 1.792-3.918 4 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.46.74 2.746 1.865 3.45-.164.446-.252.93-.252 1.45 0 2.21 1.71 4 3.918 4 .503 0 .984-.095 1.428-.266 1.053 1.252 2.628 2.066 4.34 2.066 1.714 0 3.287-.814 4.34-2.066.445.17.925.265 1.428.265 2.21 0 3.918-1.792 3.918-4 0-.52-.088-1.004-.252-1.45 1.125-.705 1.865-1.99 1.865-3.45zm-10.153 6.015l-4.5-4.5 1.815-1.815 2.685 2.685 7.185-7.185 1.815 1.815-9 9z"></path></g></svg>
@@ -207,24 +208,24 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* Feed */}
-      <div className="flex flex-col">
+      <div className="columns-1 sm:columns-2 gap-4 space-y-4 pb-4 px-4 pt-4">
          {posts.map((post) => (
             <Link
                 key={post._id}
                 href={`/post/${post._id}`}
                 prefetch={true}
-                className="group block bg-surface border-b border-outline-variant/50 hover:bg-surface-variant/20 transition-colors duration-200 p-4"
+                className="group block bg-surface border border-outline-variant hover:border-primary/30 hover:shadow-md transition-all duration-300 animate-fade-in p-5 rounded-sm break-inside-avoid"
               >
               <div className="flex gap-3">
                 {/* Avatar */}
-                <div className="w-10 h-10 shrink-0 rounded-full bg-surface-variant overflow-hidden flex items-center justify-center">
+                <div className="w-8 h-8 shrink-0 rounded-sm bg-surface-variant overflow-hidden flex items-center justify-center border border-outline-variant/50">
                    <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">{author.name?.charAt(0)}</div>
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   {/* Top row */}
-                  <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                  <div className="flex items-center gap-2 flex-wrap mb-3 border-b border-outline-variant/30 pb-2">
                     <span className="font-bold text-[15px] text-on-surface hover:underline">
                       {author.name}
                     </span>
@@ -239,16 +240,16 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
                   </div>
 
                   {/* Headline and Body */}
-                  <h3 className="text-[15px] font-bold text-on-surface leading-snug mb-1">
+                  <h3 className="font-display text-2xl font-black text-on-surface leading-tight mb-2 group-hover:text-primary transition-colors">
                     {post.headline}
                   </h3>
-                  <p className="text-[15px] text-on-surface leading-normal mb-3 whitespace-pre-wrap">
+                  <p className="font-body text-base text-on-surface-variant/90 leading-relaxed mb-4 whitespace-pre-wrap">
                     {post.description}
                   </p>
 
                   {/* Media */}
                   {(post.imageUrl || post.videoUrl) && (
-                    <div className="mt-2 mb-3 rounded-2xl overflow-hidden border border-outline-variant/50 relative bg-surface-container-low max-h-[400px]">
+                    <div className="mt-4 mb-4 overflow-hidden border border-outline-variant/50 relative bg-surface-container-low max-h-[400px]">
                       {post.imageUrl && !post.videoUrl && (
                         <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
                       )}

@@ -132,7 +132,7 @@ export default function VerifyAuthorPage() {
 
             <div className="p-5 bg-surface-container-high border border-outline-variant/40 mb-8 rounded-sm">
               <span className="font-label text-[10px] text-primary uppercase tracking-widest block mb-3">AI Verification Summary</span>
-              <p className="font-body text-sm text-on-surface/90 leading-relaxed italic">"{result.summary}"</p>
+              <p className="font-body text-sm text-on-surface/90 leading-relaxed italic">&quot;{result.summary}&quot;</p>
             </div>
 
             {result.isVerified ? (

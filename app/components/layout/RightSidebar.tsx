@@ -51,13 +51,13 @@ export function RightSidebar() {
 
       {/* Trending Box */}
       <div className="bg-surface-container-high rounded-2xl border border-outline-variant overflow-hidden mb-4">
-        <h2 className="font-bold text-xl px-4 py-3 text-on-surface">What's happening</h2>
+        <h2 className="font-bold text-xl px-4 py-3 text-on-surface">What&apos;s happening</h2>
 
         {trending.length > 0 ? trending.map((topic, i) => (
           <div key={i} className="px-4 py-3 hover:bg-surface-variant/50 cursor-pointer transition-colors">
             <p className="text-[13px] text-on-surface-variant">Trending in News</p>
             <p className="font-bold text-[15px] text-on-surface mt-0.5">{topic}</p>
-            <p className="text-[13px] text-on-surface-variant mt-0.5">{Math.floor(Math.random() * 50) + 10}K Reports</p>
+            <p className="text-[13px] text-on-surface-variant mt-0.5">{34}K Reports</p>
           </div>
         )) : (
           <div className="px-4 py-3 text-on-surface-variant text-sm">Loading trends...</div>

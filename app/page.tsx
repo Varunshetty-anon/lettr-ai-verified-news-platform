@@ -35,7 +35,7 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-import useSWR, { mutate } from 'swr';
+import useSWR from 'swr';
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -90,26 +90,26 @@ export default function Home() {
   useEffect(() => {
     if (data?.posts) {
       if (displayPosts.length === 0) {
-        setDisplayPosts(data.posts);
+        setTimeout(() => setDisplayPosts(data.posts), 0);
       } else {
         const currentTopId = displayPosts[0]?._id;
         const newTopId = data.posts[0]?._id;
         if (currentTopId && newTopId && currentTopId !== newTopId) {
-          setHasNewPosts(true);
+          setTimeout(() => setHasNewPosts(true), 0);
         }
       }
 
-      setLikedIds(prev => {
+      setTimeout(() => setLikedIds(prev => {
         const next = new Set(prev);
         data.posts.forEach((p: PostData) => { if (p.isLiked) next.add(p._id); });
         return next;
-      });
+      }), 0);
     }
   }, [data]);
 
   const loadNewPosts = () => {
     if (data?.posts) {
-      setDisplayPosts(data.posts);
+      setTimeout(() => setDisplayPosts(data.posts), 0);
       setHasNewPosts(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -189,17 +189,17 @@ export default function Home() {
       )}
 
       {!loading && posts.length > 0 && (
-        <div className="flex flex-col">
+        <div className="columns-1 sm:columns-2 gap-4 space-y-4 pb-4">
           {posts.map((post) => (
             <ImpressTracker key={post._id} postId={post._id}>
               <Link
                 href={`/post/${post._id}`}
                 prefetch={true}
-                className="group block bg-surface border-b border-outline-variant/50 hover:bg-surface-variant/20 transition-colors duration-200 animate-fade-in p-4"
+                className="group block bg-surface border border-outline-variant hover:border-primary/30 hover:shadow-md transition-all duration-300 animate-fade-in p-5 rounded-sm break-inside-avoid"
               >
               <div className="flex gap-3">
                 {/* Left side: Avatar */}
-                <div className="w-10 h-10 shrink-0 rounded-full bg-surface-variant overflow-hidden flex items-center justify-center">
+                <div className="w-8 h-8 shrink-0 rounded-sm bg-surface-variant overflow-hidden flex items-center justify-center border border-outline-variant/50">
                   {post.author ? (
                      <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">{post.author.name?.charAt(0)}</div>
                   ) : (
@@ -210,7 +210,7 @@ export default function Home() {
                 {/* Right side: Content */}
                 <div className="flex-1 min-w-0">
                   {/* Top row: Name, Handle, Time, Badges */}
-                  <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                  <div className="flex items-center gap-2 flex-wrap mb-3 border-b border-outline-variant/30 pb-2">
                     {post.author && (
                       <Link
                         href={`/author/${post.author._id}`}
@@ -238,16 +238,16 @@ export default function Home() {
                   </div>
 
                   {/* Content: Headline and Body */}
-                  <h3 className="text-[15px] font-bold text-on-surface leading-snug mb-1">
+                  <h3 className="font-display text-2xl font-black text-on-surface leading-tight mb-2 group-hover:text-primary transition-colors">
                     {post.headline}
                   </h3>
-                  <p className="text-[15px] text-on-surface leading-normal mb-3 whitespace-pre-wrap">
+                  <p className="font-body text-base text-on-surface-variant/90 leading-relaxed mb-4 whitespace-pre-wrap">
                     {post.description}
                   </p>
 
                   {/* Media */}
                   {(post.imageUrl || post.videoUrl) && (
-                    <div className="mt-2 mb-3 rounded-2xl overflow-hidden border border-outline-variant/50 relative bg-surface-container-low max-h-[400px]">
+                    <div className="mt-4 mb-4 overflow-hidden border border-outline-variant/50 relative bg-surface-container-low max-h-[400px]">
                       {post.imageUrl && !post.videoUrl && (
                         <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
                       )}
@@ -260,7 +260,7 @@ export default function Home() {
                   )}
 
                   {/* Community Note Integration */}
-                  <div className="mt-3 mb-3 bg-surface-container-high rounded-xl p-3 border border-outline-variant/30 relative">
+                  <div className="mt-4 mb-4 bg-surface-container-low p-4 border-l-4 border-l-primary/40 relative">
                      <div className="flex items-start gap-2">
                         <Shield size={16} className={post.factScore >= 80 ? 'text-emerald-500 mt-0.5' : post.factScore >= 60 ? 'text-amber-500 mt-0.5' : 'text-red-500 mt-0.5'} />
                         <div className="flex-1">

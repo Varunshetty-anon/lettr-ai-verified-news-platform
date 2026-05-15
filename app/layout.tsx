@@ -1,22 +1,20 @@
 import type { Metadata } from "next";
-import { Newsreader, Work_Sans, Public_Sans } from "next/font/google";
+import { Playfair_Display, Lora, Inter } from "next/font/google";
 import "./globals.css";
 
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
   subsets: ["latin"],
 });
 
-const workSans = Work_Sans({
-  variable: "--font-work-sans",
+const lora = Lora({
+  variable: "--font-lora",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
 });
 
-const publicSans = Public_Sans({
-  variable: "--font-public-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
 });
 
 import { ThemeProvider } from "./components/ThemeProvider";
@@ -37,7 +35,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${newsreader.variable} ${workSans.variable} ${publicSans.variable} h-full antialiased`}
+      className={`${playfair.variable} ${lora.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full font-body bg-surface text-on-surface">
         <SessionProvider>

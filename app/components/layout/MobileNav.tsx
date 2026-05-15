@@ -19,7 +19,7 @@ export function MobileNav() {
   return (
     <>
       {/* Mobile Top Bar */}
-      <header className="sm:hidden sticky top-0 z-50 w-full bg-surface/90 backdrop-blur-md border-b border-outline-variant flex items-center justify-between px-4 h-[53px]">
+      <header className="sm:hidden fixed top-0 left-0 z-[100] w-full bg-surface/90 backdrop-blur-md border-b border-outline-variant flex items-center justify-between px-4 h-[53px]">
         <div className="w-8">
             <Link href="/account">
                <div className="w-8 h-8 rounded-full bg-surface-variant overflow-hidden flex items-center justify-center">
@@ -28,13 +28,13 @@ export function MobileNav() {
             </Link>
         </div>
         <Link href="/" className="flex items-center justify-center">
-          <span className="text-xl font-bold text-on-surface">L</span>
+          <span className="font-display text-2xl font-black text-on-surface">L</span>
         </Link>
         <div className="w-8 flex justify-end"><ThemeToggle /></div>
       </header>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="sm:hidden fixed bottom-0 left-0 w-full bg-surface/90 backdrop-blur-md border-t border-outline-variant z-50 flex items-center justify-around h-[53px] pb-[env(safe-area-inset-bottom)]">
+      <nav className="sm:hidden fixed bottom-0 left-0 w-full bg-surface/90 backdrop-blur-md border-t border-outline-variant z-[100] flex items-center justify-around h-[56px] pb-[env(safe-area-inset-bottom)]">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (
@@ -46,7 +46,6 @@ export function MobileNav() {
               }`}
             >
               <item.icon size={26} strokeWidth={isActive ? 2.5 : 2} />
-
             </Link>
           );
         })}

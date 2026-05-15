@@ -17,7 +17,8 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   const { data: session } = useSession();
   const [liked, setLiked] = useState(false);
 
-  const { data: post, error, isLoading } = useSWR(`/api/posts/${postId}`, fetcher);
+  const { data, error, isLoading } = useSWR(`/api/posts/${postId}`, fetcher);
+  const post = data?.post;
 
   useEffect(() => {
     if (postId && session?.user?.email) {
