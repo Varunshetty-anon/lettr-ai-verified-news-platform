@@ -1,20 +1,22 @@
-import React, { ButtonHTMLAttributes } from 'react';
+import React from 'react';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'tertiary';
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary';
+  children: React.ReactNode;
 }
 
 export function Button({ variant = 'primary', className = '', children, ...props }: ButtonProps) {
-  const baseStyles = "inline-flex items-center justify-center font-label font-medium transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]";
+  const baseClasses = "font-label text-xs uppercase tracking-[0.1em] px-6 py-3 transition-all duration-200 flex items-center justify-center gap-2 rounded-none";
   
-  const variants = {
-    primary: "bg-primary text-on-primary  px-6 py-3 hover:bg-primary-container",
-    secondary: "bg-surface-container-high text-on-surface px-6 py-3 hover:bg-surface-variant",
-    tertiary: "text-primary px-2 py-2 border-b-2 border-transparent hover:border-outline-variant hover:border-opacity-15"
-  };
+  const variantClasses = variant === 'primary'
+    ? "bg-primary text-on-primary hover:bg-primary-container"
+    : "bg-transparent text-primary border-2 border-primary hover:bg-primary hover:text-on-primary";
 
   return (
-    <button className={`${baseStyles} ${variants[variant]} ${className}`} {...props}>
+    <button
+      className={`${baseClasses} ${variantClasses} ${className}`}
+      {...props}
+    >
       {children}
     </button>
   );

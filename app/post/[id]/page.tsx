@@ -1,12 +1,15 @@
 "use client";
 
-import React, { use, useState, useEffect } from 'react';
-import useSWR from 'swr';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, Shield, ExternalLink, MessageCircle, Heart, Share, BarChart2 } from 'lucide-react';
-import { DynamicPlayer } from '@/app/components/ui/HoverVideoPlayer';
-import { useSession } from 'next-auth/react';
+import { use, useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import useSWR from "swr";
+import { ArrowLeft, Shield, ExternalLink, Heart, MessageCircle, BarChart2, Share, CheckCircle } from "lucide-react";
+import dynamic from 'next/dynamic';
+import { FactScoreBadge } from "../../components/ui/FactScoreBadge";
+
+const DynamicPlayer = dynamic(() => import('../../components/ui/HoverVideoPlayer').then(mod => mod.default), { ssr: false });
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -48,7 +51,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent  animate-spin" />
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent animate-spin rounded-none" />
       </div>
     );
   }
@@ -56,69 +59,79 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   if (error || !post) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-on-surface-variant">Post not found.</p>
+        <p className="font-body text-[16px] text-on-surface-variant">Post not found.</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full min-h-screen pb-20">
+    <div className="w-full min-h-screen pb-[64px]">
+      {/* Progress Bar placeholder */}
+      <div className="fixed top-0 left-0 w-full h-[4px] bg-primary z-50 transform origin-left" style={{ transform: 'scaleX(0.3)' }} />
+
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-surface/80 backdrop-blur-md flex items-center gap-6 px-4 h-[53px] border-b border-outline-variant/50">
-        <button onClick={() => router.back()} className="p-2 -ml-2  hover:bg-surface-variant transition-colors">
-          <ArrowLeft size={20} className="text-on-surface" />
+      <div className="sticky top-[4px] sm:top-0 z-40 bg-surface/90 backdrop-blur-md flex items-center gap-6 px-4 py-4 border-b border-outline-variant/50">
+        <button onClick={() => router.back()} className="p-2 -ml-2 hover:bg-surface-dim transition-colors rounded-none">
+          <ArrowLeft size={24} className="text-on-surface" />
         </button>
-        <h1 className="text-xl font-bold text-on-surface">Post</h1>
+        <span className="font-label text-[12px] uppercase tracking-[0.1em] font-bold text-on-surface">REPORT</span>
       </div>
 
       {/* Post Content */}
-      <article className="px-4 pt-3 pb-4 border-b border-outline-variant/50">
+      <article className="pt-[32px]">
+        {/* Category & Fact Score Top */}
+        <div className="flex items-center justify-between mb-[32px] px-4 sm:px-0">
+           {post.category ? (
+             <span className="font-label text-[12px] uppercase tracking-[0.1em] text-tertiary font-bold bg-tertiary-fixed/20 px-3 py-1">
+               {post.category}
+             </span>
+           ) : <div/>}
+           <FactScoreBadge score={post.factScore || 0} />
+        </div>
+
+        {/* Text Content */}
+        <h1 className="px-4 sm:px-0 font-display text-[48px] sm:text-[80px] font-bold text-on-surface leading-[1.0] tracking-[-0.04em] mb-[32px]">
+          {post.headline}
+        </h1>
+
         {/* Author Row */}
-        <div className="flex items-center gap-3 mb-3">
+        <div className="px-4 sm:px-0 flex items-center gap-4 mb-[32px] pb-[32px] border-b border-outline-variant/30">
           <Link href={`/author/${post.author?._id}`} className="shrink-0">
-            <div className="w-10 h-10  bg-surface-variant overflow-hidden flex items-center justify-center">
+            <div className="w-[48px] h-[48px] bg-surface-variant overflow-hidden flex items-center justify-center border border-outline-variant/50 rounded-none hover:bg-surface-dim transition-colors">
               {post.author ? (
-                 <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">{post.author.name?.charAt(0)}</div>
+                 <div className="w-full h-full font-display font-bold text-[24px] text-on-surface flex items-center justify-center">{post.author.name?.charAt(0)}</div>
               ) : (
-                 <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">?</div>
+                 <div className="w-full h-full font-display font-bold text-[24px] text-on-surface flex items-center justify-center">?</div>
               )}
             </div>
           </Link>
           <div className="flex flex-col">
-            <div className="flex items-center gap-1">
-              <Link href={`/author/${post.author?._id}`} className="font-bold text-[15px] text-on-surface hover:underline">
+            <div className="flex items-center gap-2">
+              <Link href={`/author/${post.author?._id}`} className="font-label text-[14px] font-bold uppercase tracking-[0.1em] text-on-surface hover:text-primary transition-colors">
                 {post.author?.name || 'Unknown'}
               </Link>
               {post.author?.isVerifiedAuthor && (
-                <svg viewBox="0 0 24 24" aria-label="Verified account" className="w-[18px] h-[18px] fill-primary"><g><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.918-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.337 2.25c-.416-.165-.866-.25-1.336-.25-2.21 0-3.918 1.792-3.918 4 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.46.74 2.746 1.865 3.45-.164.446-.252.93-.252 1.45 0 2.21 1.71 4 3.918 4 .503 0 .984-.095 1.428-.266 1.053 1.252 2.628 2.066 4.34 2.066 1.714 0 3.287-.814 4.34-2.066.445.17.925.265 1.428.265 2.21 0 3.918-1.792 3.918-4 0-.52-.088-1.004-.252-1.45 1.125-.705 1.865-1.99 1.865-3.45zm-10.153 6.015l-4.5-4.5 1.815-1.815 2.685 2.685 7.185-7.185 1.815 1.815-9 9z"></path></g></svg>
+                <CheckCircle size={16} className="text-tertiary" />
+              )}
+              {post.author?.email?.includes('@lettr.ai') && (
+                <span className="ml-1 font-label text-[10px] uppercase tracking-widest px-1.5 py-0.5 border border-outline-variant text-on-surface-variant font-bold rounded-none">BOT</span>
               )}
             </div>
-            <div className="flex items-center gap-1">
-              <span className="text-[15px] text-on-surface-variant">
+            <div className="flex items-center gap-2 mt-1">
+              <span className="font-body text-[14px] text-on-surface-variant">
                 @{post.author?.name?.toLowerCase().replace(/\s+/g, '')}
               </span>
-              {post.author?.email?.includes('@lettr.ai') && (
-                <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold ">BOT</span>
-              )}
+              <span className="font-body text-[14px] text-on-surface-variant">·</span>
+              <span className="font-body text-[14px] text-on-surface-variant">{new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
             </div>
           </div>
         </div>
 
-        {/* Text Content */}
-        <h2 className="text-[17px] sm:text-[19px] font-bold text-on-surface leading-snug mb-2">
-          {post.headline}
-        </h2>
-
-        {/* Full Article Body */}
-        <div className="text-[15px] sm:text-[17px] text-on-surface leading-normal mb-4 whitespace-pre-wrap">
-          {post.content || post.description}
-        </div>
-
         {/* Media */}
         {(post.imageUrl || post.videoUrl) && (
-          <div className="mb-4 -2xl overflow-hidden border border-outline-variant/50 relative bg-surface-container-low max-h-[600px] flex items-center justify-center">
+          <div className="mb-[64px] overflow-hidden border-y sm:border border-outline-variant/50 relative bg-surface-dim flex items-center justify-center rounded-none">
             {post.imageUrl && !post.videoUrl && (
-              <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-full object-contain max-h-[600px]" />
+              <img src={post.imageUrl} alt="" className="w-full h-auto object-cover max-h-[800px]" />
             )}
             {post.videoUrl && (
               <div className="w-full relative">
@@ -128,33 +141,40 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           </div>
         )}
 
+        {/* Full Article Body */}
+        <div className="px-4 sm:px-0 font-body text-[20px] text-on-surface leading-[1.6] mb-[64px] whitespace-pre-wrap max-w-[700px]">
+          {post.content || post.description}
+        </div>
+
         {/* Community Note Integration */}
-        <div className="mb-4 bg-surface-container-high  p-4 border border-outline-variant/30">
-           <div className="flex items-start gap-3">
-              <Shield size={20} className={post.factScore >= 80 ? 'text-emerald-500 mt-1' : post.factScore >= 60 ? 'text-amber-500 mt-1' : 'text-red-500 mt-1'} />
+        <div className="mx-4 sm:mx-0 mb-[64px] bg-surface-container-low p-6 sm:p-[32px] border-l-[4px] border-primary relative rounded-none shadow-none">
+           <div className="flex items-start gap-4">
+              <Shield size={24} className={post.factScore >= 85 ? 'text-[#485c00]' : post.factScore >= 50 ? 'text-[#a33800]' : 'text-red-500'} />
               <div className="flex-1">
-                 <p className="text-[15px] font-bold text-on-surface mb-1">
+                 <p className="font-display font-bold text-[24px] text-on-surface mb-2 leading-[1.3] tracking-[-0.01em]">
                    Readers added context they thought people might want to know
                  </p>
-                 <p className="text-[14px] text-on-surface leading-relaxed mb-3">
+                 <p className="font-body text-[16px] text-on-surface-variant leading-[1.6] mb-4">
                    {post.reasoning}
                  </p>
                  {post.issues && post.issues.length > 0 && (
-                    <div className="mb-4">
-                       <p className="text-[13px] font-bold text-on-surface-variant mb-2">Key Issues Identified:</p>
-                       <ul className="list-disc pl-5 space-y-1">
+                    <div className="mb-6">
+                       <p className="font-label text-[12px] uppercase tracking-[0.1em] font-bold text-on-surface mb-2">Key Issues Identified:</p>
+                       <ul className="space-y-2">
                           {post.issues.map((issue: string, idx: number) => (
-                             <li key={idx} className="text-[13px] text-on-surface-variant">{issue}</li>
+                             <li key={idx} className="font-body text-[16px] text-on-surface-variant flex items-start gap-2">
+                               <span className="text-primary mt-1">•</span> {issue}
+                             </li>
                           ))}
                        </ul>
                     </div>
                  )}
-                 <div className="flex items-center gap-3 border-t border-outline-variant/30 pt-3">
-                    <span className="text-[13px] text-on-surface-variant/80 font-medium">
-                      AI Fact Score: <span className="font-bold">{post.factScore}/100</span>
+                 <div className="flex items-center gap-4 border-t border-outline-variant/30 pt-4">
+                    <span className="font-label text-[12px] uppercase tracking-[0.1em] text-on-surface-variant font-bold">
+                      AI Fact Score: <span className="text-primary">{post.factScore}/100</span>
                     </span>
-                    <span className="text-[13px] text-on-surface-variant">·</span>
-                    <span className={`text-[11px] uppercase tracking-wider font-bold px-2 py-0.5  ${post.factScore >= 85 ? 'bg-emerald-500/10 text-emerald-500' : post.factScore >= 60 ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'}`}>
+                    <span className="font-body text-[14px] text-on-surface-variant">·</span>
+                    <span className={`font-label text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 border rounded-none ${post.factScore >= 85 ? 'border-[#5d7600]/30 text-[#485c00] bg-[#c3f400]/20' : post.factScore >= 50 ? 'border-[#cd4800]/30 text-[#a33800] bg-[#ffdbce]/20' : 'border-red-500/20 text-red-500 bg-red-500/10'}`}>
                       {post.confidence || 'Medium'} Confidence
                     </span>
                  </div>
@@ -162,52 +182,40 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
            </div>
         </div>
 
-        {/* Source Link */}
-        {post.sourceLink && (
-          <div className="mb-4 text-[15px] text-on-surface-variant">
-             <a href={post.sourceLink} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1.5 truncate">
-               <ExternalLink size={16} />
-               <span className="truncate">{post.sourceLink.replace(/^https?:\/\//, '')}</span>
-             </a>
+        {/* Source Link & Metadata */}
+        <div className="px-4 sm:px-0 border-t border-b border-outline-variant/30 py-6 mb-[32px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {post.sourceLink && (
+            <a href={post.sourceLink} target="_blank" rel="noopener noreferrer" className="font-label text-[12px] uppercase tracking-[0.1em] text-primary hover:bg-primary/10 transition-colors flex items-center gap-2 truncate px-4 py-2 border border-primary w-fit rounded-none">
+              <ExternalLink size={16} />
+              <span className="truncate">Source Document</span>
+            </a>
+          )}
+          <div className="flex items-center gap-2 font-label text-[12px] uppercase tracking-[0.1em] text-on-surface-variant font-bold">
+             <span>{new Date(post.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+             <span>·</span>
+             <span className="text-on-surface">12.5K VIEWS</span>
           </div>
-        )}
-
-        {/* Timestamp */}
-        <div className="flex items-center gap-1 text-[15px] text-on-surface-variant mb-4 border-b border-outline-variant/50 pb-4">
-          <span>{new Date(post.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
-          <span>·</span>
-          <span>{new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-          <span>·</span>
-          <span className="font-bold text-on-surface">12.5K</span> <span>Views</span>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-around text-on-surface-variant pb-2">
-          <button className="flex items-center gap-2 group/btn transition-colors">
-            <div className="p-2  group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
-              <MessageCircle size={22} />
-            </div>
-            <span className="text-[15px] group-hover/btn:text-primary">12</span>
+        <div className="px-4 sm:px-0 flex items-center justify-between sm:justify-start sm:gap-[64px] text-on-surface-variant">
+          <button className="flex items-center gap-3 group/btn transition-colors hover:text-primary">
+            <MessageCircle size={24} />
+            <span className="font-label text-[14px] font-bold">12</span>
           </button>
 
-          <button onClick={handleLike} className="flex items-center gap-2 group/btn transition-colors">
-            <div className="p-2  group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 transition-colors">
-              <Heart size={22} className={liked ? "fill-emerald-500 text-emerald-500" : ""} />
-            </div>
-            <span className="text-[15px] group-hover/btn:text-emerald-500">{post.engagement}</span>
+          <button onClick={handleLike} className={`flex items-center gap-3 group/btn transition-colors ${liked ? 'text-secondary' : 'hover:text-secondary'}`}>
+            <Heart size={24} className={liked ? "fill-secondary text-secondary" : ""} />
+            <span className="font-label text-[14px] font-bold">{post.engagement}</span>
           </button>
 
-          <button className="flex items-center gap-2 group/btn transition-colors">
-            <div className="p-2  group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
-              <BarChart2 size={22} />
-            </div>
-            <span className="text-[15px] group-hover/btn:text-primary">12.5K</span>
+          <button className="flex items-center gap-3 group/btn transition-colors hover:text-primary">
+            <BarChart2 size={24} />
+            <span className="font-label text-[14px] font-bold">12.5K</span>
           </button>
 
-          <button className="flex items-center gap-2 group/btn transition-colors">
-            <div className="p-2  group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
-              <Share size={22} />
-            </div>
+          <button className="flex items-center gap-3 group/btn transition-colors hover:text-primary">
+            <Share size={24} />
           </button>
         </div>
       </article>
