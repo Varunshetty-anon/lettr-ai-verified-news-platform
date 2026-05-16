@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import dynamic from 'next/dynamic';
 import 'plyr/dist/plyr.css';
 
@@ -25,7 +25,7 @@ export default function HoverVideoPlayer({ src, poster, mode = 'preview' }: Hove
   };
 
   return (
-    <div className={`relative w-full overflow-hidden bg-black flex items-center justify-center ${isPreview ? 'pointer-events-none' : ''}`}>
+    <div className={`relative w-full aspect-video overflow-hidden bg-surface-container-highest flex items-center justify-center ${isPreview ? 'pointer-events-none' : ''}`}>
       <Plyr
         source={{
           type: 'video',

@@ -4,12 +4,10 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Heart, ExternalLink, ArrowUpRight } from 'lucide-react';
 import useSWR from 'swr';
 import { FactScoreBadge } from '@/app/components/ui/FactScoreBadge';
 import { VerifiedBadge } from '@/app/components/ui/VerifiedBadge';
 import { AuthorAvatar } from '@/app/components/ui/AuthorAvatar';
-import { CategoryChip } from '@/app/components/ui/CategoryChip';
 import { PostSkeleton } from '@/app/components/ui/PostSkeleton';
 import ImpressTracker from '@/app/components/ui/ImpressTracker';
 
@@ -18,16 +16,12 @@ interface PostData {
   headline: string;
   description: string;
   factScore: number;
-  reasoning?: string;
-  originSource?: string;
   category?: string;
-  sourceLink?: string;
   imageUrl?: string;
-  videoUrl?: string;
   engagement: number;
   createdAt: string;
   isLiked?: boolean;
-  author: { _id: string; name: string; email?: string; trustScore: number; role: string; isVerifiedAuthor: boolean } | null;
+  author: { _id: string; name: string; trustScore: number; role: string; isVerifiedAuthor: boolean } | null;
 }
 
 function timeAgo(dateStr: string) {
@@ -42,10 +36,17 @@ function timeAgo(dateStr: string) {
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
+// Category Color Helper for badges
+const getCategoryColorClass = (cat?: string) => {
+  const normalized = cat?.toLowerCase() || '';
+  if (normalized.includes('tech')) return 'bg-primary text-on-primary';
+  if (normalized.includes('culture')) return 'bg-tertiary-fixed text-on-surface';
+  return 'bg-secondary text-on-primary';
+};
+
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
   // Redirect new users to onboarding
   useEffect(() => {
@@ -61,356 +62,225 @@ export default function Home() {
     }
   }, [session, status, router]);
 
-  const apiUrl = `/api/posts`;
-  
-  const { data, error, isLoading, mutate } = useSWR(apiUrl, fetcher, { 
+  const { data, isLoading } = useSWR(`/api/posts`, fetcher, { 
     refreshInterval: 0,
     revalidateOnFocus: true, 
-    keepPreviousData: true, 
   });
 
-  const [displayPosts, setDisplayPosts] = useState<PostData[]>([]);
-  const [hasNewPosts, setHasNewPosts] = useState(false);
+  const posts: PostData[] = data?.posts || [];
+  const loading = isLoading && posts.length === 0;
 
-  useEffect(() => {
-    if (data?.posts) {
-      if (displayPosts.length === 0) {
-        setTimeout(() => setDisplayPosts(data.posts), 0);
-      } else {
-        const currentTopId = displayPosts[0]?._id;
-        const newTopId = data.posts[0]?._id;
-        if (currentTopId && newTopId && currentTopId !== newTopId) {
-          setTimeout(() => setHasNewPosts(true), 0);
-        }
-      }
-      setTimeout(() => setLikedIds(prev => {
-        const next = new Set(prev);
-        data.posts.forEach((p: PostData) => { if (p.isLiked) next.add(p._id); });
-        return next;
-      }), 0);
-    }
-  }, [data]);
-
-  const loadNewPosts = () => {
-    if (data?.posts) {
-      setTimeout(() => setDisplayPosts(data.posts), 0);
-      setHasNewPosts(false);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const posts = displayPosts;
-  const loading = isLoading && displayPosts.length === 0;
-
-  const toggleLike = async (postId: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const isLiked = likedIds.has(postId);
-    const next = new Set(likedIds);
-    if (isLiked) next.delete(postId); else next.add(postId);
-    setLikedIds(next);
-
-    setDisplayPosts(posts.map(p => p._id === postId ? { ...p, engagement: p.engagement + (isLiked ? -1 : 1) } : p));
-    
-    if (apiUrl) {
-      mutate({
-        ...data,
-        posts: posts.map(p => p._id === postId ? { ...p, engagement: p.engagement + (isLiked ? -1 : 1) } : p)
-      }, { revalidate: false });
-    }
-
-    await fetch(`/api/user/interact`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ postId, action: isLiked ? 'unlike' : 'like' })
-    }).catch(() => {});
-  };
-
-  const firstName = session?.user?.name?.split(' ')[0] || '';
-
-  // Split posts into editorial sections
-  const heroPost = posts[0];
-  const subFeatures = posts.slice(1, 3);
-  const briefPosts = posts.slice(3);
-
-  if (status === 'loading') {
+  if (loading || status === 'loading') {
     return (
-      <div className="w-full min-h-screen">
+      <div className="w-full max-w-[1440px] mx-auto px-[16px] md:px-[64px] mt-8">
         <PostSkeleton variant="hero" />
-        <div className="grid grid-cols-1 md:grid-cols-2">
-          <PostSkeleton variant="card" />
-          <PostSkeleton variant="card" />
-        </div>
-        {[1, 2, 3].map(i => <PostSkeleton key={i} variant="brief" />)}
       </div>
     );
   }
 
+  const heroPost = posts[0];
+  const stackedPost1 = posts[1];
+  const stackedPost2 = posts[2];
+  const briefPosts = posts.slice(3, 6);
+  const lifestylePost = posts[6];
+
   return (
-    <div className="w-full min-h-screen">
-      {/* ── Editorial Masthead ── */}
-      <div className="px-6 pt-8 pb-6 border-b-2 border-on-surface">
-        <div className="flex items-end justify-between">
-          <div>
-            {firstName && (
-              <p className="type-label-caps text-on-surface-variant/50 mb-1">
-                Welcome back, {firstName}
-              </p>
-            )}
-            <h1 className="font-display text-5xl md:text-7xl font-bold text-on-surface tracking-[-0.04em] leading-none">
-              LETTR<span className="text-primary">.</span>
-            </h1>
-          </div>
-          {!loading && (
-            <span className="type-label-caps text-on-surface-variant/40 mb-1">
-              {posts.length} articles
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* ── New Posts Banner ── */}
-      {hasNewPosts && (
-        <div className="sticky top-[53px] sm:top-0 z-30 flex justify-center py-3 bg-primary">
-          <button 
-            onClick={loadNewPosts}
-            className="px-4 py-1.5 text-on-primary font-label text-[10px] uppercase tracking-widest font-bold hover:opacity-90 transition-opacity"
-          >
-            New Posts Available ↑
-          </button>
-        </div>
-      )}
-
-      {/* ── Loading State ── */}
-      {loading && (
-        <div>
-          <PostSkeleton variant="hero" />
-          <div className="grid grid-cols-1 md:grid-cols-2">
-            <PostSkeleton variant="card" />
-            <PostSkeleton variant="card" />
-          </div>
-        </div>
-      )}
-
-      {/* ── Empty State ── */}
-      {!loading && posts.length === 0 && (
-        <div className="px-6 py-20 text-center border-b border-outline-variant">
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">No articles yet</h2>
-          <p className="font-body text-sm text-on-surface-variant/50 max-w-xs mx-auto">
-            The bot network is seeding content automatically. Articles will appear shortly.
-          </p>
-        </div>
-      )}
-
-      {/* ══════════ HERO FEATURE ARTICLE ══════════ */}
+    <div className="w-full max-w-[1440px] mx-auto px-[16px] md:px-[64px] py-[24px] md:py-[64px]">
+      
+      {/* ══════════ HERO SECTION (12-COL GRID) ══════════ */}
       {heroPost && (
         <ImpressTracker postId={heroPost._id}>
-          <Link
-            href={`/post/${heroPost._id}`}
-            prefetch={true}
-            className="group block px-6 pt-10 pb-10 border-b border-outline-variant animate-fade-in"
-          >
-            {/* Category + Timestamp */}
-            <div className="flex items-center gap-3 mb-5">
-              {heroPost.category && (
-                <span className="font-label text-[11px] uppercase tracking-[0.1em] px-3 py-1.5 bg-tertiary-fixed text-on-surface font-bold">
-                  {heroPost.category}
-                </span>
-              )}
-              <span className="type-label-caps text-on-surface-variant/40 text-[10px]">
-                {timeAgo(heroPost.createdAt)}
-              </span>
-            </div>
-
-            {/* Hero Headline */}
-            <h2 className="type-display-xl text-on-surface mb-5 group-hover:text-primary transition-colors">
-              {heroPost.headline}<span className="text-primary">.</span>
-            </h2>
-
-            {/* Description */}
-            <p className="type-body-lg text-on-surface-variant/80 max-w-2xl mb-6 leading-relaxed">
-              {heroPost.description}
-            </p>
-
-            {/* Author Row */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <AuthorAvatar
-                  name={heroPost.author?.name || '?'}
-                  size="sm"
-                />
-                <div className="flex items-center gap-2">
-                  {heroPost.author && (
-                    <span className="font-bold text-[15px] text-on-surface">
-                      {heroPost.author.name}
-                    </span>
-                  )}
-                  {heroPost.author?.isVerifiedAuthor && <VerifiedBadge size={16} />}
-                  <span className="text-on-surface-variant text-[14px]">·</span>
-                  <FactScoreBadge score={heroPost.factScore} size="sm" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-[24px] mb-[48px] md:mb-[64px] border-b border-outline-variant pb-[48px]">
+            
+            {/* Desktop col-span-8: Image with badge overlay */}
+            <div className="lg:col-span-8 order-2 lg:order-1 relative aspect-video bg-surface-container-highest">
+              {heroPost.imageUrl ? (
+                <img src={heroPost.imageUrl} alt={heroPost.headline} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-surface-container-highest flex items-center justify-center">
+                  <span className="type-caption text-on-surface-variant">Image Unavailable</span>
                 </div>
+              )}
+              {heroPost.category && (
+                <div className="absolute top-0 left-0 bg-surface border-b border-r border-on-surface px-3 py-1.5">
+                  <span className="type-label-md">{heroPost.category}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Desktop col-span-4: Text content */}
+            <div className="lg:col-span-4 order-1 lg:order-2 flex flex-col justify-center">
+              {/* Mobile Only: Category Tag (since image overlay is tricky on mobile stacking) */}
+              <div className="lg:hidden mb-4">
+                 {heroPost.category && (
+                   <span className={`type-label-md px-2 py-1 ${getCategoryColorClass(heroPost.category)}`}>
+                     {heroPost.category}
+                   </span>
+                 )}
               </div>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={(e) => toggleLike(heroPost._id, e)}
-                  className={`flex items-center gap-1.5 transition-colors ${likedIds.has(heroPost._id) ? 'text-rose-500' : 'text-on-surface-variant hover:text-rose-500'}`}
-                >
-                  <Heart size={16} fill={likedIds.has(heroPost._id) ? 'currentColor' : 'none'} />
-                  <span className="text-[13px]">{heroPost.engagement}</span>
-                </button>
-                {heroPost.sourceLink && (
-                  <span className="text-on-surface-variant/40 hover:text-primary transition-colors">
-                    <ExternalLink size={14} />
-                  </span>
-                )}
+
+              <Link href={`/post/${heroPost._id}`} className="group block mb-6">
+                <h2 className="type-display-xl-mobile lg:text-[72px] lg:leading-[1.1] text-on-surface group-hover:text-primary transition-colors uppercase mb-6">
+                  {heroPost.headline}
+                </h2>
+                <p className="type-body-md text-on-surface-variant line-clamp-3 mb-6">
+                  {heroPost.description}
+                </p>
+                <div className="flex items-center gap-2 type-label-md text-primary">
+                  <span>READ STORY</span>
+                  <span className="text-on-surface-variant lowercase">· 5 min read</span>
+                </div>
+              </Link>
+
+              {/* Author / Meta Row */}
+              <div className="flex items-center justify-between pt-6 border-t border-outline-variant">
+                <div className="flex items-center gap-3">
+                  <div className="w-[32px] h-[32px] bg-surface-container-highest grayscale">
+                    {heroPost.author?.name ? <span className="flex items-center justify-center w-full h-full type-label-md">{heroPost.author.name.charAt(0)}</span> : null}
+                  </div>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1">
+                      <span className="type-label-md">{heroPost.author?.name}</span>
+                      {heroPost.author?.isVerifiedAuthor && <VerifiedBadge size={14} />}
+                    </div>
+                    <span className="type-caption text-on-surface-variant">{timeAgo(heroPost.createdAt)}</span>
+                  </div>
+                </div>
+                <FactScoreBadge score={heroPost.factScore} size="sm" />
               </div>
             </div>
-          </Link>
+
+          </div>
         </ImpressTracker>
       )}
 
-      {/* ══════════ SUB-FEATURE GRID ══════════ */}
-      {subFeatures.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 border-b border-outline-variant">
-          {subFeatures.map((post, i) => (
-            <ImpressTracker key={post._id} postId={post._id}>
-              <Link
-                href={`/post/${post._id}`}
-                prefetch={true}
-                className={`group block px-6 py-8 animate-fade-in ${
-                  i === 0 ? 'md:border-r border-b md:border-b-0 border-outline-variant' : ''
-                }`}
-              >
-                {/* Category */}
-                <div className="flex items-center gap-3 mb-4">
-                  {post.category && (
-                    <span className="font-label text-[10px] uppercase tracking-[0.1em] text-tertiary font-bold">
-                      {post.category}
+      {/* ══════════ SECONDARY GRID (12-COL) ══════════ */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-[24px] lg:gap-[64px]">
+        
+        {/* col-span-7: Stacked Articles */}
+        <div className="lg:col-span-7 flex flex-col gap-[48px]">
+          {/* First Stacked Article (2-col sub-grid) */}
+          {stackedPost1 && (
+            <ImpressTracker postId={stackedPost1._id}>
+              <Link href={`/post/${stackedPost1._id}`} className="group grid grid-cols-1 md:grid-cols-2 gap-[24px] border-b border-outline-variant pb-[48px]">
+                <div className="flex flex-col order-2 md:order-1">
+                  {stackedPost1.category && (
+                    <span className={`type-label-md self-start px-2 py-1 mb-4 ${getCategoryColorClass(stackedPost1.category)}`}>
+                      {stackedPost1.category}
                     </span>
                   )}
-                  <span className="text-[12px] text-on-surface-variant/40">{timeAgo(post.createdAt)}</span>
-                </div>
-
-                {/* Headline */}
-                <h3 className="font-display text-xl md:text-2xl font-semibold text-on-surface leading-tight mb-3 group-hover:text-primary transition-colors">
-                  {post.headline}<span className="text-primary/40">.</span>
-                </h3>
-
-                {/* Description */}
-                <p className="font-body text-sm text-on-surface-variant/70 leading-relaxed line-clamp-2 mb-4">
-                  {post.description}
-                </p>
-
-                {/* Author + Actions */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <AuthorAvatar name={post.author?.name || '?'} size="sm" />
-                    <span className="font-bold text-[13px] text-on-surface">{post.author?.name}</span>
-                    {post.author?.isVerifiedAuthor && <VerifiedBadge size={14} />}
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <FactScoreBadge score={post.factScore} size="sm" />
-                    <button
-                      onClick={(e) => toggleLike(post._id, e)}
-                      className={`flex items-center gap-1 transition-colors ${likedIds.has(post._id) ? 'text-rose-500' : 'text-on-surface-variant/40 hover:text-rose-500'}`}
-                    >
-                      <Heart size={14} fill={likedIds.has(post._id) ? 'currentColor' : 'none'} />
-                      <span className="text-[11px]">{post.engagement}</span>
-                    </button>
-                  </div>
-                </div>
-              </Link>
-            </ImpressTracker>
-          ))}
-        </div>
-      )}
-
-      {/* ══════════ THE BRIEF ══════════ */}
-      {briefPosts.length > 0 && (
-        <div className="px-6 pt-8 pb-4">
-          {/* Section Header */}
-          <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-on-surface">
-            <h4 className="font-display text-[11px] uppercase tracking-[0.2em] font-black text-on-surface">
-              THE BRIEF
-            </h4>
-            <span className="text-tertiary-fixed text-lg">⚡</span>
-          </div>
-
-          {briefPosts.map((post) => (
-            <ImpressTracker key={post._id} postId={post._id}>
-              <Link
-                href={`/post/${post._id}`}
-                prefetch={true}
-                className="group block py-5 border-b border-outline-variant/30 animate-fade-in"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    {/* Headline */}
-                    <h5 className="font-display text-lg font-semibold text-on-surface group-hover:text-primary transition-colors mb-1 leading-snug">
-                      {post.headline}<span className="text-primary/30">.</span>
-                    </h5>
-                    {/* Description */}
-                    <p className="font-body text-sm text-on-surface-variant/60 line-clamp-1 mb-2">
-                      {post.description}
-                    </p>
-                    {/* Meta row */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] text-on-surface-variant/50 font-bold">{post.author?.name}</span>
-                        {post.author?.isVerifiedAuthor && <VerifiedBadge size={12} />}
-                      </div>
-                      <span className="text-[11px] text-on-surface-variant/30">{timeAgo(post.createdAt)}</span>
-                      <FactScoreBadge score={post.factScore} size="sm" />
-                      <button
-                        onClick={(e) => toggleLike(post._id, e)}
-                        className={`flex items-center gap-1 transition-colors ${likedIds.has(post._id) ? 'text-rose-500' : 'text-on-surface-variant/30 hover:text-rose-500'}`}
-                      >
-                        <Heart size={12} fill={likedIds.has(post._id) ? 'currentColor' : 'none'} />
-                        <span className="text-[11px]">{post.engagement}</span>
-                      </button>
+                  <h3 className="type-headline-md text-on-surface group-hover:text-primary transition-colors mb-3">
+                    {stackedPost1.headline}
+                  </h3>
+                  <p className="type-body-md text-on-surface-variant line-clamp-3 mb-6">
+                    {stackedPost1.description}
+                  </p>
+                  <div className="mt-auto flex items-center justify-between pt-4 border-t border-outline-variant">
+                    <div className="flex items-center gap-2">
+                       <span className="type-label-md">{stackedPost1.author?.name}</span>
                     </div>
+                    <span className="type-caption text-on-surface-variant">{timeAgo(stackedPost1.createdAt)}</span>
                   </div>
-                  <ArrowUpRight size={16} className="text-on-surface-variant/20 group-hover:text-primary transition-colors mt-1 shrink-0" />
+                </div>
+                <div className="aspect-square bg-surface-container-highest order-1 md:order-2">
+                  {stackedPost1.imageUrl && <img src={stackedPost1.imageUrl} alt="" className="w-full h-full object-cover grayscale brightness-90" />}
                 </div>
               </Link>
             </ImpressTracker>
-          ))}
-        </div>
-      )}
+          )}
 
-      {/* ══════════ NEWSLETTER CTA ══════════ */}
-      {!loading && posts.length > 0 && (
-        <div className="px-6 py-16 bg-surface-container-low border-t-2 border-on-surface">
-          <div className="max-w-lg mx-auto text-center">
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-on-surface mb-3 tracking-tight">
-              Stay ahead of the curve<span className="text-primary">.</span>
-            </h2>
-            <p className="font-body text-sm text-on-surface-variant/60 mb-8 leading-relaxed">
-              Join 50,000+ thinkers who receive our weekly deep dive into the intersections of technology and culture.
-            </p>
-            <div className="flex gap-0 max-w-sm mx-auto">
-              <input
-                type="email"
-                placeholder="your@email.com"
-                className="flex-1 bg-transparent border-2 border-on-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/25"
-              />
-              <button className="bg-on-surface text-surface px-6 py-3 font-label text-[10px] uppercase tracking-widest font-bold hover:bg-primary transition-colors whitespace-nowrap">
-                Subscribe
-              </button>
+          {/* Second Stacked Article (Full width) */}
+          {stackedPost2 && (
+            <ImpressTracker postId={stackedPost2._id}>
+              <Link href={`/post/${stackedPost2._id}`} className="group block border-b border-outline-variant pb-[48px] lg:border-none lg:pb-0">
+                {stackedPost2.category && (
+                  <span className={`type-label-md inline-block px-2 py-1 mb-4 ${getCategoryColorClass(stackedPost2.category)}`}>
+                    {stackedPost2.category}
+                  </span>
+                )}
+                <h3 className="type-headline-lg-mobile md:type-headline-lg text-on-surface group-hover:text-primary transition-colors mb-4">
+                  {stackedPost2.headline}
+                </h3>
+                <div className="aspect-video bg-surface-container-highest mb-6">
+                  {stackedPost2.imageUrl && <img src={stackedPost2.imageUrl} alt="" className="w-full h-full object-cover" />}
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="type-label-md">{stackedPost2.author?.name}</span>
+                    <FactScoreBadge score={stackedPost2.factScore} size="sm" />
+                  </div>
+                  <span className="type-caption text-on-surface-variant">{timeAgo(stackedPost2.createdAt)}</span>
+                </div>
+              </Link>
+            </ImpressTracker>
+          )}
+        </div>
+
+        {/* col-span-5: THE BRIEF & Lifestyle */}
+        <div className="lg:col-span-5 flex flex-col gap-[48px]">
+          
+          {/* THE BRIEF Panel */}
+          {briefPosts.length > 0 && (
+            <div className="bg-surface-container p-[24px]">
+              <div className="border-b-2 border-on-surface pb-[12px] mb-[24px]">
+                <h4 className="type-label-md text-on-surface">THE BRIEF</h4>
+              </div>
+              
+              <div className="flex flex-col gap-[24px]">
+                {briefPosts.map((post, idx) => (
+                  <ImpressTracker key={post._id} postId={post._id}>
+                    <Link href={`/post/${post._id}`} className="group block border-b border-outline-variant pb-[24px] last:border-0 last:pb-0">
+                      <div className="flex gap-4">
+                        <span className="type-label-md text-on-surface-variant">0{idx + 1}</span>
+                        <div className="flex-1">
+                          <h5 className="type-headline-sm text-on-surface group-hover:text-primary transition-colors mb-2">
+                            {post.headline}
+                          </h5>
+                          <p className="type-body-md text-on-surface-variant line-clamp-2">
+                            {post.description}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  </ImpressTracker>
+                ))}
+              </div>
+
+              <Link href="/explore" className="block w-full text-center mt-[32px] border border-on-surface py-3 type-label-md hover:bg-on-surface hover:text-surface transition-colors">
+                VIEW ALL RECENT
+              </Link>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* ══════════ FOOTER ══════════ */}
-      <div className="px-6 py-8 border-t border-outline-variant/30">
-        <div className="flex items-center justify-between">
-          <span className="font-display font-black text-sm text-on-surface tracking-tight">LETTR</span>
-          <span className="type-label-caps text-on-surface-variant/30 text-[9px]">
-            © {new Date().getFullYear()} LETTR DIGITAL CULTURE. ALL RIGHTS RESERVED.
-          </span>
+          {/* Lifestyle Article Below Brief */}
+          {lifestylePost && (
+            <ImpressTracker postId={lifestylePost._id}>
+              <Link href={`/post/${lifestylePost._id}`} className="group block">
+                <div className="aspect-[4/3] bg-surface-container-highest mb-4">
+                  {lifestylePost.imageUrl && <img src={lifestylePost.imageUrl} alt="" className="w-full h-full object-cover" />}
+                </div>
+                {lifestylePost.category && (
+                  <span className={`type-label-md inline-block px-2 py-1 mb-3 ${getCategoryColorClass(lifestylePost.category)}`}>
+                    {lifestylePost.category}
+                  </span>
+                )}
+                <h3 className="type-headline-sm text-on-surface group-hover:text-primary transition-colors mb-2">
+                  {lifestylePost.headline}
+                </h3>
+                <p className="type-body-md text-on-surface-variant line-clamp-2 mb-4">
+                  {lifestylePost.description}
+                </p>
+                <div className="flex items-center justify-between border-t border-outline-variant pt-3">
+                  <span className="type-label-md">{lifestylePost.author?.name}</span>
+                  <span className="type-caption text-on-surface-variant">{timeAgo(lifestylePost.createdAt)}</span>
+                </div>
+              </Link>
+            </ImpressTracker>
+          )}
+
         </div>
       </div>
+
     </div>
   );
 }

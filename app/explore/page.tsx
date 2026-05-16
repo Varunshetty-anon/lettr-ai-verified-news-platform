@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { TrendingUp, Users, ArrowUpRight } from 'lucide-react';
+import { TrendingUp, ArrowUpRight, Search } from 'lucide-react';
 import { FactScoreBadge } from '@/app/components/ui/FactScoreBadge';
 import { VerifiedBadge } from '@/app/components/ui/VerifiedBadge';
 import { AuthorAvatar } from '@/app/components/ui/AuthorAvatar';
-import { CategoryChip } from '@/app/components/ui/CategoryChip';
 import { PostSkeleton } from '@/app/components/ui/PostSkeleton';
+import useSWR from 'swr';
 
 interface PostData {
   _id: string;
@@ -22,15 +22,6 @@ interface PostData {
   author: { name: string; trustScore: number; role: string; isVerifiedAuthor: boolean } | null;
 }
 
-interface AuthorData {
-  _id: string;
-  name: string;
-  image?: string;
-  followersCount: number;
-  isVerifiedAuthor: boolean;
-  role: string;
-}
-
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -41,220 +32,156 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+const getCategoryColorClass = (cat?: string) => {
+  const normalized = cat?.toLowerCase() || '';
+  if (normalized.includes('tech')) return 'bg-primary text-on-primary';
+  if (normalized.includes('culture')) return 'bg-tertiary-fixed text-on-surface';
+  return 'bg-secondary text-on-primary';
+};
+
 export default function Explore() {
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [activeSort, setActiveSort] = useState<'recent' | 'score'>('recent');
-  const [posts, setPosts] = useState<PostData[]>([]);
-  const [trending, setTrending] = useState<PostData[]>([]);
-  const [topAuthors, setTopAuthors] = useState<AuthorData[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<string[]>([]);
+  const { data: postsData, isLoading: loadingPosts } = useSWR(`/api/posts?sort=recent`, fetcher);
+  const { data: trendingData } = useSWR(`/api/posts?sort=score`, fetcher);
 
-  useEffect(() => {
-    fetch(`/api/posts?sort=score`)
-      .then(res => res.json())
-      .then(data => setTrending((data.posts || []).slice(0, 5)))
-      .catch(() => {});
+  const posts: PostData[] = postsData?.posts || [];
+  const trending: PostData[] = (trendingData?.posts || []).slice(0, 6);
 
-    fetch('/api/posts/categories')
-      .then(res => res.json())
-      .then(data => setCategories(data.categories || []))
-      .catch(() => {});
-
-    fetch('/api/authors/top')
-      .then(res => res.json())
-      .then(data => setTopAuthors(data.authors || []))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (!activeCategory) return;
-    setTimeout(() => setLoading(true), 0);
-    fetch(`/api/posts?category=${encodeURIComponent(activeCategory)}&sort=${activeSort}`)
-      .then(res => res.json())
-      .then(data => { setPosts(data.posts || []); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [activeCategory, activeSort]);
+  // Derive top categories dynamically
+  const categoriesMap = new Map<string, number>();
+  posts.forEach(p => {
+    if (p.category) categoriesMap.set(p.category, (categoriesMap.get(p.category) || 0) + 1);
+  });
+  const trendingTopics = Array.from(categoriesMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(entry => ({ name: entry[0], count: entry[1] }));
 
   return (
-    <div className="w-full min-h-screen animate-fade-in pb-20">
-      {/* ── Masthead ── */}
-      <div className="px-6 pt-10 pb-6 border-b-2 border-on-surface">
-        <h1 className="font-display text-4xl md:text-5xl font-bold text-on-surface tracking-tight">
-          Explore<span className="text-primary">.</span>
-        </h1>
-        <p className="font-body text-sm text-on-surface-variant/50 mt-1">
-          Discover verified authors and trending topics
-        </p>
+    <div className="w-full max-w-[1440px] mx-auto px-[16px] md:px-[64px] py-[24px] md:py-[64px]">
+      
+      {/* ── Heading ── */}
+      <h1 className="type-display-xl text-center text-on-surface mb-[48px]">
+        EXPLORE
+      </h1>
+
+      {/* ── Search Input ── */}
+      <div className="max-w-[720px] mx-auto mb-[64px] relative">
+        <input 
+          type="text" 
+          placeholder="SEARCH TOPICS, AUTHORS, OR KEYWORDS" 
+          className="w-full bg-transparent border-b-2 border-on-surface py-4 pl-12 text-on-surface type-headline-sm placeholder:type-headline-sm placeholder:uppercase placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary transition-colors"
+        />
+        <Search size={24} className="absolute left-2 top-1/2 -translate-y-1/2 text-on-surface" />
       </div>
 
-      {/* ── Category Chips ── */}
-      <div className="px-6 py-4 border-b border-outline-variant overflow-x-auto no-scrollbar">
-        <div className="flex gap-2">
-          {categories.map(cat => (
-            <CategoryChip
-              key={cat}
-              label={cat}
-              active={activeCategory === cat}
-              onClick={() => { setActiveCategory(activeCategory === cat ? null : cat); setPosts([]); }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* ── Default View: Trending + Top Authors ── */}
-      {!activeCategory && (
-        <div className="px-6 py-10 space-y-12">
-          {/* Trending Reports */}
-          {trending.length > 0 && (
-            <section>
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-on-surface">
-                <TrendingUp size={16} className="text-primary" />
-                <h3 className="font-display text-[11px] uppercase tracking-[0.2em] text-on-surface font-black">
-                  Trending Reports
-                </h3>
+      {/* ── TRENDING TOPICS ── */}
+      {trendingTopics.length > 0 && (
+        <div className="mb-[64px]">
+          <h2 className="type-label-md border-b-2 border-on-surface pb-[12px] mb-[24px]">TRENDING TOPICS</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-[24px]">
+            {trendingTopics.map(topic => (
+              <div key={topic.name} className="group border-2 border-on-surface p-[24px] hover:bg-primary hover:border-primary transition-colors cursor-pointer flex flex-col justify-between aspect-[3/2]">
+                <TrendingUp size={24} className="text-on-surface group-hover:text-on-primary" />
+                <div>
+                  <h3 className="type-headline-sm text-on-surface group-hover:text-on-primary line-clamp-1">#{topic.name.toUpperCase()}</h3>
+                  <p className="type-label-md text-on-surface-variant group-hover:text-on-primary/80 mt-2">{topic.count} STORIES</p>
+                </div>
               </div>
-              <div className="space-y-0">
-                {trending.map((post, i) => (
-                  <Link
-                    key={post._id}
-                    href={`/post/${post._id}`}
-                    className="group flex items-center gap-6 py-5 border-b border-outline-variant/30 transition-colors"
-                  >
-                    <span className="font-display text-4xl font-bold text-on-surface-variant/15 min-w-[40px] text-right tabular-nums">
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-display text-base font-semibold text-on-surface group-hover:text-primary transition-colors leading-snug line-clamp-1">
-                        {post.headline}
-                      </p>
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <span className="text-[11px] text-on-surface-variant/50 font-bold">{post.author?.name}</span>
-                        {post.author?.isVerifiedAuthor && <VerifiedBadge size={12} />}
-                        <FactScoreBadge score={post.factScore} size="sm" />
-                      </div>
-                    </div>
-                    <ArrowUpRight size={14} className="text-on-surface-variant/20 group-hover:text-primary transition-colors shrink-0" />
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Verified Experts */}
-          {topAuthors.length > 0 && (
-            <section>
-              <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-on-surface">
-                <Users size={16} className="text-primary" />
-                <h3 className="font-display text-[11px] uppercase tracking-[0.2em] text-on-surface font-black">
-                  Verified Experts to Follow
-                </h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-                {topAuthors.map((auth, i) => (
-                  <Link
-                    key={auth._id}
-                    href={`/author/${auth._id}`}
-                    className={`group flex items-center gap-4 py-5 transition-colors ${
-                      i < topAuthors.length - 1 ? 'border-b border-outline-variant/30' : ''
-                    }`}
-                  >
-                    <AuthorAvatar name={auth.name} image={auth.image} size="lg" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <p className="font-body text-sm font-bold text-on-surface group-hover:text-primary transition-colors truncate">
-                          {auth.name}
-                        </p>
-                        {auth.isVerifiedAuthor && <VerifiedBadge size={14} />}
-                      </div>
-                      <p className="type-label-caps text-[10px] text-on-surface-variant/40 mt-0.5">
-                        {auth.followersCount || 0} Followers
-                      </p>
-                    </div>
-                    <button className="bg-on-surface text-surface font-bold text-[12px] px-4 py-1.5 hover:bg-primary transition-colors shrink-0">
-                      Follow
-                    </button>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-        </div>
-      )}
-
-      {/* ── Filtered Category View ── */}
-      {activeCategory && (
-        <div className="px-6 pt-8">
-          {/* Sort Tabs */}
-          <div className="flex gap-6 mb-8 pb-2 border-b border-outline-variant">
-            {(['recent', 'score'] as const).map(s => (
-              <button
-                key={s}
-                onClick={() => setActiveSort(s)}
-                className={`type-label-caps text-[10px] pb-3 border-b-2 transition-all ${
-                  activeSort === s
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-on-surface-variant/40 hover:text-on-surface'
-                }`}
-              >
-                {s === 'recent' ? 'Latest Reporting' : 'Highest Fidelity'}
-              </button>
             ))}
           </div>
-
-          {loading && (
-            <div className="space-y-0">
-              {[1, 2, 3].map(i => <PostSkeleton key={i} variant="card" />)}
-            </div>
-          )}
-
-          {!loading && posts.length === 0 && (
-            <div className="py-20 text-center border border-dashed border-outline-variant/40">
-              <h3 className="font-display text-base text-on-surface mb-2 font-bold uppercase tracking-widest">
-                No reports in {activeCategory}
-              </h3>
-              <p className="font-body text-sm text-on-surface-variant/40">
-                Our verification bots are currently analyzing new sources.
-              </p>
-            </div>
-          )}
-
-          {!loading && posts.length > 0 && (
-            <div className="space-y-0">
-              {posts.map(post => (
-                <Link
-                  key={post._id}
-                  href={`/post/${post._id}`}
-                  className="group block py-6 border-b border-outline-variant/30 animate-fade-in"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="flex items-center gap-2">
-                      <AuthorAvatar name={post.author?.name || '?'} size="sm" />
-                      <span className="text-[11px] text-on-surface-variant/60 font-bold uppercase tracking-wider">
-                        {post.author?.name}
-                      </span>
-                      {post.author?.isVerifiedAuthor && <VerifiedBadge size={12} />}
-                    </div>
-                    <span className="text-[11px] text-on-surface-variant/30">{timeAgo(post.createdAt)}</span>
-                    <div className="ml-auto">
-                      <FactScoreBadge score={post.factScore} size="sm" />
-                    </div>
-                  </div>
-                  <h3 className="font-display text-xl md:text-2xl font-semibold text-on-surface leading-tight group-hover:text-primary transition-colors mb-2">
-                    {post.headline}
-                  </h3>
-                  <p className="font-body text-sm text-on-surface-variant/70 line-clamp-2 leading-relaxed mb-3">
-                    {post.description}
-                  </p>
-                  <span className="inline-flex items-center gap-1.5 type-label-caps text-[9px] text-primary font-bold">
-                    Read Full Report <ArrowUpRight size={10} />
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
         </div>
       )}
+
+      {/* ── MAIN CONTENT (8-col feed + 4-col sidebar) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-[24px] lg:gap-[64px]">
+        
+        {/* 8-col Feed */}
+        <div className="lg:col-span-8 flex flex-col gap-[48px]">
+          {loadingPosts && (
+            <>
+              <PostSkeleton variant="card" />
+              <PostSkeleton variant="card" />
+            </>
+          )}
+
+          {!loadingPosts && posts.map(post => (
+             <Link
+               key={post._id}
+               href={`/post/${post._id}`}
+               className="group block border-b border-outline-variant pb-[48px] last:border-0 last:pb-0"
+             >
+               {/* Display Image if available */}
+               {post.imageUrl && (
+                 <div className="aspect-video bg-surface-container-highest mb-[24px]">
+                   <img src={post.imageUrl} alt={post.headline} className="w-full h-full object-cover" />
+                 </div>
+               )}
+
+               <div className="flex items-center gap-4 mb-4">
+                 {post.category && (
+                   <span className={`type-label-md px-2 py-1 ${getCategoryColorClass(post.category)}`}>
+                     {post.category}
+                   </span>
+                 )}
+               </div>
+               
+               <h3 className="type-headline-md text-on-surface leading-tight group-hover:text-primary transition-colors mb-4">
+                 {post.headline}
+               </h3>
+               
+               <p className="type-body-lg text-on-surface-variant line-clamp-2 leading-relaxed mb-6">
+                 {post.description}
+               </p>
+
+               <div className="flex items-center justify-between pt-4 border-t border-outline-variant">
+                 <div className="flex items-center gap-3">
+                   <div className="w-[32px] h-[32px] bg-surface-container-highest grayscale">
+                     {post.author?.name ? <span className="flex items-center justify-center w-full h-full type-label-md">{post.author.name.charAt(0)}</span> : null}
+                   </div>
+                   <div className="flex items-center gap-1">
+                     <span className="type-label-md text-on-surface">{post.author?.name}</span>
+                     {post.author?.isVerifiedAuthor && <VerifiedBadge size={14} />}
+                   </div>
+                   <span className="type-caption text-on-surface-variant">· 4 MIN READ</span>
+                 </div>
+                 <FactScoreBadge score={post.factScore} size="sm" />
+               </div>
+             </Link>
+          ))}
+        </div>
+
+        {/* 4-col Sidebar */}
+        <div className="lg:col-span-4">
+          <div className="sticky top-[104px] flex flex-col gap-[48px]">
+            
+            {/* Featured Collection Box */}
+            <div className="bg-surface-container-low border-2 border-on-surface p-[24px]">
+              <h3 className="type-headline-sm mb-4">FEATURED COLLECTION</h3>
+              <p className="type-body-md text-on-surface-variant mb-6">Deep dives into the intersection of technology and human behavior.</p>
+              <button className="w-full border border-on-surface py-3 type-label-md hover:bg-on-surface hover:text-surface transition-colors">
+                VIEW COLLECTION
+              </button>
+            </div>
+
+            {/* Popular Searches */}
+            <div>
+              <h3 className="type-label-md border-b-2 border-on-surface pb-[12px] mb-[24px]">POPULAR SEARCHES</h3>
+              <div className="flex flex-col">
+                {['Artificial Intelligence', 'Global Markets', 'Design Systems', 'Silicon Valley'].map(search => (
+                  <Link href={`/explore?q=${search}`} key={search} className="group flex items-center justify-between border-b border-outline-variant py-4 last:border-0 hover:bg-surface-container-low px-2 -mx-2 transition-colors">
+                    <span className="type-body-md text-on-surface">{search}</span>
+                    <ArrowUpRight size={16} className="text-on-surface-variant group-hover:text-primary" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }

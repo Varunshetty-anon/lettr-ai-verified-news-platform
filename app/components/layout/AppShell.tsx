@@ -3,9 +3,8 @@
 import React from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
-import { LeftSidebar } from './LeftSidebar';
-import { RightSidebar } from './RightSidebar';
 import { MobileNav } from './MobileNav';
+import { TopNavigation } from './TopNavigation';
 
 const NO_SHELL_ROUTES = ['/auth', '/onboarding'];
 
@@ -13,18 +12,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
 
-  // Don't show sidebars on auth and onboarding pages
   const isNoShellRoute = NO_SHELL_ROUTES.some(route => pathname.startsWith(route));
 
-  if (isNoShellRoute || status === 'loading') {
-    return (
-      <div className="min-h-screen">
-        {children}
-      </div>
-    );
-  }
-
-  if (!session) {
+  if (isNoShellRoute || status === 'loading' || !session) {
     return (
       <div className="min-h-screen">
         {children}
@@ -33,17 +23,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col md:flex-row justify-center max-w-[1440px] mx-auto min-h-screen bg-surface px-0 sm:px-[64px] gap-[32px]">
-      <LeftSidebar />
+    <div className="min-h-screen bg-surface flex flex-col">
+      <TopNavigation />
       <MobileNav />
       {/* 
-        Add pt-[53px] (top bar height) and pb-[56px] (bottom nav height) for mobile 
-        to ensure content is not hidden behind fixed headers/footers
+        Mobile requires padding for fixed header and bottom tab bar.
+        Desktop relies on static TopNavigation.
       */}
-      <main className="flex-1 w-full max-w-[800px] min-h-screen pt-[53px] pb-[70px] sm:pt-0 sm:pb-0 px-[20px] sm:px-0">
+      <main className="flex-1 w-full pt-[53px] pb-[70px] md:pt-0 md:pb-0">
         {children}
       </main>
-      <RightSidebar />
     </div>
   );
 }
