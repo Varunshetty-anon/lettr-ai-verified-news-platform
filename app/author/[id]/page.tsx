@@ -84,7 +84,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent  animate-spin" />
       </div>
     );
   }
@@ -104,7 +104,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
     <div className="w-full min-h-screen pb-20">
       {/* Header */}
       <div className="sticky top-0 z-20 bg-surface/80 backdrop-blur-md flex items-center gap-6 px-4 h-[53px] border-b border-outline-variant/50">
-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-surface-variant transition-colors">
+        <button onClick={() => router.back()} className="p-2 -ml-2  hover:bg-surface-variant transition-colors">
           <ArrowLeft size={20} className="text-on-surface" />
         </button>
         <div className="flex flex-col">
@@ -139,7 +139,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
              <button
                onClick={handleFollow}
                disabled={followLoading}
-               className={`px-4 py-1.5 rounded-full font-bold text-[15px] transition-colors ${
+               className={`px-4 py-1.5  font-bold text-[15px] transition-colors ${
                  isFollowing
                    ? 'bg-transparent border border-outline-variant text-on-surface hover:border-red-500 hover:text-red-500 hover:bg-red-500/10'
                    : 'bg-on-surface text-surface hover:bg-on-surface/90'
@@ -152,7 +152,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
 
         {/* Bio Section */}
         <div className="mb-3">
-           <h1 className="font-display text-4xl font-black text-on-surface flex items-center gap-2 tracking-tight">
+           <h1 className="font-display text-4xl md:text-5xl font-bold text-on-surface flex items-center gap-2 tracking-tight">
              {author.name}
              {author.isVerifiedAuthor && (
                 <svg viewBox="0 0 24 24" aria-label="Verified account" className="w-[18px] h-[18px] fill-primary"><g><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.918-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.337 2.25c-.416-.165-.866-.25-1.336-.25-2.21 0-3.918 1.792-3.918 4 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.46.74 2.746 1.865 3.45-.164.446-.252.93-.252 1.45 0 2.21 1.71 4 3.918 4 .503 0 .984-.095 1.428-.266 1.053 1.252 2.628 2.066 4.34 2.066 1.714 0 3.287-.814 4.34-2.066.445.17.925.265 1.428.265 2.21 0 3.918-1.792 3.918-4 0-.52-.088-1.004-.252-1.45 1.125-.705 1.865-1.99 1.865-3.45zm-10.153 6.015l-4.5-4.5 1.815-1.815 2.685 2.685 7.185-7.185 1.815 1.815-9 9z"></path></g></svg>
@@ -161,7 +161,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
            <p className="text-[15px] text-on-surface-variant flex items-center gap-1">
               @{author.name?.toLowerCase().replace(/\s+/g, '')}
               {isBot && (
-                <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold rounded">BOT</span>
+                <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold ">BOT</span>
               )}
            </p>
         </div>
@@ -197,7 +197,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
       <div className="flex border-b border-outline-variant/50">
          <div className="flex-1 text-center py-4 hover:bg-surface-variant/30 cursor-pointer relative">
             <span className="font-bold text-[15px] text-on-surface">Posts</span>
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-primary rounded-full" />
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-primary " />
          </div>
          <div className="flex-1 text-center py-4 hover:bg-surface-variant/30 cursor-pointer">
             <span className="font-medium text-[15px] text-on-surface-variant">Replies</span>
@@ -214,11 +214,11 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
                 key={post._id}
                 href={`/post/${post._id}`}
                 prefetch={true}
-                className="group block bg-surface border border-outline-variant hover:border-primary/30 hover:shadow-md transition-all duration-300 animate-fade-in p-5 rounded-sm break-inside-avoid"
+                className="group block bg-surface border border-outline-variant hover:border-primary/30 hover:shadow-md transition-all duration-300 animate-fade-in p-5  break-inside-avoid"
               >
               <div className="flex gap-3">
                 {/* Avatar */}
-                <div className="w-8 h-8 shrink-0 rounded-sm bg-surface-variant overflow-hidden flex items-center justify-center border border-outline-variant/50">
+                <div className="w-8 h-8 shrink-0  bg-surface-variant overflow-hidden flex items-center justify-center border border-outline-variant/50">
                    <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">{author.name?.charAt(0)}</div>
                 </div>
 

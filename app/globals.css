@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-display: var(--font-playfair);
-  --font-body: var(--font-lora);
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-inter);
   --font-label: var(--font-inter);
 
   /* Color tokens — will be overridden by dark class */
@@ -26,44 +26,44 @@
   --color-accent: #b91c1c; /* a classic deep red accent */
 }
 
-/* ===== LIGHT MODE (Vintage NYT / Magazine) ===== */
+/* ===== LIGHT MODE (Modern Editorial) ===== */
 :root {
-  --surface: #fdfbf7;
-  --surface-container-low: #f5f3ee;
+  --surface: #fcf9f8;
+  --surface-container-low: #f6f3f2;
   --surface-container-lowest: #ffffff;
-  --surface-container-high: #eae8e1;
-  --surface-container-highest: #dfddd4;
-  --surface-variant: #e6e4dc;
+  --surface-container-high: #ebe7e7;
+  --surface-container-highest: #e5e2e1;
+  --surface-variant: #e5e2e1;
   
-  --on-surface: #1a1a1a;
-  --on-surface-variant: #4a4a4a;
-  --outline-variant: #d1cfc8;
+  --on-surface: #1c1b1b;
+  --on-surface-variant: #434656;
+  --outline-variant: #c4c5d9;
   
-  --primary: #111111;
-  --primary-container: #222222;
+  --primary: #0040e0;
+  --primary-container: #2e5bff;
   --on-primary: #ffffff;
-  --on-primary-container: #aaaaaa;
+  --on-primary-container: #efefff;
   
-  --secondary: #5a5a5a;
+  --secondary: #4959a3;
 }
 
 /* ===== DARK MODE (Elegant Dark Magazine) ===== */
 .dark {
-  --surface: #121212;
-  --surface-container-low: #181818;
-  --surface-container-lowest: #0a0a0a;
-  --surface-container-high: #242424;
-  --surface-container-highest: #2a2a2a;
-  --surface-variant: #2a2a2a;
+  --surface: #0a0a0a;
+  --surface-container-low: #141414;
+  --surface-container-lowest: #000000;
+  --surface-container-high: #1f1f1f;
+  --surface-container-highest: #292929;
+  --surface-variant: #292929;
   
-  --on-surface: #e4e2dd;
+  --on-surface: #ffffff;
   --on-surface-variant: #a1a1aa;
   --outline-variant: #3f3f46;
   
-  --primary: #e4e2dd;
-  --primary-container: #ffffff;
-  --on-primary: #121212;
-  --on-primary-container: #121212;
+  --primary: #2e5bff;
+  --primary-container: #0040e0;
+  --on-primary: #ffffff;
+  --on-primary-container: #efefff;
   
   --secondary: #a1a1aa;
 }
@@ -71,7 +71,7 @@
 body {
   background: var(--surface);
   color: var(--on-surface);
-  font-family: var(--font-body), system-ui, serif;
+  font-family: var(--font-body), system-ui, sans-serif;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

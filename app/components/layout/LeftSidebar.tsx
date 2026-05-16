@@ -26,7 +26,7 @@ export function LeftSidebar() {
   return (
     <header className="hidden sm:flex flex-col w-[88px] xl:w-[275px] h-screen sticky top-0 px-2 xl:px-4 py-4">
       <div className="flex items-center justify-center xl:justify-start xl:px-4 mb-4">
-        <Link href="/" className="w-12 h-12 flex items-center justify-center xl:justify-start rounded-full hover:bg-surface-variant transition-colors">
+        <Link href="/" className="w-12 h-12 flex items-center justify-center xl:justify-start hover:bg-surface-variant transition-colors">
            <span className="text-3xl font-bold xl:hidden text-on-surface">L</span>
            <span className="font-display font-black text-3xl tracking-[-0.04em] text-on-surface hidden xl:block">LETTR</span>
         </Link>
@@ -39,7 +39,7 @@ export function LeftSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`group flex items-center xl:justify-start justify-center gap-5 p-3 xl:px-4 xl:py-3 rounded-full transition-all w-fit ${
+              className={`group flex items-center xl:justify-start justify-center gap-5 p-3 xl:px-4 xl:py-3 transition-all w-fit ${
                 isActive
                   ? 'text-on-surface font-bold'
                   : 'text-on-surface hover:bg-surface-variant/50'
@@ -53,7 +53,7 @@ export function LeftSidebar() {
         <div className="pt-2">
             <button
               onClick={() => signOut()}
-              className="group flex items-center xl:justify-start justify-center gap-5 p-3 xl:px-4 xl:py-3 rounded-full transition-all w-fit text-on-surface hover:bg-surface-variant/50"
+              className="group flex items-center xl:justify-start justify-center gap-5 p-3 xl:px-4 xl:py-3 transition-all w-fit text-on-surface hover:bg-surface-variant/50"
             >
               <LogOut size={26} strokeWidth={2} />
               <span className="hidden xl:block font-body text-xl">Logout</span>
@@ -63,8 +63,8 @@ export function LeftSidebar() {
 
       {/* User Menu */}
       <div className="mt-auto pt-4 flex justify-center xl:justify-start w-full">
-        <div className="flex items-center gap-3 p-3 xl:px-4 xl:py-3 rounded-full hover:bg-surface-variant transition-colors cursor-pointer w-fit xl:w-full">
-          <div className="w-10 h-10 rounded-full bg-surface-variant overflow-hidden flex items-center justify-center shrink-0">
+        <div className="flex items-center gap-3 p-3 xl:px-4 xl:py-3 hover:bg-surface-variant transition-colors cursor-pointer w-fit xl:w-full">
+          <div className="w-10 h-10 bg-surface-variant overflow-hidden flex items-center justify-center shrink-0">
             {userImage ? (
               <img src={userImage} alt={userName} className="w-full h-full object-cover" />
             ) : (

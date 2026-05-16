@@ -1,0 +1,688 @@
+diff --git a/README_PATCH.md b/README_PATCH.md
+new file mode 100644
+index 0000000..9ded3aa
+--- /dev/null
++++ b/README_PATCH.md
+@@ -0,0 +1,13 @@
++# Applying the UI Patch
++
++A patch file has been created containing the new "Modern Editorial" UI updates from Stitch.
++
++Because this sandbox environment prevents direct remote git pushes, I have provided the raw Git patch output in the previous chat message.
++
++To apply all of these UI updates seamlessly to your local codebase, please copy the patch content from the chat, save it locally as `my-changes.patch` in the root of your project, and then run:
++
++```bash
++git apply my-changes.patch
++```
++
++Once applied, run `npm install` (or `pnpm install`) to ensure the new Space Grotesk fonts are downloaded, and then you can commit and push it to your repository!
+diff --git a/app/account/page.tsx b/app/account/page.tsx
+index 8454838..fe87806 100644
+--- a/app/account/page.tsx
++++ b/app/account/page.tsx
+@@ -44,9 +44,9 @@ export default function Account() {
+     return (
+       <div className="w-full min-h-screen p-5">
+         <div className="animate-pulse space-y-4">
+-          <div className="h-16 w-16 bg-surface-container-high rounded-full" />
+-          <div className="h-6 bg-surface-container-high rounded w-40" />
+-          <div className="h-4 bg-surface-container-high rounded w-60" />
++          <div className="h-16 w-16 bg-surface-container-high " />
++          <div className="h-6 bg-surface-container-high  w-40" />
++          <div className="h-4 bg-surface-container-high  w-60" />
+         </div>
+       </div>
+     );
+@@ -74,7 +74,7 @@ export default function Account() {
+       <div className="p-5">
+         {/* Profile card */}
+         <div className="flex items-center gap-4 mb-8 pb-6 border-b border-outline-variant">
+-          <div className="w-16 h-16 bg-primary/10 text-primary flex items-center justify-center font-display text-2xl font-bold rounded-full overflow-hidden flex-shrink-0">
++          <div className="w-16 h-16 bg-primary/10 text-primary flex items-center justify-center font-display text-2xl font-bold  overflow-hidden flex-shrink-0">
+             {user.image ? (
+               <img src={user.image} alt="" className="w-full h-full object-cover" />
+             ) : (
+diff --git a/app/auth/page.tsx b/app/auth/page.tsx
+index c73e6dd..7b20b62 100644
+--- a/app/auth/page.tsx
++++ b/app/auth/page.tsx
+@@ -82,7 +82,7 @@ export default function AuthPage() {
+       <div className="w-full max-w-md">
+         {/* Logo */}
+         <div className="text-center mb-10">
+-          <h1 className="font-display font-black text-3xl tracking-[-0.04em] text-primary mb-1">
++          <h1 className="font-display font-black text-5xl tracking-[-0.04em] text-primary mb-1">
+             LETTR<span className="text-primary/30">.</span>
+           </h1>
+           <p className="font-label text-[9px] uppercase tracking-[0.25em] text-on-surface-variant/40">
+diff --git a/app/author/[id]/page.tsx b/app/author/[id]/page.tsx
+index ae0407d..8ce9049 100644
+--- a/app/author/[id]/page.tsx
++++ b/app/author/[id]/page.tsx
+@@ -84,7 +84,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
+   if (loading) {
+     return (
+       <div className="min-h-screen flex items-center justify-center">
+-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
++        <div className="w-8 h-8 border-4 border-primary border-t-transparent  animate-spin" />
+       </div>
+     );
+   }
+@@ -104,7 +104,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
+     <div className="w-full min-h-screen pb-20">
+       {/* Header */}
+       <div className="sticky top-0 z-20 bg-surface/80 backdrop-blur-md flex items-center gap-6 px-4 h-[53px] border-b border-outline-variant/50">
+-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-surface-variant transition-colors">
++        <button onClick={() => router.back()} className="p-2 -ml-2  hover:bg-surface-variant transition-colors">
+           <ArrowLeft size={20} className="text-on-surface" />
+         </button>
+         <div className="flex flex-col">
+@@ -139,7 +139,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
+              <button
+                onClick={handleFollow}
+                disabled={followLoading}
+-               className={`px-4 py-1.5 rounded-full font-bold text-[15px] transition-colors ${
++               className={`px-4 py-1.5  font-bold text-[15px] transition-colors ${
+                  isFollowing
+                    ? 'bg-transparent border border-outline-variant text-on-surface hover:border-red-500 hover:text-red-500 hover:bg-red-500/10'
+                    : 'bg-on-surface text-surface hover:bg-on-surface/90'
+@@ -152,7 +152,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
+
+         {/* Bio Section */}
+         <div className="mb-3">
+-           <h1 className="font-display text-4xl font-black text-on-surface flex items-center gap-2 tracking-tight">
++           <h1 className="font-display text-4xl md:text-5xl font-bold text-on-surface flex items-center gap-2 tracking-tight">
+              {author.name}
+              {author.isVerifiedAuthor && (
+                 <svg viewBox="0 0 24 24" aria-label="Verified account" className="w-[18px] h-[18px] fill-primary"><g><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.918-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.337 2.25c-.416-.165-.866-.25-1.336-.25-2.21 0-3.918 1.792-3.918 4 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.46.74 2.746 1.865 3.45-.164.446-.252.93-.252 1.45 0 2.21 1.71 4 3.918 4 .503 0 .984-.095 1.428-.266 1.053 1.252 2.628 2.066 4.34 2.066 1.714 0 3.287-.814 4.34-2.066.445.17.925.265 1.428.265 2.21 0 3.918-1.792 3.918-4 0-.52-.088-1.004-.252-1.45 1.125-.705 1.865-1.99 1.865-3.45zm-10.153 6.015l-4.5-4.5 1.815-1.815 2.685 2.685 7.185-7.185 1.815 1.815-9 9z"></path></g></svg>
+@@ -161,7 +161,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
+            <p className="text-[15px] text-on-surface-variant flex items-center gap-1">
+               @{author.name?.toLowerCase().replace(/\s+/g, '')}
+               {isBot && (
+-                <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold rounded">BOT</span>
++                <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold ">BOT</span>
+               )}
+            </p>
+         </div>
+@@ -197,7 +197,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
+       <div className="flex border-b border-outline-variant/50">
+          <div className="flex-1 text-center py-4 hover:bg-surface-variant/30 cursor-pointer relative">
+             <span className="font-bold text-[15px] text-on-surface">Posts</span>
+-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-primary rounded-full" />
++            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-14 h-1 bg-primary " />
+          </div>
+          <div className="flex-1 text-center py-4 hover:bg-surface-variant/30 cursor-pointer">
+             <span className="font-medium text-[15px] text-on-surface-variant">Replies</span>
+@@ -214,11 +214,11 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
+                 key={post._id}
+                 href={`/post/${post._id}`}
+                 prefetch={true}
+-                className="group block bg-surface border border-outline-variant hover:border-primary/30 hover:shadow-md transition-all duration-300 animate-fade-in p-5 rounded-sm break-inside-avoid"
++                className="group block bg-surface border border-outline-variant hover:border-primary/30 hover:shadow-md transition-all duration-300 animate-fade-in p-5  break-inside-avoid"
+               >
+               <div className="flex gap-3">
+                 {/* Avatar */}
+-                <div className="w-8 h-8 shrink-0 rounded-sm bg-surface-variant overflow-hidden flex items-center justify-center border border-outline-variant/50">
++                <div className="w-8 h-8 shrink-0  bg-surface-variant overflow-hidden flex items-center justify-center border border-outline-variant/50">
+                    <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">{author.name?.charAt(0)}</div>
+                 </div>
+
+diff --git a/app/components/layout/LeftSidebar.tsx b/app/components/layout/LeftSidebar.tsx
+index 0420019..2ce821c 100644
+--- a/app/components/layout/LeftSidebar.tsx
++++ b/app/components/layout/LeftSidebar.tsx
+@@ -26,7 +26,7 @@ export function LeftSidebar() {
+   return (
+     <header className="hidden sm:flex flex-col w-[88px] xl:w-[275px] h-screen sticky top-0 px-2 xl:px-4 py-4">
+       <div className="flex items-center justify-center xl:justify-start xl:px-4 mb-4">
+-        <Link href="/" className="w-12 h-12 flex items-center justify-center xl:justify-start rounded-full hover:bg-surface-variant transition-colors">
++        <Link href="/" className="w-12 h-12 flex items-center justify-center xl:justify-start hover:bg-surface-variant transition-colors">
+            <span className="text-3xl font-bold xl:hidden text-on-surface">L</span>
+            <span className="font-display font-black text-3xl tracking-[-0.04em] text-on-surface hidden xl:block">LETTR</span>
+         </Link>
+@@ -39,7 +39,7 @@ export function LeftSidebar() {
+             <Link
+               key={item.href}
+               href={item.href}
+-              className={`group flex items-center xl:justify-start justify-center gap-5 p-3 xl:px-4 xl:py-3 rounded-full transition-all w-fit ${
++              className={`group flex items-center xl:justify-start justify-center gap-5 p-3 xl:px-4 xl:py-3 transition-all w-fit ${
+                 isActive
+                   ? 'text-on-surface font-bold'
+                   : 'text-on-surface hover:bg-surface-variant/50'
+@@ -53,7 +53,7 @@ export function LeftSidebar() {
+         <div className="pt-2">
+             <button
+               onClick={() => signOut()}
+-              className="group flex items-center xl:justify-start justify-center gap-5 p-3 xl:px-4 xl:py-3 rounded-full transition-all w-fit text-on-surface hover:bg-surface-variant/50"
++              className="group flex items-center xl:justify-start justify-center gap-5 p-3 xl:px-4 xl:py-3 transition-all w-fit text-on-surface hover:bg-surface-variant/50"
+             >
+               <LogOut size={26} strokeWidth={2} />
+               <span className="hidden xl:block font-body text-xl">Logout</span>
+@@ -63,8 +63,8 @@ export function LeftSidebar() {
+
+       {/* User Menu */}
+       <div className="mt-auto pt-4 flex justify-center xl:justify-start w-full">
+-        <div className="flex items-center gap-3 p-3 xl:px-4 xl:py-3 rounded-full hover:bg-surface-variant transition-colors cursor-pointer w-fit xl:w-full">
+-          <div className="w-10 h-10 rounded-full bg-surface-variant overflow-hidden flex items-center justify-center shrink-0">
++        <div className="flex items-center gap-3 p-3 xl:px-4 xl:py-3 hover:bg-surface-variant transition-colors cursor-pointer w-fit xl:w-full">
++          <div className="w-10 h-10 bg-surface-variant overflow-hidden flex items-center justify-center shrink-0">
+             {userImage ? (
+               <img src={userImage} alt={userName} className="w-full h-full object-cover" />
+             ) : (
+diff --git a/app/components/layout/MobileNav.tsx b/app/components/layout/MobileNav.tsx
+index 89af4d2..636470b 100644
+--- a/app/components/layout/MobileNav.tsx
++++ b/app/components/layout/MobileNav.tsx
+@@ -22,7 +22,7 @@ export function MobileNav() {
+       <header className="sm:hidden fixed top-0 left-0 z-[100] w-full bg-surface/90 backdrop-blur-md border-b border-outline-variant flex items-center justify-between px-4 h-[53px]">
+         <div className="w-8">
+             <Link href="/account">
+-               <div className="w-8 h-8 rounded-full bg-surface-variant overflow-hidden flex items-center justify-center">
++               <div className="w-8 h-8 bg-surface-variant overflow-hidden flex items-center justify-center">
+                  <UserIcon size={16} className="text-on-surface-variant" />
+                </div>
+             </Link>
+diff --git a/app/components/layout/RightSidebar.tsx b/app/components/layout/RightSidebar.tsx
+index 7a57878..10649bf 100644
+--- a/app/components/layout/RightSidebar.tsx
++++ b/app/components/layout/RightSidebar.tsx
+@@ -39,7 +39,7 @@ export function RightSidebar() {
+     <aside className="hidden lg:block w-[350px] pl-8 py-4 sticky top-0 h-screen overflow-y-auto">
+       {/* Search / Top Space */}
+       <div className="mb-4 sticky top-0 bg-surface z-10 pt-2 pb-2">
+-        <div className="bg-surface-variant rounded-full flex items-center px-4 py-3 border border-transparent focus-within:border-primary focus-within:bg-surface">
++        <div className="bg-surface-variant flex items-center px-4 py-3 border-b-2 border-transparent focus-within:border-primary focus-within:bg-surface">
+           <Search size={20} className="text-on-surface-variant" />
+           <input
+             type="text"
+@@ -50,7 +50,7 @@ export function RightSidebar() {
+       </div>
+
+       {/* Trending Box */}
+-      <div className="bg-surface-container-high rounded-2xl border border-outline-variant overflow-hidden mb-4">
++      <div className="bg-surface-container-high border border-outline-variant mb-4">
+         <h2 className="font-bold text-xl px-4 py-3 text-on-surface">What&apos;s happening</h2>
+
+         {trending.length > 0 ? trending.map((topic, i) => (
+@@ -69,13 +69,13 @@ export function RightSidebar() {
+       </div>
+
+       {/* Who to Follow Box */}
+-      <div className="bg-surface-container-high rounded-2xl border border-outline-variant overflow-hidden">
++      <div className="bg-surface-container-high border border-outline-variant">
+         <h2 className="font-bold text-xl px-4 py-3 text-on-surface">Who to follow</h2>
+
+         {authors.length > 0 ? authors.map((author, i) => (
+           <Link href={`/author/${author._id}`} key={i} className="px-4 py-3 hover:bg-surface-variant/50 cursor-pointer transition-colors flex items-center justify-between block">
+             <div className="flex items-center gap-3">
+-              <div className="w-10 h-10 rounded-full bg-surface-variant overflow-hidden shrink-0">
++              <div className="w-10 h-10 bg-surface-variant overflow-hidden shrink-0">
+                 {author.image ? (
+                   <img src={author.image} alt={author.name} className="w-full h-full object-cover" />
+                 ) : (
+@@ -92,7 +92,7 @@ export function RightSidebar() {
+                 <p className="text-[15px] text-on-surface-variant truncate">@{author.name?.toLowerCase().replace(/\s+/g, '')}</p>
+               </div>
+             </div>
+-            <button className="bg-on-surface text-surface font-bold text-[14px] px-4 py-1.5 rounded-full hover:bg-on-surface/90 shrink-0 ml-2">
++            <button className="bg-on-surface text-surface font-bold text-[14px] px-4 py-1.5 hover:bg-on-surface/90 shrink-0 ml-2">
+               Follow
+             </button>
+           </Link>
+diff --git a/app/components/ui/Button.tsx b/app/components/ui/Button.tsx
+index 8b762c5..a25b9a1 100644
+--- a/app/components/ui/Button.tsx
++++ b/app/components/ui/Button.tsx
+@@ -8,7 +8,7 @@ export function Button({ variant = 'primary', className = '', children, ...props
+   const baseStyles = "inline-flex items-center justify-center font-label font-medium transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]";
+
+   const variants = {
+-    primary: "bg-primary text-on-primary rounded-sm px-6 py-3 hover:bg-primary-container",
++    primary: "bg-primary text-on-primary  px-6 py-3 hover:bg-primary-container",
+     secondary: "bg-surface-container-high text-on-surface px-6 py-3 hover:bg-surface-variant",
+     tertiary: "text-primary px-2 py-2 border-b-2 border-transparent hover:border-outline-variant hover:border-opacity-15"
+   };
+diff --git a/app/explore/page.tsx b/app/explore/page.tsx
+index 75b18f9..f5ce7cf 100644
+--- a/app/explore/page.tsx
++++ b/app/explore/page.tsx
+@@ -74,7 +74,7 @@ export default function Explore() {
+   return (
+     <div className="w-full min-h-screen bg-surface-container-lowest animate-fade-in pb-20">
+       <div className="px-5 pt-10 pb-6 border-b border-outline-variant bg-surface-container-low shadow-sm">
+-        <h1 className="font-display text-sm uppercase tracking-[0.3em] text-on-surface font-black">Explore</h1>
++        <h1 className="font-display text-4xl md:text-5xl font-bold text-on-surface">Explore</h1>
+         <p className="font-body text-xs text-on-surface-variant/50 mt-1">Discover verified authors and trending topics</p>
+       </div>
+
+@@ -106,7 +106,7 @@ export default function Explore() {
+               <div className="grid grid-cols-1 gap-4">
+                 {trending.map((post, i) => (
+                   <Link key={post._id} href={`/post/${post._id}`} className="group flex items-center gap-6 p-5 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all shadow-sm">
+-                    <span className="font-display text-3xl font-black text-on-surface-variant/10 min-w-[32px] text-center italic">{i + 1}</span>
++                    <span className="font-display text-4xl font-bold text-on-surface-variant/20 min-w-[32px] text-center">{i + 1}</span>
+                     <div className="flex-1 min-w-0">
+                       <p className="font-body text-base font-bold text-on-surface group-hover:text-primary transition-colors leading-snug line-clamp-1">{post.headline}</p>
+                       <div className="flex items-center gap-3 mt-1.5">
+@@ -133,7 +133,7 @@ export default function Explore() {
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {topAuthors.map((auth) => (
+                   <Link key={auth._id} href={`/author/${auth._id}`} className="group flex items-center gap-4 p-5 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all shadow-sm">
+-                    <div className="w-12 h-12 bg-surface-container-high rounded-full overflow-hidden shrink-0 flex items-center justify-center text-primary font-black border border-outline-variant/30">
++                    <div className="w-12 h-12 bg-surface-container-high  overflow-hidden shrink-0 flex items-center justify-center text-primary font-black border border-outline-variant/30">
+                        {auth.image ? <img src={auth.image} className="w-full h-full object-cover" /> : auth.name[0]}
+                     </div>
+                     <div className="flex-1 min-w-0">
+@@ -165,8 +165,8 @@ export default function Explore() {
+             <div className="space-y-4">
+               {[1, 2, 3].map(i => (
+                 <div key={i} className="animate-pulse p-6 bg-surface-container-low border border-outline-variant shadow-sm">
+-                  <div className="h-5 bg-surface-container-high rounded w-3/4 mb-3" />
+-                  <div className="h-4 bg-surface-container-high rounded w-full" />
++                  <div className="h-5 bg-surface-container-high  w-3/4 mb-3" />
++                  <div className="h-4 bg-surface-container-high  w-full" />
+                 </div>
+               ))}
+             </div>
+@@ -182,12 +182,12 @@ export default function Explore() {
+           {!loading && posts.length > 0 && (
+             <div className="columns-1 sm:columns-2 gap-4 space-y-4 pb-4">
+               {posts.map(post => (
+-                <Link key={post._id} href={`/post/${post._id}`} className="group block p-6 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all shadow-sm animate-fade-in relative overflow-hidden rounded-sm break-inside-avoid">
++                <Link key={post._id} href={`/post/${post._id}`} className="group block p-6 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all shadow-sm animate-fade-in relative overflow-hidden  break-inside-avoid">
+                   <div className="flex items-center justify-between mb-4">
+                     <div className="flex items-center gap-3">
+                       {post.author && (
+                         <div className="flex items-center gap-2">
+-                           <div className="w-5 h-5 rounded-full bg-surface-container-high flex items-center justify-center text-[10px] font-black text-primary/40 border border-outline-variant/30">
++                           <div className="w-5 h-5  bg-surface-container-high flex items-center justify-center text-[10px] font-black text-primary/40 border border-outline-variant/30">
+                               {post.author.name[0]}
+                            </div>
+                            <span className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-bold">{post.author.name}</span>
+@@ -200,7 +200,7 @@ export default function Explore() {
+                       <Shield size={12} /> {post.factScore}%
+                     </div>
+                   </div>
+-                  <h3 className="font-display text-xl font-bold text-on-surface leading-tight group-hover:text-primary transition-colors mb-2">{post.headline}</h3>
++                  <h3 className="font-display text-3xl md:text-4xl font-bold text-on-surface leading-tight group-hover:text-primary transition-colors mb-2">{post.headline}</h3>
+                   <p className="font-body text-sm text-on-surface-variant/70 line-clamp-2 leading-relaxed mb-4">{post.description}</p>
+                   <div className="inline-flex items-center gap-1.5 font-label text-[9px] uppercase tracking-widest text-primary font-bold">
+                      Read Detailed Portfolio <ArrowUpRight size={10} />
+diff --git a/app/globals.css b/app/globals.css
+index 5d27c02..71f0566 100644
+--- a/app/globals.css
++++ b/app/globals.css
+@@ -1,8 +1,8 @@
+ @import "tailwindcss";
+
+ @theme inline {
+-  --font-display: var(--font-playfair);
+-  --font-body: var(--font-lora);
++  --font-display: var(--font-space-grotesk);
++  --font-body: var(--font-inter);
+   --font-label: var(--font-inter);
+
+   /* Color tokens — will be overridden by dark class */
+@@ -26,44 +26,44 @@
+   --color-accent: #b91c1c; /* a classic deep red accent */
+ }
+
+-/* ===== LIGHT MODE (Vintage NYT / Magazine) ===== */
++/* ===== LIGHT MODE (Modern Editorial) ===== */
+ :root {
+-  --surface: #fdfbf7;
+-  --surface-container-low: #f5f3ee;
++  --surface: #fcf9f8;
++  --surface-container-low: #f6f3f2;
+   --surface-container-lowest: #ffffff;
+-  --surface-container-high: #eae8e1;
+-  --surface-container-highest: #dfddd4;
+-  --surface-variant: #e6e4dc;
++  --surface-container-high: #ebe7e7;
++  --surface-container-highest: #e5e2e1;
++  --surface-variant: #e5e2e1;
+
+-  --on-surface: #1a1a1a;
+-  --on-surface-variant: #4a4a4a;
+-  --outline-variant: #d1cfc8;
++  --on-surface: #1c1b1b;
++  --on-surface-variant: #434656;
++  --outline-variant: #c4c5d9;
+
+-  --primary: #111111;
+-  --primary-container: #222222;
++  --primary: #0040e0;
++  --primary-container: #2e5bff;
+   --on-primary: #ffffff;
+-  --on-primary-container: #aaaaaa;
++  --on-primary-container: #efefff;
+
+-  --secondary: #5a5a5a;
++  --secondary: #4959a3;
+ }
+
+ /* ===== DARK MODE (Elegant Dark Magazine) ===== */
+ .dark {
+-  --surface: #121212;
+-  --surface-container-low: #181818;
+-  --surface-container-lowest: #0a0a0a;
+-  --surface-container-high: #242424;
+-  --surface-container-highest: #2a2a2a;
+-  --surface-variant: #2a2a2a;
++  --surface: #0a0a0a;
++  --surface-container-low: #141414;
++  --surface-container-lowest: #000000;
++  --surface-container-high: #1f1f1f;
++  --surface-container-highest: #292929;
++  --surface-variant: #292929;
+
+-  --on-surface: #e4e2dd;
++  --on-surface: #ffffff;
+   --on-surface-variant: #a1a1aa;
+   --outline-variant: #3f3f46;
+
+-  --primary: #e4e2dd;
+-  --primary-container: #ffffff;
+-  --on-primary: #121212;
+-  --on-primary-container: #121212;
++  --primary: #2e5bff;
++  --primary-container: #0040e0;
++  --on-primary: #ffffff;
++  --on-primary-container: #efefff;
+
+   --secondary: #a1a1aa;
+ }
+@@ -71,7 +71,7 @@
+ body {
+   background: var(--surface);
+   color: var(--on-surface);
+-  font-family: var(--font-body), system-ui, serif;
++  font-family: var(--font-body), system-ui, sans-serif;
+   text-rendering: optimizeLegibility;
+   -webkit-font-smoothing: antialiased;
+   -moz-osx-font-smoothing: grayscale;
+diff --git a/app/layout.tsx b/app/layout.tsx
+index ae1600d..2ffaf6f 100644
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -1,16 +1,13 @@
+ import type { Metadata } from "next";
+-import { Playfair_Display, Lora, Inter } from "next/font/google";
++import { Space_Grotesk, Inter } from "next/font/google";
+ import "./globals.css";
+
+-const playfair = Playfair_Display({
+-  variable: "--font-playfair",
++const spaceGrotesk = Space_Grotesk({
++  variable: "--font-space-grotesk",
+   subsets: ["latin"],
+ });
+
+-const lora = Lora({
+-  variable: "--font-lora",
+-  subsets: ["latin"],
+-});
++
+
+ const inter = Inter({
+   variable: "--font-inter",
+@@ -35,7 +32,7 @@ export default function RootLayout({
+     <html
+       lang="en"
+       suppressHydrationWarning
+-      className={`${playfair.variable} ${lora.variable} ${inter.variable} h-full antialiased`}
++      className={`${spaceGrotesk.variable} ${inter.variable} h-full antialiased`}
+     >
+       <body className="min-h-full font-body bg-surface text-on-surface">
+         <SessionProvider>
+diff --git a/app/onboarding/preferences/page.tsx b/app/onboarding/preferences/page.tsx
+index ac679af..37926dc 100644
+--- a/app/onboarding/preferences/page.tsx
++++ b/app/onboarding/preferences/page.tsx
+@@ -58,10 +58,10 @@ export default function OnboardingPreferencesPage() {
+       <div className="max-w-xl w-full">
+         {/* Header */}
+         <div className="text-center mb-10">
+-          <h1 className="font-display font-black text-3xl tracking-[-0.04em] text-primary mb-2">
++          <h1 className="font-display font-black text-5xl tracking-[-0.04em] text-primary mb-2">
+             LETTR<span className="text-primary/30">.</span>
+           </h1>
+-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
++          <h2 className="font-display text-4xl font-bold text-on-surface mb-2">
+             Welcome, {firstName}
+           </h2>
+           <p className="font-body text-sm text-on-surface-variant/60 max-w-sm mx-auto">
+diff --git a/app/page.tsx b/app/page.tsx
+index 45c5879..b15e146 100644
+--- a/app/page.tsx
++++ b/app/page.tsx
+@@ -154,7 +154,7 @@ export default function Home() {
+         <div className="flex items-baseline justify-between">
+           <div>
+             {firstName && (
+-              <h1 className="font-display text-xl font-bold text-on-surface mb-0.5">
++              <h1 className="font-display text-4xl md:text-7xl font-bold text-on-surface mb-0.5">
+                 Hello, {firstName}
+               </h1>
+             )}
+@@ -195,11 +195,11 @@ export default function Home() {
+               <Link
+                 href={`/post/${post._id}`}
+                 prefetch={true}
+-                className="group block bg-surface border border-outline-variant hover:border-primary/30 hover:shadow-md transition-all duration-300 animate-fade-in p-5 rounded-sm break-inside-avoid"
++                className="group block bg-surface border border-outline-variant hover:border-primary transition-all duration-300 animate-fade-in p-5 break-inside-avoid"
+               >
+               <div className="flex gap-3">
+                 {/* Left side: Avatar */}
+-                <div className="w-8 h-8 shrink-0 rounded-sm bg-surface-variant overflow-hidden flex items-center justify-center border border-outline-variant/50">
++                <div className="w-8 h-8 shrink-0 bg-surface-variant overflow-hidden flex items-center justify-center border border-outline-variant/50">
+                   {post.author ? (
+                      <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">{post.author.name?.charAt(0)}</div>
+                   ) : (
+@@ -233,7 +233,7 @@ export default function Home() {
+                     <span className="text-[15px] text-on-surface-variant hover:underline">{timeAgo(post.createdAt)}</span>
+
+                     {post.author?.email?.includes('@lettr.ai') && (
+-                        <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold rounded">BOT</span>
++                        <span className="ml-1 text-[11px] px-1.5 py-0.5 border border-outline-variant text-on-surface-variant font-bold">BOT</span>
+                     )}
+                   </div>
+
+@@ -273,7 +273,7 @@ export default function Home() {
+                              </p>
+                            )}
+                            <div className="mt-2 flex items-center justify-between">
+-                              <span className="text-[12px] text-on-surface-variant/70 font-medium border border-outline-variant/50 rounded-full px-2 py-0.5">
++                              <span className="text-[12px] text-on-surface-variant/70 font-medium border border-outline-variant/50 px-2 py-0.5">
+                                 AI Fact Score: {post.factScore}/100
+                               </span>
+                            </div>
+@@ -284,14 +284,14 @@ export default function Home() {
+                   {/* Bottom Actions */}
+                   <div className="flex items-center justify-between text-on-surface-variant max-w-md mt-1">
+                     <button className="flex items-center gap-2 group/btn transition-colors">
+-                      <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
++                      <div className="p-2 group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+                         <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><g><path d="M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01zm8.005-6c-3.317 0-6.005 2.69-6.005 6 0 3.37 2.77 6.08 6.138 6.01l.351-.01h1.761v2.3l5.087-2.81c1.951-1.08 3.163-3.13 3.163-5.36 0-3.39-2.744-6.13-6.129-6.13H9.756z"></path></g></svg>
+                       </div>
+                       <span className="text-[13px] group-hover/btn:text-primary">12</span>
+                     </button>
+
+                     <button className="flex items-center gap-2 group/btn transition-colors">
+-                      <div className="p-2 rounded-full group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 transition-colors">
++                      <div className="p-2 group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 transition-colors">
+                         <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><g><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"></path></g></svg>
+                       </div>
+                       <span className="text-[13px] group-hover/btn:text-emerald-500">4</span>
+@@ -301,7 +301,7 @@ export default function Home() {
+                       onClick={(e) => toggleLike(post._id, e)}
+                       className={`flex items-center gap-2 group/btn transition-colors ${likedIds.has(post._id) ? 'text-rose-500' : ''}`}
+                     >
+-                      <div className="p-2 rounded-full group-hover/btn:bg-rose-500/10 group-hover/btn:text-rose-500 transition-colors">
++                      <div className="p-2 group-hover/btn:bg-rose-500/10 group-hover/btn:text-rose-500 transition-colors">
+                         {likedIds.has(post._id) ? (
+                            <Heart size={20} fill="currentColor" className="text-rose-500" />
+                         ) : (
+@@ -312,7 +312,7 @@ export default function Home() {
+                     </button>
+
+                     <button className="flex items-center gap-2 group/btn transition-colors">
+-                      <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
++                      <div className="p-2 group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+                         <ExternalLink size={20} />
+                       </div>
+                     </button>
+diff --git a/app/post/[id]/page.tsx b/app/post/[id]/page.tsx
+index 1c2a95c..9cf090f 100644
+--- a/app/post/[id]/page.tsx
++++ b/app/post/[id]/page.tsx
+@@ -48,7 +48,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
+   if (isLoading) {
+     return (
+       <div className="min-h-screen flex items-center justify-center">
+-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
++        <div className="w-8 h-8 border-4 border-primary border-t-transparent  animate-spin" />
+       </div>
+     );
+   }
+@@ -65,7 +65,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
+     <div className="w-full min-h-screen pb-20">
+       {/* Header */}
+       <div className="sticky top-0 z-10 bg-surface/80 backdrop-blur-md flex items-center gap-6 px-4 h-[53px] border-b border-outline-variant/50">
+-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-surface-variant transition-colors">
++        <button onClick={() => router.back()} className="p-2 -ml-2  hover:bg-surface-variant transition-colors">
+           <ArrowLeft size={20} className="text-on-surface" />
+         </button>
+         <h1 className="text-xl font-bold text-on-surface">Post</h1>
+@@ -76,7 +76,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
+         {/* Author Row */}
+         <div className="flex items-center gap-3 mb-3">
+           <Link href={`/author/${post.author?._id}`} className="shrink-0">
+-            <div className="w-10 h-10 rounded-full bg-surface-variant overflow-hidden flex items-center justify-center">
++            <div className="w-10 h-10  bg-surface-variant overflow-hidden flex items-center justify-center">
+               {post.author ? (
+                  <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">{post.author.name?.charAt(0)}</div>
+               ) : (
+@@ -98,7 +98,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
+                 @{post.author?.name?.toLowerCase().replace(/\s+/g, '')}
+               </span>
+               {post.author?.email?.includes('@lettr.ai') && (
+-                <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold rounded">BOT</span>
++                <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold ">BOT</span>
+               )}
+             </div>
+           </div>
+@@ -116,7 +116,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
+
+         {/* Media */}
+         {(post.imageUrl || post.videoUrl) && (
+-          <div className="mb-4 rounded-2xl overflow-hidden border border-outline-variant/50 relative bg-surface-container-low max-h-[600px] flex items-center justify-center">
++          <div className="mb-4 -2xl overflow-hidden border border-outline-variant/50 relative bg-surface-container-low max-h-[600px] flex items-center justify-center">
+             {post.imageUrl && !post.videoUrl && (
+               <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-full object-contain max-h-[600px]" />
+             )}
+@@ -129,7 +129,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
+         )}
+
+         {/* Community Note Integration */}
+-        <div className="mb-4 bg-surface-container-high rounded-xl p-4 border border-outline-variant/30">
++        <div className="mb-4 bg-surface-container-high  p-4 border border-outline-variant/30">
+            <div className="flex items-start gap-3">
+               <Shield size={20} className={post.factScore >= 80 ? 'text-emerald-500 mt-1' : post.factScore >= 60 ? 'text-amber-500 mt-1' : 'text-red-500 mt-1'} />
+               <div className="flex-1">
+@@ -154,7 +154,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
+                       AI Fact Score: <span className="font-bold">{post.factScore}/100</span>
+                     </span>
+                     <span className="text-[13px] text-on-surface-variant">·</span>
+-                    <span className={`text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${post.factScore >= 85 ? 'bg-emerald-500/10 text-emerald-500' : post.factScore >= 60 ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'}`}>
++                    <span className={`text-[11px] uppercase tracking-wider font-bold px-2 py-0.5  ${post.factScore >= 85 ? 'bg-emerald-500/10 text-emerald-500' : post.factScore >= 60 ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'}`}>
+                       {post.confidence || 'Medium'} Confidence
+                     </span>
+                  </div>
+@@ -184,28 +184,28 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
+         {/* Action Buttons */}
+         <div className="flex items-center justify-around text-on-surface-variant pb-2">
+           <button className="flex items-center gap-2 group/btn transition-colors">
+-            <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
++            <div className="p-2  group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+               <MessageCircle size={22} />
+             </div>
+             <span className="text-[15px] group-hover/btn:text-primary">12</span>
+           </button>
+
+           <button onClick={handleLike} className="flex items-center gap-2 group/btn transition-colors">
+-            <div className="p-2 rounded-full group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 transition-colors">
++            <div className="p-2  group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 transition-colors">
+               <Heart size={22} className={liked ? "fill-emerald-500 text-emerald-500" : ""} />
+             </div>
+             <span className="text-[15px] group-hover/btn:text-emerald-500">{post.engagement}</span>
+           </button>
+
+           <button className="flex items-center gap-2 group/btn transition-colors">
+-            <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
++            <div className="p-2  group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+               <BarChart2 size={22} />
+             </div>
+             <span className="text-[15px] group-hover/btn:text-primary">12.5K</span>
+           </button>
+
+           <button className="flex items-center gap-2 group/btn transition-colors">
+-            <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
++            <div className="p-2  group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+               <Share size={22} />
+             </div>
+           </button>
+diff --git a/app/publish/page.tsx b/app/publish/page.tsx
+index 855d99d..ed1f209 100644
+--- a/app/publish/page.tsx
++++ b/app/publish/page.tsx
+@@ -89,7 +89,7 @@ export default function PublishPage() {
+               </h1>
+               <p className="font-body text-sm text-on-surface-variant/50 mt-1">Submit high-fidelity reports for AI fact-checking</p>
+            </div>
+-           <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-full">
++           <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 ">
+               <CheckCircle size={12} />
+               <span className="font-label text-[10px] uppercase tracking-wider font-bold">Verified Author Status</span>
+            </div>
+@@ -188,7 +188,7 @@ export default function PublishPage() {
+                 >
+                   {loading ? (
+                      <>
+-                        <div className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin" />
++                        <div className="w-4 h-4 border-2 border-on-primary border-t-transparent  animate-spin" />
+                         Verifying...
+                      </>
+                   ) : 'Publish Article'}
+diff --git a/package.json b/package.json
+index b23484a..f2db9b4 100644
+--- a/package.json
++++ b/package.json
+@@ -12,9 +12,7 @@
+   },
+   "dependencies": {
+     "@fontsource/inter": "^5.2.8",
+-    "@fontsource/lora": "^5.2.8",
+     "@fontsource/merriweather": "^5.2.11",
+-    "@fontsource/playfair-display": "^5.2.8",
+     "@google/generative-ai": "^0.24.1",
+     "@supabase/supabase-js": "^2.103.3",
+     "@types/bcryptjs": "^2.4.6",
+@@ -35,7 +33,8 @@
+     "react-dom": "19.2.4",
+     "react-player": "^3.4.0",
+     "swr": "^2.4.1",
+-    "tsx": "^4.21.0"
++    "tsx": "^4.21.0",
++    "@fontsource/space-grotesk": "^5.0.0"
+   },
+   "devDependencies": {
+     "@tailwindcss/postcss": "^4",
+@@ -48,4 +47,4 @@
+     "tailwindcss": "^4",
+     "typescript": "^5"
+   }
+-}
++}
+\ No newline at end of file

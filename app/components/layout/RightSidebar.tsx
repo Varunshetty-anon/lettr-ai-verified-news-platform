@@ -39,7 +39,7 @@ export function RightSidebar() {
     <aside className="hidden lg:block w-[350px] pl-8 py-4 sticky top-0 h-screen overflow-y-auto">
       {/* Search / Top Space */}
       <div className="mb-4 sticky top-0 bg-surface z-10 pt-2 pb-2">
-        <div className="bg-surface-variant rounded-full flex items-center px-4 py-3 border border-transparent focus-within:border-primary focus-within:bg-surface">
+        <div className="bg-surface-variant flex items-center px-4 py-3 border-b-2 border-transparent focus-within:border-primary focus-within:bg-surface">
           <Search size={20} className="text-on-surface-variant" />
           <input
             type="text"
@@ -50,7 +50,7 @@ export function RightSidebar() {
       </div>
 
       {/* Trending Box */}
-      <div className="bg-surface-container-high rounded-2xl border border-outline-variant overflow-hidden mb-4">
+      <div className="bg-surface-container-high border border-outline-variant mb-4">
         <h2 className="font-bold text-xl px-4 py-3 text-on-surface">What&apos;s happening</h2>
 
         {trending.length > 0 ? trending.map((topic, i) => (
@@ -69,13 +69,13 @@ export function RightSidebar() {
       </div>
 
       {/* Who to Follow Box */}
-      <div className="bg-surface-container-high rounded-2xl border border-outline-variant overflow-hidden">
+      <div className="bg-surface-container-high border border-outline-variant">
         <h2 className="font-bold text-xl px-4 py-3 text-on-surface">Who to follow</h2>
 
         {authors.length > 0 ? authors.map((author, i) => (
           <Link href={`/author/${author._id}`} key={i} className="px-4 py-3 hover:bg-surface-variant/50 cursor-pointer transition-colors flex items-center justify-between block">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-surface-variant overflow-hidden shrink-0">
+              <div className="w-10 h-10 bg-surface-variant overflow-hidden shrink-0">
                 {author.image ? (
                   <img src={author.image} alt={author.name} className="w-full h-full object-cover" />
                 ) : (
@@ -92,7 +92,7 @@ export function RightSidebar() {
                 <p className="text-[15px] text-on-surface-variant truncate">@{author.name?.toLowerCase().replace(/\s+/g, '')}</p>
               </div>
             </div>
-            <button className="bg-on-surface text-surface font-bold text-[14px] px-4 py-1.5 rounded-full hover:bg-on-surface/90 shrink-0 ml-2">
+            <button className="bg-on-surface text-surface font-bold text-[14px] px-4 py-1.5 hover:bg-on-surface/90 shrink-0 ml-2">
               Follow
             </button>
           </Link>

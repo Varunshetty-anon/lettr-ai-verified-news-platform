@@ -1,16 +1,13 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Lora, Inter } from "next/font/google";
+import { Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
 });
 
-const lora = Lora({
-  variable: "--font-lora",
-  subsets: ["latin"],
-});
+
 
 const inter = Inter({
   variable: "--font-inter",
@@ -35,7 +32,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${playfair.variable} ${lora.variable} ${inter.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full font-body bg-surface text-on-surface">
         <SessionProvider>

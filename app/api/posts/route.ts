@@ -83,7 +83,7 @@ export async function GET(request: Request) {
       viewedPosts.forEach(p => { if (p.category) viewedCategorySet.add(p.category); });
     }
 
-    let hydrated = posts.map(post => {
+    const hydrated = posts.map(post => {
       const author = authorMap.get(post.authorId?.toString());
       return {
         _id: (post._id as any).toString(),

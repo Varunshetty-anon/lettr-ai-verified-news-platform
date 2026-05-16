@@ -22,7 +22,7 @@ export function MobileNav() {
       <header className="sm:hidden fixed top-0 left-0 z-[100] w-full bg-surface/90 backdrop-blur-md border-b border-outline-variant flex items-center justify-between px-4 h-[53px]">
         <div className="w-8">
             <Link href="/account">
-               <div className="w-8 h-8 rounded-full bg-surface-variant overflow-hidden flex items-center justify-center">
+               <div className="w-8 h-8 bg-surface-variant overflow-hidden flex items-center justify-center">
                  <UserIcon size={16} className="text-on-surface-variant" />
                </div>
             </Link>
