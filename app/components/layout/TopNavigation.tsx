@@ -21,7 +21,7 @@ export function TopNavigation() {
         </div>
         <div className="flex items-center gap-4">
           <Link href="/verify">
-            <Button variant="tertiary" className="hidden sm:block">Submit Fact</Button>
+            <Button variant="secondary" className="hidden sm:block">Submit Fact</Button>
           </Link>
           <Link href="/account">
             <Button variant="primary">My Archive</Button>
