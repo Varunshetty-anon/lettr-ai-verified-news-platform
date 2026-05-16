@@ -8,7 +8,6 @@ import {
   Satellite, HeartPulse, Leaf, Wifi, FlaskConical,
   Briefcase, Zap
 } from 'lucide-react';
-import { Button } from '../../components/ui/Button';
 
 const CATEGORIES = [
   { name: 'AI & Tech', icon: Cpu },
@@ -56,41 +55,41 @@ export default function OnboardingPreferencesPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-surface">
-      <div className="max-w-[800px] w-full">
+      <div className="max-w-xl w-full">
         {/* Header */}
-        <div className="text-center mb-[64px]">
-          <h1 className="font-display font-bold text-[80px] leading-[1.0] tracking-[-0.04em] text-primary mb-4">
+        <div className="text-center mb-10">
+          <h1 className="font-display font-black text-5xl tracking-[-0.04em] text-primary mb-2">
             LETTR<span className="text-primary/30">.</span>
           </h1>
-          <h2 className="font-display text-[48px] font-bold text-on-surface leading-[1.1] tracking-[-0.02em] mb-4">
-            WELCOME, {firstName.toUpperCase()}
+          <h2 className="font-display text-4xl font-bold text-on-surface mb-2">
+            Welcome, {firstName}
           </h2>
-          <p className="font-body text-[20px] text-on-surface-variant leading-[1.6] max-w-[600px] mx-auto">
+          <p className="font-body text-sm text-on-surface-variant/60 max-w-sm mx-auto">
             Choose your interests to build a personalized, AI-verified news feed.
             Select at least 3 topics.
           </p>
         </div>
 
         {/* Category grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-[16px] mb-[64px]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-8">
           {CATEGORIES.map(({ name, icon: Icon }) => {
             const isSelected = selected.includes(name);
             return (
               <button
                 key={name}
                 onClick={() => toggle(name)}
-                className={`group flex items-center justify-center gap-3 px-6 py-4 border-[2px] transition-all duration-200 rounded-none ${
+                className={`group flex items-center gap-3 px-4 py-3.5 border transition-all duration-200 ${
                   isSelected
-                    ? 'bg-tertiary text-on-tertiary-container border-tertiary shadow-none'
-                    : 'bg-surface-dim border-outline-variant text-on-surface-variant hover:border-tertiary hover:text-tertiary'
+                    ? 'bg-primary text-on-primary border-primary'
+                    : 'border-outline-variant text-on-surface-variant/70 hover:border-primary/30 hover:text-primary hover:bg-primary/[0.03]'
                 }`}
               >
                 <Icon
-                  size={20}
-                  strokeWidth={2}
-                  className={`transition-colors ${isSelected ? 'text-on-tertiary-container' : 'text-on-surface-variant group-hover:text-tertiary'}`}
+                  size={16}
+                  strokeWidth={1.5}
+                  className={`transition-colors ${isSelected ? 'text-on-primary' : 'text-on-surface-variant/40 group-hover:text-primary'}`}
                 />
-                <span className="font-label text-[12px] uppercase tracking-[0.1em] font-bold">
+                <span className="font-label text-[10px] uppercase tracking-[0.1em] font-medium">
                   {name}
                 </span>
               </button>
@@ -99,19 +98,18 @@ export default function OnboardingPreferencesPage() {
         </div>
 
         {/* Counter + button */}
-        <div className="text-center max-w-[400px] mx-auto">
-          <p className="font-label text-[12px] text-on-surface-variant uppercase tracking-[0.1em] mb-[32px] font-bold">
-            {selected.length} SELECTED {selected.length < 3 && '· SELECT AT LEAST 3'}
+        <div className="text-center">
+          <p className="font-label text-[10px] text-on-surface-variant/40 uppercase tracking-wider mb-4">
+            {selected.length} selected {selected.length < 3 && '· select at least 3'}
           </p>
 
-          <Button
+          <button
             onClick={save}
             disabled={selected.length < 3 || saving}
-            variant="primary"
-            className="w-full h-[64px] text-[14px]"
+            className="w-full font-label text-xs uppercase tracking-[0.15em] bg-primary text-on-primary py-3.5 transition-all disabled:opacity-30 hover:opacity-90"
           >
-            {saving ? 'SETTING UP YOUR FEED...' : 'CONTINUE TO FEED'}
-          </Button>
+            {saving ? 'Setting up your feed...' : 'Continue to Feed'}
+          </button>
         </div>
       </div>
     </div>

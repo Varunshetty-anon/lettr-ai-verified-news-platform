@@ -1,4 +1,6 @@
-@import "tailwindcss";
+import re
+
+css = """@import "tailwindcss";
 
 @theme inline {
   --font-display: var(--font-space-grotesk);
@@ -9,7 +11,6 @@
   --color-surface: var(--surface);
   --color-surface-container-low: var(--surface-container-low);
   --color-surface-container-lowest: var(--surface-container-lowest);
-  --color-surface-container: var(--surface-container);
   --color-surface-container-high: var(--surface-container-high);
   --color-surface-container-highest: var(--surface-container-highest);
   --color-surface-variant: var(--surface-variant);
@@ -104,7 +105,7 @@
   --error: #ffb4ab;
 }
 
-/* Global Shape Rule - Strict Sharp Edges (Stitch: border-radius 0) */
+/* Global Shape Rule - Strict Sharp Edges */
 * {
   border-radius: 0 !important;
 }
@@ -119,67 +120,13 @@ body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Selection - Neon Green from Stitch */
 ::selection { background: var(--tertiary-fixed); color: var(--on-surface); }
 .dark ::selection { background: var(--tertiary-fixed); color: var(--surface); }
 
-/* Minimal scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--outline-variant); border-radius: 0px !important; }
 
-/* ===== Editorial Typography Utilities ===== */
-.type-display-xl {
-  font-family: var(--font-display), system-ui;
-  font-size: clamp(48px, 5vw, 80px);
-  font-weight: 700;
-  line-height: 1.0;
-  letter-spacing: -0.04em;
-}
-
-.type-headline-lg {
-  font-family: var(--font-display), system-ui;
-  font-size: clamp(32px, 3.5vw, 48px);
-  font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
-
-.type-headline-md {
-  font-family: var(--font-display), system-ui;
-  font-size: 32px;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-}
-
-.type-headline-sm {
-  font-family: var(--font-display), system-ui;
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.type-body-lg {
-  font-family: var(--font-body), system-ui;
-  font-size: 20px;
-  font-weight: 400;
-  line-height: 1.6;
-}
-
-.type-label-caps {
-  font-family: var(--font-label), system-ui;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.0;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-/* ===== Line Clamp ===== */
-.line-clamp-1 {
-  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
-}
 .line-clamp-2 {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
@@ -187,18 +134,6 @@ body {
   display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
 }
 
-/* ===== Reading Progress Bar ===== */
-.reading-progress {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 4px;
-  background: var(--primary-container);
-  z-index: 9999;
-  transition: width 0.1s linear;
-}
-
-/* ===== Animations ===== */
 @keyframes spin { to { transform: rotate(360deg); } }
 .animate-spin { animation: spin 1s linear infinite; }
 
@@ -207,22 +142,9 @@ body {
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+"""
 
-@keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-.animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
+with open("app/globals.css", "w") as f:
+    f.write(css)
 
-/* ===== Editorial Dividers ===== */
-.editorial-divider {
-  border: none;
-  border-top: 1px solid var(--outline-variant);
-  opacity: 0.3;
-}
-
-.editorial-divider-bold {
-  border: none;
-  border-top: 2px solid var(--on-surface);
-}
-
-/* No-scrollbar utility */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+print("Updated app/globals.css")

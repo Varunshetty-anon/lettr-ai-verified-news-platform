@@ -1,209 +1,416 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
-import Link from "next/link";
-import { useSession } from "next-auth/react";
-import { Shield, ExternalLink, Heart, ArrowUpRight } from "lucide-react";
-import ImpressTracker from "./components/ui/ImpressTracker";
-import HoverVideoPlayer from "./components/ui/HoverVideoPlayer";
-import { ArticleCard, Post } from "./components/ui/ArticleCard";
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { Heart, ExternalLink, ArrowUpRight } from 'lucide-react';
+import useSWR from 'swr';
+import { FactScoreBadge } from '@/app/components/ui/FactScoreBadge';
+import { VerifiedBadge } from '@/app/components/ui/VerifiedBadge';
+import { AuthorAvatar } from '@/app/components/ui/AuthorAvatar';
+import { CategoryChip } from '@/app/components/ui/CategoryChip';
+import { PostSkeleton } from '@/app/components/ui/PostSkeleton';
+import ImpressTracker from '@/app/components/ui/ImpressTracker';
 
-function Skeleton() {
-  return (
-    <div className="space-y-4 px-0">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="animate-pulse p-6 bg-surface border border-outline-variant shadow-sm rounded-none">
-          <div className="flex gap-4">
-            <div className="w-10 h-10 bg-surface-variant shrink-0 border border-outline-variant rounded-none" />
-            <div className="flex-1">
-              <div className="h-4 bg-surface-variant w-1/4 mb-4" />
-              <div className="h-8 bg-surface-variant w-3/4 mb-3" />
-              <div className="h-4 bg-surface-variant w-full mb-2" />
-              <div className="h-4 bg-surface-variant w-5/6" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+interface PostData {
+  _id: string;
+  headline: string;
+  description: string;
+  factScore: number;
+  reasoning?: string;
+  originSource?: string;
+  category?: string;
+  sourceLink?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  engagement: number;
+  createdAt: string;
+  isLiked?: boolean;
+  author: { _id: string; name: string; email?: string; trustScore: number; role: string; isVerifiedAuthor: boolean } | null;
 }
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function Home() {
   const { data: session, status } = useSession();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
 
-  // Ref to track the latest top post ID without triggering re-renders
-  const topPostIdRef = useRef<string | null>(null);
-
-  // Real-time ping state
-  const [hasNewPosts, setHasNewPosts] = useState(false);
-
-  // Initial fetch
-  const fetchLatestPosts = useCallback(async (isAutoRefresh = false) => {
-    try {
-      const apiUrl = `/api/posts`;
-      const res = await fetch(apiUrl);
-      const data = await res.json();
-      const fetchedPosts = data.posts || [];
-
-      if (fetchedPosts.length > 0) {
-        const latestId = fetchedPosts[0]._id;
-
-        // If this is a background auto-refresh and we already have posts
-        if (isAutoRefresh && topPostIdRef.current) {
-           if (latestId !== topPostIdRef.current) {
-              setHasNewPosts(true);
-           }
-        } else {
-           // Direct load or manual refresh
-           setPosts(fetchedPosts);
-           topPostIdRef.current = latestId;
-           setHasNewPosts(false);
-        }
-      }
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      setLoading(false);
-    }
-  }, []);
-
-  // Fetch likes
+  // Redirect new users to onboarding
   useEffect(() => {
-    if (session?.user?.email) {
-      fetch(`/api/user/me`)
-        .then((r) => r.json())
-        .then((d) => {
-          if (d.user?.likedPosts) {
-            setLikedIds(new Set(d.user.likedPosts.map((p: any) => p._id)));
+    if (status === 'authenticated' && session?.user?.email) {
+      fetch(`/api/user/preferences`)
+        .then(r => r.json())
+        .then(data => {
+          if (!data.preferences || data.preferences.length === 0) {
+            router.push('/onboarding/preferences');
           }
         })
         .catch(() => {});
     }
-  }, [session]);
+  }, [session, status, router]);
 
-  // Initial load
-  useEffect(() => {
-    fetchLatestPosts(false);
-  }, [fetchLatestPosts]);
+  const apiUrl = `/api/posts`;
+  
+  const { data, error, isLoading, mutate } = useSWR(apiUrl, fetcher, { 
+    refreshInterval: 0,
+    revalidateOnFocus: true, 
+    keepPreviousData: true, 
+  });
 
-  // Background polling every 10 seconds
+  const [displayPosts, setDisplayPosts] = useState<PostData[]>([]);
+  const [hasNewPosts, setHasNewPosts] = useState(false);
+
   useEffect(() => {
-    const interval = setInterval(() => {
-       fetchLatestPosts(true);
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [fetchLatestPosts]);
+    if (data?.posts) {
+      if (displayPosts.length === 0) {
+        setTimeout(() => setDisplayPosts(data.posts), 0);
+      } else {
+        const currentTopId = displayPosts[0]?._id;
+        const newTopId = data.posts[0]?._id;
+        if (currentTopId && newTopId && currentTopId !== newTopId) {
+          setTimeout(() => setHasNewPosts(true), 0);
+        }
+      }
+      setTimeout(() => setLikedIds(prev => {
+        const next = new Set(prev);
+        data.posts.forEach((p: PostData) => { if (p.isLiked) next.add(p._id); });
+        return next;
+      }), 0);
+    }
+  }, [data]);
 
   const loadNewPosts = () => {
-     fetchLatestPosts(false);
-     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (data?.posts) {
+      setTimeout(() => setDisplayPosts(data.posts), 0);
+      setHasNewPosts(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
+
+  const posts = displayPosts;
+  const loading = isLoading && displayPosts.length === 0;
 
   const toggleLike = async (postId: string, e: React.MouseEvent) => {
     e.preventDefault();
-    if (!session?.user?.email) return;
-
+    e.stopPropagation();
     const isLiked = likedIds.has(postId);
-    const newLikedIds = new Set(likedIds);
-    if (isLiked) {
-      newLikedIds.delete(postId);
-    } else {
-      newLikedIds.add(postId);
-    }
-    setLikedIds(newLikedIds);
+    const next = new Set(likedIds);
+    if (isLiked) next.delete(postId); else next.add(postId);
+    setLikedIds(next);
 
-    // Optimistically update engagement count
-    setPosts(posts.map(p => {
-       if (p._id === postId) {
-          return { ...p, engagement: p.engagement + (isLiked ? -1 : 1) };
-       }
-       return p;
-    }));
+    setDisplayPosts(posts.map(p => p._id === postId ? { ...p, engagement: p.engagement + (isLiked ? -1 : 1) } : p));
+    
+    if (apiUrl) {
+      mutate({
+        ...data,
+        posts: posts.map(p => p._id === postId ? { ...p, engagement: p.engagement + (isLiked ? -1 : 1) } : p)
+      }, { revalidate: false });
+    }
 
     await fetch(`/api/user/interact`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        postId,
-        action: isLiked ? "unlike" : "like",
-      }),
-    });
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postId, action: isLiked ? 'unlike' : 'like' })
+    }).catch(() => {});
   };
 
-  if (status === 'unauthenticated') {
+  const firstName = session?.user?.name?.split(' ')[0] || '';
+
+  // Split posts into editorial sections
+  const heroPost = posts[0];
+  const subFeatures = posts.slice(1, 3);
+  const briefPosts = posts.slice(3);
+
+  if (status === 'loading') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-        <h1 className="font-display font-black text-5xl md:text-7xl tracking-[-0.04em] text-primary mb-6">
-          LETTR<span className="text-primary/30">.</span>
-        </h1>
-        <p className="font-body text-xl text-on-surface-variant max-w-lg mx-auto mb-8">
-          The serious news platform verified by AI.
-        </p>
-        <Link
-          href="/auth"
-          className="font-label text-xs uppercase tracking-[0.1em] px-8 py-4 bg-primary text-on-primary hover:bg-primary-container transition-all"
-        >
-          Sign In / Sign Up
-        </Link>
+      <div className="w-full min-h-screen">
+        <PostSkeleton variant="hero" />
+        <div className="grid grid-cols-1 md:grid-cols-2">
+          <PostSkeleton variant="card" />
+          <PostSkeleton variant="card" />
+        </div>
+        {[1, 2, 3].map(i => <PostSkeleton key={i} variant="brief" />)}
       </div>
     );
   }
 
   return (
     <div className="w-full min-h-screen">
-      {/* Top Bar for Mobile */}
-      <div className="sm:hidden sticky top-0 z-20 bg-surface/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-outline-variant/30">
-        <span className="font-display font-bold text-2xl tracking-[-0.04em] text-on-surface">LETTR.</span>
-        <div className="w-8 h-8 bg-surface-variant flex items-center justify-center border border-outline-variant rounded-none">
-          <span className="font-display font-bold text-on-surface">{session?.user?.name?.charAt(0)}</span>
+      {/* ── Editorial Masthead ── */}
+      <div className="px-6 pt-8 pb-6 border-b-2 border-on-surface">
+        <div className="flex items-end justify-between">
+          <div>
+            {firstName && (
+              <p className="type-label-caps text-on-surface-variant/50 mb-1">
+                Welcome back, {firstName}
+              </p>
+            )}
+            <h1 className="font-display text-5xl md:text-7xl font-bold text-on-surface tracking-[-0.04em] leading-none">
+              LETTR<span className="text-primary">.</span>
+            </h1>
+          </div>
+          {!loading && (
+            <span className="type-label-caps text-on-surface-variant/40 mb-1">
+              {posts.length} articles
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Header Space */}
-      <div className="hidden sm:block pt-[64px] pb-[32px] px-0 border-b border-outline-variant/30 mb-[32px]">
-        <h1 className="font-display font-bold text-[32px] tracking-[-0.01em] text-on-surface mb-2">FOR YOU</h1>
-        <p className="font-body text-[16px] text-on-surface-variant">Your personalized feed, verified by AI.</p>
-      </div>
-
+      {/* ── New Posts Banner ── */}
       {hasNewPosts && (
-        <div className="sticky top-[104px] z-30 flex justify-center mt-4 -mb-2">
+        <div className="sticky top-[53px] sm:top-0 z-30 flex justify-center py-3 bg-primary">
           <button 
             onClick={loadNewPosts}
-            className="px-6 py-3 bg-primary text-on-primary font-label text-[12px] uppercase tracking-[0.1em] font-bold shadow-none border-2 border-primary hover:bg-primary-container transition-transform rounded-none"
+            className="px-4 py-1.5 text-on-primary font-label text-[10px] uppercase tracking-widest font-bold hover:opacity-90 transition-opacity"
           >
             New Posts Available ↑
           </button>
         </div>
       )}
 
-      {loading && <Skeleton />}
+      {/* ── Loading State ── */}
+      {loading && (
+        <div>
+          <PostSkeleton variant="hero" />
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            <PostSkeleton variant="card" />
+            <PostSkeleton variant="card" />
+          </div>
+        </div>
+      )}
 
+      {/* ── Empty State ── */}
       {!loading && posts.length === 0 && (
-        <div className="px-5 py-20 text-center border-t border-b border-outline-variant/30 mt-[32px]">
-          <h2 className="font-display text-[24px] text-on-surface mb-2 font-bold uppercase tracking-[-0.01em]">No articles yet</h2>
-          <p className="font-body text-[16px] text-on-surface-variant max-w-xs mx-auto">
+        <div className="px-6 py-20 text-center border-b border-outline-variant">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">No articles yet</h2>
+          <p className="font-body text-sm text-on-surface-variant/50 max-w-xs mx-auto">
             The bot network is seeding content automatically. Articles will appear shortly.
           </p>
         </div>
       )}
 
-      {!loading && posts.length > 0 && (
-        <div className="space-y-[32px] pb-[64px]">
-          {posts.map((post) => (
+      {/* ══════════ HERO FEATURE ARTICLE ══════════ */}
+      {heroPost && (
+        <ImpressTracker postId={heroPost._id}>
+          <Link
+            href={`/post/${heroPost._id}`}
+            prefetch={true}
+            className="group block px-6 pt-10 pb-10 border-b border-outline-variant animate-fade-in"
+          >
+            {/* Category + Timestamp */}
+            <div className="flex items-center gap-3 mb-5">
+              {heroPost.category && (
+                <span className="font-label text-[11px] uppercase tracking-[0.1em] px-3 py-1.5 bg-tertiary-fixed text-on-surface font-bold">
+                  {heroPost.category}
+                </span>
+              )}
+              <span className="type-label-caps text-on-surface-variant/40 text-[10px]">
+                {timeAgo(heroPost.createdAt)}
+              </span>
+            </div>
+
+            {/* Hero Headline */}
+            <h2 className="type-display-xl text-on-surface mb-5 group-hover:text-primary transition-colors">
+              {heroPost.headline}<span className="text-primary">.</span>
+            </h2>
+
+            {/* Description */}
+            <p className="type-body-lg text-on-surface-variant/80 max-w-2xl mb-6 leading-relaxed">
+              {heroPost.description}
+            </p>
+
+            {/* Author Row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AuthorAvatar
+                  name={heroPost.author?.name || '?'}
+                  size="sm"
+                />
+                <div className="flex items-center gap-2">
+                  {heroPost.author && (
+                    <span className="font-bold text-[15px] text-on-surface">
+                      {heroPost.author.name}
+                    </span>
+                  )}
+                  {heroPost.author?.isVerifiedAuthor && <VerifiedBadge size={16} />}
+                  <span className="text-on-surface-variant text-[14px]">·</span>
+                  <FactScoreBadge score={heroPost.factScore} size="sm" />
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={(e) => toggleLike(heroPost._id, e)}
+                  className={`flex items-center gap-1.5 transition-colors ${likedIds.has(heroPost._id) ? 'text-rose-500' : 'text-on-surface-variant hover:text-rose-500'}`}
+                >
+                  <Heart size={16} fill={likedIds.has(heroPost._id) ? 'currentColor' : 'none'} />
+                  <span className="text-[13px]">{heroPost.engagement}</span>
+                </button>
+                {heroPost.sourceLink && (
+                  <span className="text-on-surface-variant/40 hover:text-primary transition-colors">
+                    <ExternalLink size={14} />
+                  </span>
+                )}
+              </div>
+            </div>
+          </Link>
+        </ImpressTracker>
+      )}
+
+      {/* ══════════ SUB-FEATURE GRID ══════════ */}
+      {subFeatures.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 border-b border-outline-variant">
+          {subFeatures.map((post, i) => (
             <ImpressTracker key={post._id} postId={post._id}>
-              <ArticleCard
-                post={post}
-                variant="feature"
-                liked={likedIds.has(post._id)}
-                onLikeToggle={(e) => toggleLike(post._id, e)}
-              />
+              <Link
+                href={`/post/${post._id}`}
+                prefetch={true}
+                className={`group block px-6 py-8 animate-fade-in ${
+                  i === 0 ? 'md:border-r border-b md:border-b-0 border-outline-variant' : ''
+                }`}
+              >
+                {/* Category */}
+                <div className="flex items-center gap-3 mb-4">
+                  {post.category && (
+                    <span className="font-label text-[10px] uppercase tracking-[0.1em] text-tertiary font-bold">
+                      {post.category}
+                    </span>
+                  )}
+                  <span className="text-[12px] text-on-surface-variant/40">{timeAgo(post.createdAt)}</span>
+                </div>
+
+                {/* Headline */}
+                <h3 className="font-display text-xl md:text-2xl font-semibold text-on-surface leading-tight mb-3 group-hover:text-primary transition-colors">
+                  {post.headline}<span className="text-primary/40">.</span>
+                </h3>
+
+                {/* Description */}
+                <p className="font-body text-sm text-on-surface-variant/70 leading-relaxed line-clamp-2 mb-4">
+                  {post.description}
+                </p>
+
+                {/* Author + Actions */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AuthorAvatar name={post.author?.name || '?'} size="sm" />
+                    <span className="font-bold text-[13px] text-on-surface">{post.author?.name}</span>
+                    {post.author?.isVerifiedAuthor && <VerifiedBadge size={14} />}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <FactScoreBadge score={post.factScore} size="sm" />
+                    <button
+                      onClick={(e) => toggleLike(post._id, e)}
+                      className={`flex items-center gap-1 transition-colors ${likedIds.has(post._id) ? 'text-rose-500' : 'text-on-surface-variant/40 hover:text-rose-500'}`}
+                    >
+                      <Heart size={14} fill={likedIds.has(post._id) ? 'currentColor' : 'none'} />
+                      <span className="text-[11px]">{post.engagement}</span>
+                    </button>
+                  </div>
+                </div>
+              </Link>
             </ImpressTracker>
           ))}
         </div>
       )}
+
+      {/* ══════════ THE BRIEF ══════════ */}
+      {briefPosts.length > 0 && (
+        <div className="px-6 pt-8 pb-4">
+          {/* Section Header */}
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-on-surface">
+            <h4 className="font-display text-[11px] uppercase tracking-[0.2em] font-black text-on-surface">
+              THE BRIEF
+            </h4>
+            <span className="text-tertiary-fixed text-lg">⚡</span>
+          </div>
+
+          {briefPosts.map((post) => (
+            <ImpressTracker key={post._id} postId={post._id}>
+              <Link
+                href={`/post/${post._id}`}
+                prefetch={true}
+                className="group block py-5 border-b border-outline-variant/30 animate-fade-in"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    {/* Headline */}
+                    <h5 className="font-display text-lg font-semibold text-on-surface group-hover:text-primary transition-colors mb-1 leading-snug">
+                      {post.headline}<span className="text-primary/30">.</span>
+                    </h5>
+                    {/* Description */}
+                    <p className="font-body text-sm text-on-surface-variant/60 line-clamp-1 mb-2">
+                      {post.description}
+                    </p>
+                    {/* Meta row */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-on-surface-variant/50 font-bold">{post.author?.name}</span>
+                        {post.author?.isVerifiedAuthor && <VerifiedBadge size={12} />}
+                      </div>
+                      <span className="text-[11px] text-on-surface-variant/30">{timeAgo(post.createdAt)}</span>
+                      <FactScoreBadge score={post.factScore} size="sm" />
+                      <button
+                        onClick={(e) => toggleLike(post._id, e)}
+                        className={`flex items-center gap-1 transition-colors ${likedIds.has(post._id) ? 'text-rose-500' : 'text-on-surface-variant/30 hover:text-rose-500'}`}
+                      >
+                        <Heart size={12} fill={likedIds.has(post._id) ? 'currentColor' : 'none'} />
+                        <span className="text-[11px]">{post.engagement}</span>
+                      </button>
+                    </div>
+                  </div>
+                  <ArrowUpRight size={16} className="text-on-surface-variant/20 group-hover:text-primary transition-colors mt-1 shrink-0" />
+                </div>
+              </Link>
+            </ImpressTracker>
+          ))}
+        </div>
+      )}
+
+      {/* ══════════ NEWSLETTER CTA ══════════ */}
+      {!loading && posts.length > 0 && (
+        <div className="px-6 py-16 bg-surface-container-low border-t-2 border-on-surface">
+          <div className="max-w-lg mx-auto text-center">
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-on-surface mb-3 tracking-tight">
+              Stay ahead of the curve<span className="text-primary">.</span>
+            </h2>
+            <p className="font-body text-sm text-on-surface-variant/60 mb-8 leading-relaxed">
+              Join 50,000+ thinkers who receive our weekly deep dive into the intersections of technology and culture.
+            </p>
+            <div className="flex gap-0 max-w-sm mx-auto">
+              <input
+                type="email"
+                placeholder="your@email.com"
+                className="flex-1 bg-transparent border-2 border-on-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/25"
+              />
+              <button className="bg-on-surface text-surface px-6 py-3 font-label text-[10px] uppercase tracking-widest font-bold hover:bg-primary transition-colors whitespace-nowrap">
+                Subscribe
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ FOOTER ══════════ */}
+      <div className="px-6 py-8 border-t border-outline-variant/30">
+        <div className="flex items-center justify-between">
+          <span className="font-display font-black text-sm text-on-surface tracking-tight">LETTR</span>
+          <span className="type-label-caps text-on-surface-variant/30 text-[9px]">
+            © {new Date().getFullYear()} LETTR DIGITAL CULTURE. ALL RIGHTS RESERVED.
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
