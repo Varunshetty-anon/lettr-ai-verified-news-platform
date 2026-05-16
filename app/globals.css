@@ -3,7 +3,7 @@
 @theme inline {
   --font-display: var(--font-space-grotesk);
   --font-body: var(--font-inter);
-  --font-label: var(--font-inter);
+  --font-label: var(--font-space-grotesk);
 
   /* Color tokens — will be overridden by dark class */
   --color-surface: var(--surface);
@@ -15,6 +15,7 @@
   
   --color-on-surface: var(--on-surface);
   --color-on-surface-variant: var(--on-surface-variant);
+  --color-outline: var(--outline);
   --color-outline-variant: var(--outline-variant);
   
   --color-primary: var(--primary);
@@ -23,20 +24,33 @@
   --color-on-primary-container: var(--on-primary-container);
   
   --color-secondary: var(--secondary);
-  --color-accent: #b91c1c; /* a classic deep red accent */
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary: var(--on-secondary);
+
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-container: var(--tertiary-container);
+  --color-tertiary-fixed: var(--tertiary-fixed);
+  --color-on-tertiary-container: var(--on-tertiary-container);
+
+  --color-error: var(--error);
+
+  --color-accent: #a33800; /* punchy orange */
 }
 
-/* ===== LIGHT MODE (Modern Editorial) ===== */
+/* ===== LIGHT MODE (Stitch Editorial) ===== */
 :root {
-  --surface: #fcf9f8;
+  --surface: #fcf8f8;
+  --surface-dim: #dcd9d9;
   --surface-container-low: #f6f3f2;
   --surface-container-lowest: #ffffff;
+  --surface-container: #f0edec;
   --surface-container-high: #ebe7e7;
   --surface-container-highest: #e5e2e1;
   --surface-variant: #e5e2e1;
   
   --on-surface: #1c1b1b;
   --on-surface-variant: #434656;
+  --outline: #747688;
   --outline-variant: #c4c5d9;
   
   --primary: #0040e0;
@@ -44,20 +58,32 @@
   --on-primary: #ffffff;
   --on-primary-container: #efefff;
   
-  --secondary: #4959a3;
+  --secondary: #a33800;
+  --secondary-container: #cd4800;
+  --on-secondary: #ffffff;
+
+  --tertiary: #485c00;
+  --tertiary-container: #5d7600;
+  --tertiary-fixed: #c3f400;
+  --on-tertiary-container: #d9ff67;
+
+  --error: #ba1a1a;
 }
 
-/* ===== DARK MODE (Elegant Dark Magazine) ===== */
+/* ===== DARK MODE (High-Contrast Toggle) ===== */
 .dark {
-  --surface: #0a0a0a;
-  --surface-container-low: #141414;
+  --surface: #000000;
+  --surface-dim: #111111;
   --surface-container-lowest: #000000;
-  --surface-container-high: #1f1f1f;
-  --surface-container-highest: #292929;
-  --surface-variant: #292929;
+  --surface-container-low: #141414;
+  --surface-container: #1f1f1f;
+  --surface-container-high: #292929;
+  --surface-container-highest: #333333;
+  --surface-variant: #333333;
   
   --on-surface: #ffffff;
   --on-surface-variant: #a1a1aa;
+  --outline: #52525b;
   --outline-variant: #3f3f46;
   
   --primary: #2e5bff;
@@ -65,7 +91,21 @@
   --on-primary: #ffffff;
   --on-primary-container: #efefff;
   
-  --secondary: #a1a1aa;
+  --secondary: #ff5c00;
+  --secondary-container: #cd4800;
+  --on-secondary: #ffffff;
+
+  --tertiary: #c3f400;
+  --tertiary-container: #5d7600;
+  --tertiary-fixed: #c3f400;
+  --on-tertiary-container: #161e00;
+
+  --error: #ffb4ab;
+}
+
+/* Global Shape Rule - Strict Sharp Edges */
+* {
+  border-radius: 0 !important;
 }
 
 body {
@@ -78,12 +118,12 @@ body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-::selection { background: rgba(17, 17, 17, 0.15); }
-.dark ::selection { background: rgba(228, 226, 221, 0.25); }
+::selection { background: var(--tertiary-fixed); color: var(--on-surface); }
+.dark ::selection { background: var(--tertiary-fixed); color: var(--surface); }
 
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--outline-variant); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--outline-variant); border-radius: 0px !important; }
 
 .line-clamp-2 {
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;

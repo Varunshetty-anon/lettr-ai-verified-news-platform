@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
-import { Heart, Eye, Bookmark, LogOut, Settings } from 'lucide-react';
+import { Heart, Eye, LogOut, Settings } from 'lucide-react';
 
 interface UserProfile {
   name: string;
@@ -42,11 +42,11 @@ export default function Account() {
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen p-5">
+      <div className="w-full min-h-screen pt-[64px] px-[20px] sm:px-0">
         <div className="animate-pulse space-y-4">
-          <div className="h-16 w-16 bg-surface-container-high " />
-          <div className="h-6 bg-surface-container-high  w-40" />
-          <div className="h-4 bg-surface-container-high  w-60" />
+          <div className="h-16 w-16 bg-surface-variant rounded-none" />
+          <div className="h-6 bg-surface-variant w-40" />
+          <div className="h-4 bg-surface-variant w-60" />
         </div>
       </div>
     );
@@ -66,15 +66,16 @@ export default function Account() {
   };
 
   return (
-    <div className="w-full min-h-screen">
-      <div className="px-5 pt-8 pb-4 border-b border-outline-variant">
-        <h1 className="font-display text-sm uppercase tracking-[0.2em] text-on-surface-variant font-medium">Account</h1>
+    <div className="w-full min-h-screen pb-[64px]">
+      <div className="pt-[64px] pb-[32px] border-b border-outline-variant/30 mb-[32px] px-[20px] sm:px-0">
+        <h1 className="font-display font-bold text-[80px] leading-[1.0] tracking-[-0.04em] text-on-surface">ACCOUNT</h1>
+        <p className="font-body text-[20px] text-on-surface-variant mt-2">Manage your verification credentials and reading history.</p>
       </div>
 
-      <div className="p-5">
+      <div className="px-[20px] sm:px-0">
         {/* Profile card */}
-        <div className="flex items-center gap-4 mb-8 pb-6 border-b border-outline-variant">
-          <div className="w-16 h-16 bg-primary/10 text-primary flex items-center justify-center font-display text-2xl font-bold  overflow-hidden flex-shrink-0">
+        <div className="flex items-center gap-6 mb-[64px] pb-[32px] border-b border-outline-variant/30">
+          <div className="w-[80px] h-[80px] bg-primary text-on-primary flex items-center justify-center font-display text-[48px] font-bold overflow-hidden flex-shrink-0 border border-outline-variant rounded-none">
             {user.image ? (
               <img src={user.image} alt="" className="w-full h-full object-cover" />
             ) : (
@@ -82,44 +83,46 @@ export default function Account() {
             )}
           </div>
           <div>
-            <h2 className="font-display text-xl font-bold text-on-surface">{user.name}</h2>
-            <p className="font-body text-sm text-on-surface-variant/60">{user.email}</p>
-            <p className="font-label text-[9px] uppercase tracking-wider text-primary mt-1">{user.role}</p>
+            <h2 className="font-display text-[32px] font-bold text-on-surface tracking-[-0.01em]">{user.name}</h2>
+            <p className="font-body text-[16px] text-on-surface-variant mb-1">{user.email}</p>
+            <span className="font-label text-[10px] uppercase tracking-[0.1em] text-primary font-bold px-2 py-0.5 border border-primary/30 bg-primary/10">
+              {user.role}
+            </span>
           </div>
         </div>
 
         {/* History Lists */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div>
-            <h3 className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/40 mb-3 flex items-center gap-2">
-              <Heart size={12} className="text-red-500" /> Liked Posts ({user.likedPosts.length})
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[32px] mb-[64px]">
+          <div className="border border-outline-variant rounded-none">
+            <h3 className="font-label text-[12px] uppercase tracking-[0.1em] font-bold text-on-surface bg-surface-dim px-6 py-4 border-b border-outline-variant flex items-center gap-2">
+              <Heart size={16} className="text-secondary" /> Liked Posts ({user.likedPosts.length})
             </h3>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col">
               {user.likedPosts.length === 0 ? (
-                <p className="font-body text-xs text-on-surface-variant/40 p-3 border border-outline-variant/30 text-center bg-surface-container-low">No liked posts yet.</p>
+                <p className="font-body text-[14px] text-on-surface-variant p-6 text-center bg-surface">No liked posts yet.</p>
               ) : (
                 user.likedPosts.map((post: any) => (
-                  <Link key={post._id} href={`/post/${post._id}`} className="group p-3 border border-outline-variant hover:border-red-500/30 bg-surface-container-low transition-colors block">
-                    <p className="font-body text-sm text-on-surface group-hover:text-primary truncate">{post.headline}</p>
-                    <p className="font-label text-[9px] uppercase tracking-wider text-on-surface-variant/40 mt-1">{post.category} · {timeAgo(post.createdAt)}</p>
+                  <Link key={post._id} href={`/post/${post._id}`} className="group p-6 border-b border-outline-variant/30 last:border-b-0 hover:bg-surface-dim transition-colors block">
+                    <p className="font-display text-[20px] font-bold text-on-surface group-hover:text-primary mb-2 line-clamp-2">{post.headline}</p>
+                    <p className="font-label text-[10px] uppercase tracking-[0.1em] text-on-surface-variant font-bold">{post.category} · {timeAgo(post.createdAt)}</p>
                   </Link>
                 ))
               )}
             </div>
           </div>
 
-          <div>
-            <h3 className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/40 mb-3 flex items-center gap-2">
-              <Eye size={12} className="text-primary" /> Reading History ({user.viewedPosts.length})
+          <div className="border border-outline-variant rounded-none">
+            <h3 className="font-label text-[12px] uppercase tracking-[0.1em] font-bold text-on-surface bg-surface-dim px-6 py-4 border-b border-outline-variant flex items-center gap-2">
+              <Eye size={16} className="text-primary" /> Reading History ({user.viewedPosts.length})
             </h3>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col">
               {user.viewedPosts.length === 0 ? (
-                <p className="font-body text-xs text-on-surface-variant/40 p-3 border border-outline-variant/30 text-center bg-surface-container-low">No reading history yet.</p>
+                <p className="font-body text-[14px] text-on-surface-variant p-6 text-center bg-surface">No reading history yet.</p>
               ) : (
                 user.viewedPosts.map((post: any) => (
-                  <Link key={post._id} href={`/post/${post._id}`} className="group p-3 border border-outline-variant hover:border-primary/30 bg-surface-container-low transition-colors block">
-                    <p className="font-body text-sm text-on-surface group-hover:text-primary truncate">{post.headline}</p>
-                    <p className="font-label text-[9px] uppercase tracking-wider text-on-surface-variant/40 mt-1">{post.category} · {timeAgo(post.createdAt)}</p>
+                  <Link key={post._id} href={`/post/${post._id}`} className="group p-6 border-b border-outline-variant/30 last:border-b-0 hover:bg-surface-dim transition-colors block">
+                    <p className="font-display text-[20px] font-bold text-on-surface group-hover:text-primary mb-2 line-clamp-2">{post.headline}</p>
+                    <p className="font-label text-[10px] uppercase tracking-[0.1em] text-on-surface-variant font-bold">{post.category} · {timeAgo(post.createdAt)}</p>
                   </Link>
                 ))
               )}
@@ -129,28 +132,30 @@ export default function Account() {
 
         {/* Preferences */}
         {user.preferences.length > 0 && (
-          <div className="mb-8">
-            <h3 className="font-label text-[9px] uppercase tracking-[0.2em] text-on-surface-variant/40 mb-3">Your Interests</h3>
-            <div className="flex flex-wrap gap-1.5">
+          <div className="mb-[64px] p-[32px] border border-outline-variant bg-surface-dim">
+            <h3 className="font-label text-[12px] uppercase tracking-[0.1em] font-bold text-primary mb-4">YOUR INTERESTS</h3>
+            <div className="flex flex-wrap gap-2">
               {user.preferences.map(p => (
-                <span key={p} className="font-label text-[9px] uppercase tracking-wider px-3 py-1.5 bg-primary/10 text-primary border border-primary/20">{p}</span>
+                <span key={p} className="font-label text-[12px] uppercase tracking-[0.1em] px-4 py-2 border border-outline-variant bg-surface text-on-surface font-bold">
+                  {p}
+                </span>
               ))}
             </div>
           </div>
         )}
 
         {/* Actions */}
-        <div className="flex flex-col gap-2">
-          <Link href="/onboarding/preferences" className="flex items-center gap-2.5 px-4 py-3 border border-outline-variant hover:border-primary/30 transition-colors font-body text-sm text-on-surface">
-            <Settings size={15} className="text-on-surface-variant/40" />
-            Update Preferences
+        <div className="flex flex-col sm:flex-row gap-[16px]">
+          <Link href="/onboarding/preferences" className="flex items-center justify-center gap-3 px-8 py-4 border-[2px] border-primary text-primary hover:bg-primary hover:text-on-primary transition-all font-label text-[12px] uppercase tracking-[0.1em] font-bold rounded-none w-full sm:w-auto">
+            <Settings size={18} />
+            UPDATE PREFERENCES
           </Link>
           <button
             onClick={() => signOut({ callbackUrl: '/auth' })}
-            className="flex items-center gap-2.5 px-4 py-3 border border-outline-variant hover:border-red-500/30 transition-colors font-body text-sm text-red-600 dark:text-red-400"
+            className="flex items-center justify-center gap-3 px-8 py-4 border-[2px] border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all font-label text-[12px] uppercase tracking-[0.1em] font-bold rounded-none w-full sm:w-auto"
           >
-            <LogOut size={15} />
-            Sign Out
+            <LogOut size={18} />
+            SIGN OUT
           </button>
         </div>
       </div>
