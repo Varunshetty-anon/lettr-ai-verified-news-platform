@@ -13,6 +13,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Name, email, and password are required.' }, { status: 400 });
     }
 
+    // Input length validation (DoS protection)
+    if (name.length > 100 || email.length > 254 || password.length > 128) {
+      return NextResponse.json({ error: 'Input exceeds maximum length.' }, { status: 400 });
+    }
+
     if (password.length < 6) {
       return NextResponse.json({ error: 'Password must be at least 6 characters.' }, { status: 400 });
     }
