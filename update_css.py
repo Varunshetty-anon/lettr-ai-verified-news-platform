@@ -1,4 +1,6 @@
-@import "tailwindcss";
+import re
+
+css = """@import "tailwindcss";
 
 @theme inline {
   --font-display: var(--font-space-grotesk);
@@ -140,3 +142,9 @@ body {
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+"""
+
+with open("app/globals.css", "w") as f:
+    f.write(css)
+
+print("Updated app/globals.css")

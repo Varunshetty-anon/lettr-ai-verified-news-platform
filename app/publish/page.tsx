@@ -89,7 +89,7 @@ export default function PublishPage() {
               </h1>
               <p className="font-body text-sm text-on-surface-variant/50 mt-1">Submit high-fidelity reports for AI fact-checking</p>
            </div>
-           <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-full">
+           <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 ">
               <CheckCircle size={12} />
               <span className="font-label text-[10px] uppercase tracking-wider font-bold">Verified Author Status</span>
            </div>
@@ -188,7 +188,7 @@ export default function PublishPage() {
                 >
                   {loading ? (
                      <>
-                        <div className="w-4 h-4 border-2 border-on-primary border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-on-primary border-t-transparent  animate-spin" />
                         Verifying...
                      </>
                   ) : 'Publish Article'}

@@ -99,7 +99,7 @@ async function runBotTask() {
     const urlHash = hashUrl(originalLink);
     
     // Extract media
-    let media = extractMediaFromReddit(targetContent);
+    const media = extractMediaFromReddit(targetContent);
 
     let imageUrl = undefined;
     let videoUrl = undefined;
@@ -125,7 +125,7 @@ async function runBotTask() {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) throw new Error("Missing GROQ API Key");
 
-    let rewriteContent = {
+    const rewriteContent = {
       cleanHeadline: rawTitle,
       cleanSummary: "Live news feed summary.",
       fullBody: "",

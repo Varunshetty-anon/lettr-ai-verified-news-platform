@@ -48,7 +48,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent  animate-spin" />
       </div>
     );
   }
@@ -65,7 +65,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
     <div className="w-full min-h-screen pb-20">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-surface/80 backdrop-blur-md flex items-center gap-6 px-4 h-[53px] border-b border-outline-variant/50">
-        <button onClick={() => router.back()} className="p-2 -ml-2 rounded-full hover:bg-surface-variant transition-colors">
+        <button onClick={() => router.back()} className="p-2 -ml-2  hover:bg-surface-variant transition-colors">
           <ArrowLeft size={20} className="text-on-surface" />
         </button>
         <h1 className="text-xl font-bold text-on-surface">Post</h1>
@@ -76,7 +76,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         {/* Author Row */}
         <div className="flex items-center gap-3 mb-3">
           <Link href={`/author/${post.author?._id}`} className="shrink-0">
-            <div className="w-10 h-10 rounded-full bg-surface-variant overflow-hidden flex items-center justify-center">
+            <div className="w-10 h-10  bg-surface-variant overflow-hidden flex items-center justify-center">
               {post.author ? (
                  <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">{post.author.name?.charAt(0)}</div>
               ) : (
@@ -98,7 +98,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
                 @{post.author?.name?.toLowerCase().replace(/\s+/g, '')}
               </span>
               {post.author?.email?.includes('@lettr.ai') && (
-                <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold rounded">BOT</span>
+                <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold ">BOT</span>
               )}
             </div>
           </div>
@@ -116,7 +116,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
         {/* Media */}
         {(post.imageUrl || post.videoUrl) && (
-          <div className="mb-4 rounded-2xl overflow-hidden border border-outline-variant/50 relative bg-surface-container-low max-h-[600px] flex items-center justify-center">
+          <div className="mb-4 -2xl overflow-hidden border border-outline-variant/50 relative bg-surface-container-low max-h-[600px] flex items-center justify-center">
             {post.imageUrl && !post.videoUrl && (
               <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-full object-contain max-h-[600px]" />
             )}
@@ -129,7 +129,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         )}
 
         {/* Community Note Integration */}
-        <div className="mb-4 bg-surface-container-high rounded-xl p-4 border border-outline-variant/30">
+        <div className="mb-4 bg-surface-container-high  p-4 border border-outline-variant/30">
            <div className="flex items-start gap-3">
               <Shield size={20} className={post.factScore >= 80 ? 'text-emerald-500 mt-1' : post.factScore >= 60 ? 'text-amber-500 mt-1' : 'text-red-500 mt-1'} />
               <div className="flex-1">
@@ -154,7 +154,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
                       AI Fact Score: <span className="font-bold">{post.factScore}/100</span>
                     </span>
                     <span className="text-[13px] text-on-surface-variant">·</span>
-                    <span className={`text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded ${post.factScore >= 85 ? 'bg-emerald-500/10 text-emerald-500' : post.factScore >= 60 ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'}`}>
+                    <span className={`text-[11px] uppercase tracking-wider font-bold px-2 py-0.5  ${post.factScore >= 85 ? 'bg-emerald-500/10 text-emerald-500' : post.factScore >= 60 ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'}`}>
                       {post.confidence || 'Medium'} Confidence
                     </span>
                  </div>
@@ -184,28 +184,28 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         {/* Action Buttons */}
         <div className="flex items-center justify-around text-on-surface-variant pb-2">
           <button className="flex items-center gap-2 group/btn transition-colors">
-            <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+            <div className="p-2  group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
               <MessageCircle size={22} />
             </div>
             <span className="text-[15px] group-hover/btn:text-primary">12</span>
           </button>
 
           <button onClick={handleLike} className="flex items-center gap-2 group/btn transition-colors">
-            <div className="p-2 rounded-full group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 transition-colors">
+            <div className="p-2  group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 transition-colors">
               <Heart size={22} className={liked ? "fill-emerald-500 text-emerald-500" : ""} />
             </div>
             <span className="text-[15px] group-hover/btn:text-emerald-500">{post.engagement}</span>
           </button>
 
           <button className="flex items-center gap-2 group/btn transition-colors">
-            <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+            <div className="p-2  group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
               <BarChart2 size={22} />
             </div>
             <span className="text-[15px] group-hover/btn:text-primary">12.5K</span>
           </button>
 
           <button className="flex items-center gap-2 group/btn transition-colors">
-            <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+            <div className="p-2  group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
               <Share size={22} />
             </div>
           </button>

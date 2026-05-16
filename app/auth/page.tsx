@@ -82,7 +82,7 @@ export default function AuthPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-10">
-          <h1 className="font-display font-black text-3xl tracking-[-0.04em] text-primary mb-1">
+          <h1 className="font-display font-black text-5xl tracking-[-0.04em] text-primary mb-1">
             LETTR<span className="text-primary/30">.</span>
           </h1>
           <p className="font-label text-[9px] uppercase tracking-[0.25em] text-on-surface-variant/40">
