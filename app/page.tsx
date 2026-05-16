@@ -4,8 +4,13 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Heart, ExternalLink, Shield, CheckCircle, Image as ImageIcon } from 'lucide-react';
-import HoverVideoPlayer from '@/app/components/ui/HoverVideoPlayer';
+import { Heart, ExternalLink, ArrowUpRight } from 'lucide-react';
+import useSWR from 'swr';
+import { FactScoreBadge } from '@/app/components/ui/FactScoreBadge';
+import { VerifiedBadge } from '@/app/components/ui/VerifiedBadge';
+import { AuthorAvatar } from '@/app/components/ui/AuthorAvatar';
+import { CategoryChip } from '@/app/components/ui/CategoryChip';
+import { PostSkeleton } from '@/app/components/ui/PostSkeleton';
 import ImpressTracker from '@/app/components/ui/ImpressTracker';
 
 interface PostData {
@@ -35,27 +40,7 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-import useSWR from 'swr';
-
 const fetcher = (url: string) => fetch(url).then(res => res.json());
-
-function Skeleton() {
-  return (
-    <div className="flex flex-col gap-3 px-5 py-4">
-      {[1, 2, 3, 4].map(i => (
-        <div key={i} className="bg-surface-container-low border border-outline-variant/20 p-5 animate-pulse">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-3 bg-surface-container-high rounded w-20" />
-            <div className="h-3 bg-surface-container-high rounded w-14" />
-          </div>
-          <div className="h-5 bg-surface-container-high rounded w-4/5 mb-2" />
-          <div className="h-3.5 bg-surface-container-high rounded w-full mb-1.5" />
-          <div className="h-3.5 bg-surface-container-high rounded w-3/5" />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -79,7 +64,7 @@ export default function Home() {
   const apiUrl = `/api/posts`;
   
   const { data, error, isLoading, mutate } = useSWR(apiUrl, fetcher, { 
-    refreshInterval: 0, // Disabled auto background refresh to prevent jumpy UX
+    refreshInterval: 0,
     revalidateOnFocus: true, 
     keepPreviousData: true, 
   });
@@ -98,7 +83,6 @@ export default function Home() {
           setTimeout(() => setHasNewPosts(true), 0);
         }
       }
-
       setTimeout(() => setLikedIds(prev => {
         const next = new Set(prev);
         data.posts.forEach((p: PostData) => { if (p.isLiked) next.add(p._id); });
@@ -126,7 +110,6 @@ export default function Home() {
     if (isLiked) next.delete(postId); else next.add(postId);
     setLikedIds(next);
 
-    // Optimistic SWR update
     setDisplayPosts(posts.map(p => p._id === postId ? { ...p, engagement: p.engagement + (isLiked ? -1 : 1) } : p));
     
     if (apiUrl) {
@@ -145,185 +128,289 @@ export default function Home() {
 
   const firstName = session?.user?.name?.split(' ')[0] || '';
 
-  if (status === 'loading') return <Skeleton />;
+  // Split posts into editorial sections
+  const heroPost = posts[0];
+  const subFeatures = posts.slice(1, 3);
+  const briefPosts = posts.slice(3);
+
+  if (status === 'loading') {
+    return (
+      <div className="w-full min-h-screen">
+        <PostSkeleton variant="hero" />
+        <div className="grid grid-cols-1 md:grid-cols-2">
+          <PostSkeleton variant="card" />
+          <PostSkeleton variant="card" />
+        </div>
+        {[1, 2, 3].map(i => <PostSkeleton key={i} variant="brief" />)}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen">
-      {/* Header */}
-      <div className="px-5 pt-8 pb-4 border-b border-outline-variant">
-        <div className="flex items-baseline justify-between">
+      {/* ── Editorial Masthead ── */}
+      <div className="px-6 pt-8 pb-6 border-b-2 border-on-surface">
+        <div className="flex items-end justify-between">
           <div>
             {firstName && (
-              <h1 className="font-display text-4xl md:text-7xl font-bold text-on-surface mb-0.5">
-                Hello, {firstName}
-              </h1>
+              <p className="type-label-caps text-on-surface-variant/50 mb-1">
+                Welcome back, {firstName}
+              </p>
             )}
-            <p className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/50">
-              AI-verified · Personalized Feed
-            </p>
+            <h1 className="font-display text-5xl md:text-7xl font-bold text-on-surface tracking-[-0.04em] leading-none">
+              LETTR<span className="text-primary">.</span>
+            </h1>
           </div>
-          {!loading && <span className="font-label text-[10px] text-on-surface-variant/40 uppercase tracking-wider">{posts.length} articles</span>}
+          {!loading && (
+            <span className="type-label-caps text-on-surface-variant/40 mb-1">
+              {posts.length} articles
+            </span>
+          )}
         </div>
       </div>
 
+      {/* ── New Posts Banner ── */}
       {hasNewPosts && (
-        <div className="sticky top-[104px] z-30 flex justify-center mt-4 -mb-2">
+        <div className="sticky top-[53px] sm:top-0 z-30 flex justify-center py-3 bg-primary">
           <button 
             onClick={loadNewPosts}
-            className="px-4 py-2 bg-primary text-on-primary font-label text-[10px] uppercase tracking-widest font-bold shadow-lg shadow-primary/20 rounded-full hover:scale-105 transition-transform"
+            className="px-4 py-1.5 text-on-primary font-label text-[10px] uppercase tracking-widest font-bold hover:opacity-90 transition-opacity"
           >
             New Posts Available ↑
           </button>
         </div>
       )}
 
-      {loading && <Skeleton />}
+      {/* ── Loading State ── */}
+      {loading && (
+        <div>
+          <PostSkeleton variant="hero" />
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            <PostSkeleton variant="card" />
+            <PostSkeleton variant="card" />
+          </div>
+        </div>
+      )}
 
+      {/* ── Empty State ── */}
       {!loading && posts.length === 0 && (
-        <div className="px-5 py-20 text-center">
-          <h2 className="font-display text-lg text-on-surface mb-2">No articles yet</h2>
+        <div className="px-6 py-20 text-center border-b border-outline-variant">
+          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">No articles yet</h2>
           <p className="font-body text-sm text-on-surface-variant/50 max-w-xs mx-auto">
             The bot network is seeding content automatically. Articles will appear shortly.
           </p>
         </div>
       )}
 
-      {!loading && posts.length > 0 && (
-        <div className="columns-1 sm:columns-2 gap-4 space-y-4 pb-4">
-          {posts.map((post) => (
+      {/* ══════════ HERO FEATURE ARTICLE ══════════ */}
+      {heroPost && (
+        <ImpressTracker postId={heroPost._id}>
+          <Link
+            href={`/post/${heroPost._id}`}
+            prefetch={true}
+            className="group block px-6 pt-10 pb-10 border-b border-outline-variant animate-fade-in"
+          >
+            {/* Category + Timestamp */}
+            <div className="flex items-center gap-3 mb-5">
+              {heroPost.category && (
+                <span className="font-label text-[11px] uppercase tracking-[0.1em] px-3 py-1.5 bg-tertiary-fixed text-on-surface font-bold">
+                  {heroPost.category}
+                </span>
+              )}
+              <span className="type-label-caps text-on-surface-variant/40 text-[10px]">
+                {timeAgo(heroPost.createdAt)}
+              </span>
+            </div>
+
+            {/* Hero Headline */}
+            <h2 className="type-display-xl text-on-surface mb-5 group-hover:text-primary transition-colors">
+              {heroPost.headline}<span className="text-primary">.</span>
+            </h2>
+
+            {/* Description */}
+            <p className="type-body-lg text-on-surface-variant/80 max-w-2xl mb-6 leading-relaxed">
+              {heroPost.description}
+            </p>
+
+            {/* Author Row */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <AuthorAvatar
+                  name={heroPost.author?.name || '?'}
+                  size="sm"
+                />
+                <div className="flex items-center gap-2">
+                  {heroPost.author && (
+                    <span className="font-bold text-[15px] text-on-surface">
+                      {heroPost.author.name}
+                    </span>
+                  )}
+                  {heroPost.author?.isVerifiedAuthor && <VerifiedBadge size={16} />}
+                  <span className="text-on-surface-variant text-[14px]">·</span>
+                  <FactScoreBadge score={heroPost.factScore} size="sm" />
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={(e) => toggleLike(heroPost._id, e)}
+                  className={`flex items-center gap-1.5 transition-colors ${likedIds.has(heroPost._id) ? 'text-rose-500' : 'text-on-surface-variant hover:text-rose-500'}`}
+                >
+                  <Heart size={16} fill={likedIds.has(heroPost._id) ? 'currentColor' : 'none'} />
+                  <span className="text-[13px]">{heroPost.engagement}</span>
+                </button>
+                {heroPost.sourceLink && (
+                  <span className="text-on-surface-variant/40 hover:text-primary transition-colors">
+                    <ExternalLink size={14} />
+                  </span>
+                )}
+              </div>
+            </div>
+          </Link>
+        </ImpressTracker>
+      )}
+
+      {/* ══════════ SUB-FEATURE GRID ══════════ */}
+      {subFeatures.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 border-b border-outline-variant">
+          {subFeatures.map((post, i) => (
             <ImpressTracker key={post._id} postId={post._id}>
               <Link
                 href={`/post/${post._id}`}
                 prefetch={true}
-                className="group block bg-surface border border-outline-variant hover:border-primary transition-all duration-300 animate-fade-in p-5 break-inside-avoid"
+                className={`group block px-6 py-8 animate-fade-in ${
+                  i === 0 ? 'md:border-r border-b md:border-b-0 border-outline-variant' : ''
+                }`}
               >
-              <div className="flex gap-3">
-                {/* Left side: Avatar */}
-                <div className="w-8 h-8 shrink-0 bg-surface-variant overflow-hidden flex items-center justify-center border border-outline-variant/50">
-                  {post.author ? (
-                     <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">{post.author.name?.charAt(0)}</div>
-                  ) : (
-                     <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">?</div>
+                {/* Category */}
+                <div className="flex items-center gap-3 mb-4">
+                  {post.category && (
+                    <span className="font-label text-[10px] uppercase tracking-[0.1em] text-tertiary font-bold">
+                      {post.category}
+                    </span>
                   )}
+                  <span className="text-[12px] text-on-surface-variant/40">{timeAgo(post.createdAt)}</span>
                 </div>
 
-                {/* Right side: Content */}
-                <div className="flex-1 min-w-0">
-                  {/* Top row: Name, Handle, Time, Badges */}
-                  <div className="flex items-center gap-2 flex-wrap mb-3 border-b border-outline-variant/30 pb-2">
-                    {post.author && (
-                      <Link
-                        href={`/author/${post.author._id}`}
-                        prefetch={true}
-                        onClick={(e) => e.stopPropagation()}
-                        className="font-bold text-[15px] text-on-surface hover:underline"
-                      >
-                        {post.author.name}
-                      </Link>
-                    )}
-                    {post.author?.isVerifiedAuthor && (
-                        <svg viewBox="0 0 24 24" aria-label="Verified account" className="w-[16px] h-[16px] fill-primary shrink-0"><g><path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.918-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.337 2.25c-.416-.165-.866-.25-1.336-.25-2.21 0-3.918 1.792-3.918 4 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.46.74 2.746 1.865 3.45-.164.446-.252.93-.252 1.45 0 2.21 1.71 4 3.918 4 .503 0 .984-.095 1.428-.266 1.053 1.252 2.628 2.066 4.34 2.066 1.714 0 3.287-.814 4.34-2.066.445.17.925.265 1.428.265 2.21 0 3.918-1.792 3.918-4 0-.52-.088-1.004-.252-1.45 1.125-.705 1.865-1.99 1.865-3.45zm-10.153 6.015l-4.5-4.5 1.815-1.815 2.685 2.685 7.185-7.185 1.815 1.815-9 9z"></path></g></svg>
-                    )}
-                    {post.author && (
-                      <span className="text-[15px] text-on-surface-variant truncate max-w-[100px] sm:max-w-[200px]">
-                        @{post.author.name?.toLowerCase().replace(/\s+/g, '')}
-                      </span>
-                    )}
-                    <span className="text-[15px] text-on-surface-variant">·</span>
-                    <span className="text-[15px] text-on-surface-variant hover:underline">{timeAgo(post.createdAt)}</span>
+                {/* Headline */}
+                <h3 className="font-display text-xl md:text-2xl font-semibold text-on-surface leading-tight mb-3 group-hover:text-primary transition-colors">
+                  {post.headline}<span className="text-primary/40">.</span>
+                </h3>
 
-                    {post.author?.email?.includes('@lettr.ai') && (
-                        <span className="ml-1 text-[11px] px-1.5 py-0.5 border border-outline-variant text-on-surface-variant font-bold">BOT</span>
-                    )}
+                {/* Description */}
+                <p className="font-body text-sm text-on-surface-variant/70 leading-relaxed line-clamp-2 mb-4">
+                  {post.description}
+                </p>
+
+                {/* Author + Actions */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AuthorAvatar name={post.author?.name || '?'} size="sm" />
+                    <span className="font-bold text-[13px] text-on-surface">{post.author?.name}</span>
+                    {post.author?.isVerifiedAuthor && <VerifiedBadge size={14} />}
                   </div>
-
-                  {/* Content: Headline and Body */}
-                  <h3 className="font-display text-2xl font-black text-on-surface leading-tight mb-2 group-hover:text-primary transition-colors">
-                    {post.headline}
-                  </h3>
-                  <p className="font-body text-base text-on-surface-variant/90 leading-relaxed mb-4 whitespace-pre-wrap">
-                    {post.description}
-                  </p>
-
-                  {/* Media */}
-                  {(post.imageUrl || post.videoUrl) && (
-                    <div className="mt-4 mb-4 overflow-hidden border border-outline-variant/50 relative bg-surface-container-low max-h-[400px]">
-                      {post.imageUrl && !post.videoUrl && (
-                        <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
-                      )}
-                      {post.videoUrl && (
-                        <div className="w-full relative h-full">
-                           <HoverVideoPlayer src={post.videoUrl} />
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Community Note Integration */}
-                  <div className="mt-4 mb-4 bg-surface-container-low p-4 border-l-4 border-l-primary/40 relative">
-                     <div className="flex items-start gap-2">
-                        <Shield size={16} className={post.factScore >= 80 ? 'text-emerald-500 mt-0.5' : post.factScore >= 60 ? 'text-amber-500 mt-0.5' : 'text-red-500 mt-0.5'} />
-                        <div className="flex-1">
-                           <p className="text-[13px] font-bold text-on-surface mb-0.5">
-                             Readers added context they thought people might want to know
-                           </p>
-                           {post.reasoning && (
-                             <p className="text-[13px] text-on-surface-variant leading-relaxed">
-                               {post.reasoning}
-                             </p>
-                           )}
-                           <div className="mt-2 flex items-center justify-between">
-                              <span className="text-[12px] text-on-surface-variant/70 font-medium border border-outline-variant/50 px-2 py-0.5">
-                                AI Fact Score: {post.factScore}/100
-                              </span>
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-
-                  {/* Bottom Actions */}
-                  <div className="flex items-center justify-between text-on-surface-variant max-w-md mt-1">
-                    <button className="flex items-center gap-2 group/btn transition-colors">
-                      <div className="p-2 group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
-                        <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><g><path d="M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01zm8.005-6c-3.317 0-6.005 2.69-6.005 6 0 3.37 2.77 6.08 6.138 6.01l.351-.01h1.761v2.3l5.087-2.81c1.951-1.08 3.163-3.13 3.163-5.36 0-3.39-2.744-6.13-6.129-6.13H9.756z"></path></g></svg>
-                      </div>
-                      <span className="text-[13px] group-hover/btn:text-primary">12</span>
-                    </button>
-
-                    <button className="flex items-center gap-2 group/btn transition-colors">
-                      <div className="p-2 group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 transition-colors">
-                        <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><g><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"></path></g></svg>
-                      </div>
-                      <span className="text-[13px] group-hover/btn:text-emerald-500">4</span>
-                    </button>
-
+                  <div className="flex items-center gap-3">
+                    <FactScoreBadge score={post.factScore} size="sm" />
                     <button
                       onClick={(e) => toggleLike(post._id, e)}
-                      className={`flex items-center gap-2 group/btn transition-colors ${likedIds.has(post._id) ? 'text-rose-500' : ''}`}
+                      className={`flex items-center gap-1 transition-colors ${likedIds.has(post._id) ? 'text-rose-500' : 'text-on-surface-variant/40 hover:text-rose-500'}`}
                     >
-                      <div className="p-2 group-hover/btn:bg-rose-500/10 group-hover/btn:text-rose-500 transition-colors">
-                        {likedIds.has(post._id) ? (
-                           <Heart size={20} fill="currentColor" className="text-rose-500" />
-                        ) : (
-                           <Heart size={20} />
-                        )}
-                      </div>
-                      <span className={`text-[13px] ${likedIds.has(post._id) ? '' : 'group-hover/btn:text-rose-500'}`}>{post.engagement}</span>
-                    </button>
-
-                    <button className="flex items-center gap-2 group/btn transition-colors">
-                      <div className="p-2 group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
-                        <ExternalLink size={20} />
-                      </div>
+                      <Heart size={14} fill={likedIds.has(post._id) ? 'currentColor' : 'none'} />
+                      <span className="text-[11px]">{post.engagement}</span>
                     </button>
                   </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
             </ImpressTracker>
           ))}
         </div>
       )}
+
+      {/* ══════════ THE BRIEF ══════════ */}
+      {briefPosts.length > 0 && (
+        <div className="px-6 pt-8 pb-4">
+          {/* Section Header */}
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-on-surface">
+            <h4 className="font-display text-[11px] uppercase tracking-[0.2em] font-black text-on-surface">
+              THE BRIEF
+            </h4>
+            <span className="text-tertiary-fixed text-lg">⚡</span>
+          </div>
+
+          {briefPosts.map((post) => (
+            <ImpressTracker key={post._id} postId={post._id}>
+              <Link
+                href={`/post/${post._id}`}
+                prefetch={true}
+                className="group block py-5 border-b border-outline-variant/30 animate-fade-in"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    {/* Headline */}
+                    <h5 className="font-display text-lg font-semibold text-on-surface group-hover:text-primary transition-colors mb-1 leading-snug">
+                      {post.headline}<span className="text-primary/30">.</span>
+                    </h5>
+                    {/* Description */}
+                    <p className="font-body text-sm text-on-surface-variant/60 line-clamp-1 mb-2">
+                      {post.description}
+                    </p>
+                    {/* Meta row */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] text-on-surface-variant/50 font-bold">{post.author?.name}</span>
+                        {post.author?.isVerifiedAuthor && <VerifiedBadge size={12} />}
+                      </div>
+                      <span className="text-[11px] text-on-surface-variant/30">{timeAgo(post.createdAt)}</span>
+                      <FactScoreBadge score={post.factScore} size="sm" />
+                      <button
+                        onClick={(e) => toggleLike(post._id, e)}
+                        className={`flex items-center gap-1 transition-colors ${likedIds.has(post._id) ? 'text-rose-500' : 'text-on-surface-variant/30 hover:text-rose-500'}`}
+                      >
+                        <Heart size={12} fill={likedIds.has(post._id) ? 'currentColor' : 'none'} />
+                        <span className="text-[11px]">{post.engagement}</span>
+                      </button>
+                    </div>
+                  </div>
+                  <ArrowUpRight size={16} className="text-on-surface-variant/20 group-hover:text-primary transition-colors mt-1 shrink-0" />
+                </div>
+              </Link>
+            </ImpressTracker>
+          ))}
+        </div>
+      )}
+
+      {/* ══════════ NEWSLETTER CTA ══════════ */}
+      {!loading && posts.length > 0 && (
+        <div className="px-6 py-16 bg-surface-container-low border-t-2 border-on-surface">
+          <div className="max-w-lg mx-auto text-center">
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-on-surface mb-3 tracking-tight">
+              Stay ahead of the curve<span className="text-primary">.</span>
+            </h2>
+            <p className="font-body text-sm text-on-surface-variant/60 mb-8 leading-relaxed">
+              Join 50,000+ thinkers who receive our weekly deep dive into the intersections of technology and culture.
+            </p>
+            <div className="flex gap-0 max-w-sm mx-auto">
+              <input
+                type="email"
+                placeholder="your@email.com"
+                className="flex-1 bg-transparent border-2 border-on-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary transition-colors placeholder:text-on-surface-variant/25"
+              />
+              <button className="bg-on-surface text-surface px-6 py-3 font-label text-[10px] uppercase tracking-widest font-bold hover:bg-primary transition-colors whitespace-nowrap">
+                Subscribe
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ FOOTER ══════════ */}
+      <div className="px-6 py-8 border-t border-outline-variant/30">
+        <div className="flex items-center justify-between">
+          <span className="font-display font-black text-sm text-on-surface tracking-tight">LETTR</span>
+          <span className="type-label-caps text-on-surface-variant/30 text-[9px]">
+            © {new Date().getFullYear()} LETTR DIGITAL CULTURE. ALL RIGHTS RESERVED.
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
