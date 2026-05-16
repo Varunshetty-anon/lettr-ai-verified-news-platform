@@ -58,10 +58,10 @@ export default function OnboardingPreferencesPage() {
       <div className="max-w-xl w-full">
         {/* Header */}
         <div className="text-center mb-10">
-          <h1 className="font-display font-black text-3xl tracking-[-0.04em] text-primary mb-2">
+          <h1 className="font-display font-black text-5xl tracking-[-0.04em] text-primary mb-2">
             LETTR<span className="text-primary/30">.</span>
           </h1>
-          <h2 className="font-display text-2xl font-bold text-on-surface mb-2">
+          <h2 className="font-display text-4xl font-bold text-on-surface mb-2">
             Welcome, {firstName}
           </h2>
           <p className="font-body text-sm text-on-surface-variant/60 max-w-sm mx-auto">

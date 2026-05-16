@@ -74,7 +74,7 @@ export default function Explore() {
   return (
     <div className="w-full min-h-screen bg-surface-container-lowest animate-fade-in pb-20">
       <div className="px-5 pt-10 pb-6 border-b border-outline-variant bg-surface-container-low shadow-sm">
-        <h1 className="font-display text-sm uppercase tracking-[0.3em] text-on-surface font-black">Explore</h1>
+        <h1 className="font-display text-4xl md:text-5xl font-bold text-on-surface">Explore</h1>
         <p className="font-body text-xs text-on-surface-variant/50 mt-1">Discover verified authors and trending topics</p>
       </div>
 
@@ -106,7 +106,7 @@ export default function Explore() {
               <div className="grid grid-cols-1 gap-4">
                 {trending.map((post, i) => (
                   <Link key={post._id} href={`/post/${post._id}`} className="group flex items-center gap-6 p-5 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all shadow-sm">
-                    <span className="font-display text-3xl font-black text-on-surface-variant/10 min-w-[32px] text-center italic">{i + 1}</span>
+                    <span className="font-display text-4xl font-bold text-on-surface-variant/20 min-w-[32px] text-center">{i + 1}</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-body text-base font-bold text-on-surface group-hover:text-primary transition-colors leading-snug line-clamp-1">{post.headline}</p>
                       <div className="flex items-center gap-3 mt-1.5">
@@ -133,7 +133,7 @@ export default function Explore() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {topAuthors.map((auth) => (
                   <Link key={auth._id} href={`/author/${auth._id}`} className="group flex items-center gap-4 p-5 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all shadow-sm">
-                    <div className="w-12 h-12 bg-surface-container-high rounded-full overflow-hidden shrink-0 flex items-center justify-center text-primary font-black border border-outline-variant/30">
+                    <div className="w-12 h-12 bg-surface-container-high  overflow-hidden shrink-0 flex items-center justify-center text-primary font-black border border-outline-variant/30">
                        {auth.image ? <img src={auth.image} className="w-full h-full object-cover" /> : auth.name[0]}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -165,8 +165,8 @@ export default function Explore() {
             <div className="space-y-4">
               {[1, 2, 3].map(i => (
                 <div key={i} className="animate-pulse p-6 bg-surface-container-low border border-outline-variant shadow-sm">
-                  <div className="h-5 bg-surface-container-high rounded w-3/4 mb-3" />
-                  <div className="h-4 bg-surface-container-high rounded w-full" />
+                  <div className="h-5 bg-surface-container-high  w-3/4 mb-3" />
+                  <div className="h-4 bg-surface-container-high  w-full" />
                 </div>
               ))}
             </div>
@@ -182,12 +182,12 @@ export default function Explore() {
           {!loading && posts.length > 0 && (
             <div className="columns-1 sm:columns-2 gap-4 space-y-4 pb-4">
               {posts.map(post => (
-                <Link key={post._id} href={`/post/${post._id}`} className="group block p-6 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all shadow-sm animate-fade-in relative overflow-hidden rounded-sm break-inside-avoid">
+                <Link key={post._id} href={`/post/${post._id}`} className="group block p-6 bg-surface-container-low border border-outline-variant hover:border-primary/30 transition-all shadow-sm animate-fade-in relative overflow-hidden  break-inside-avoid">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       {post.author && (
                         <div className="flex items-center gap-2">
-                           <div className="w-5 h-5 rounded-full bg-surface-container-high flex items-center justify-center text-[10px] font-black text-primary/40 border border-outline-variant/30">
+                           <div className="w-5 h-5  bg-surface-container-high flex items-center justify-center text-[10px] font-black text-primary/40 border border-outline-variant/30">
                               {post.author.name[0]}
                            </div>
                            <span className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant/60 font-bold">{post.author.name}</span>
@@ -200,7 +200,7 @@ export default function Explore() {
                       <Shield size={12} /> {post.factScore}%
                     </div>
                   </div>
-                  <h3 className="font-display text-xl font-bold text-on-surface leading-tight group-hover:text-primary transition-colors mb-2">{post.headline}</h3>
+                  <h3 className="font-display text-3xl md:text-4xl font-bold text-on-surface leading-tight group-hover:text-primary transition-colors mb-2">{post.headline}</h3>
                   <p className="font-body text-sm text-on-surface-variant/70 line-clamp-2 leading-relaxed mb-4">{post.description}</p>
                   <div className="inline-flex items-center gap-1.5 font-label text-[9px] uppercase tracking-widest text-primary font-bold">
                      Read Detailed Portfolio <ArrowUpRight size={10} />

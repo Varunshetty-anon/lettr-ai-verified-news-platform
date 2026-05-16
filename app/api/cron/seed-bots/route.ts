@@ -138,7 +138,7 @@ export async function GET(request: Request) {
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) throw new Error("Missing GROQ API Key");
 
-    let rewriteContent = {
+    const rewriteContent = {
       cleanHeadline: rawTitle,
       cleanSummary: "Live news feed summary.",
       fullBody: "",

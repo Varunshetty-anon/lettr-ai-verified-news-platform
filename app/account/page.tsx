@@ -44,9 +44,9 @@ export default function Account() {
     return (
       <div className="w-full min-h-screen p-5">
         <div className="animate-pulse space-y-4">
-          <div className="h-16 w-16 bg-surface-container-high rounded-full" />
-          <div className="h-6 bg-surface-container-high rounded w-40" />
-          <div className="h-4 bg-surface-container-high rounded w-60" />
+          <div className="h-16 w-16 bg-surface-container-high " />
+          <div className="h-6 bg-surface-container-high  w-40" />
+          <div className="h-4 bg-surface-container-high  w-60" />
         </div>
       </div>
     );
@@ -74,7 +74,7 @@ export default function Account() {
       <div className="p-5">
         {/* Profile card */}
         <div className="flex items-center gap-4 mb-8 pb-6 border-b border-outline-variant">
-          <div className="w-16 h-16 bg-primary/10 text-primary flex items-center justify-center font-display text-2xl font-bold rounded-full overflow-hidden flex-shrink-0">
+          <div className="w-16 h-16 bg-primary/10 text-primary flex items-center justify-center font-display text-2xl font-bold  overflow-hidden flex-shrink-0">
             {user.image ? (
               <img src={user.image} alt="" className="w-full h-full object-cover" />
             ) : (

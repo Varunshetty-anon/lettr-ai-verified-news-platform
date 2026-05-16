@@ -154,7 +154,7 @@ export default function Home() {
         <div className="flex items-baseline justify-between">
           <div>
             {firstName && (
-              <h1 className="font-display text-xl font-bold text-on-surface mb-0.5">
+              <h1 className="font-display text-4xl md:text-7xl font-bold text-on-surface mb-0.5">
                 Hello, {firstName}
               </h1>
             )}
@@ -195,11 +195,11 @@ export default function Home() {
               <Link
                 href={`/post/${post._id}`}
                 prefetch={true}
-                className="group block bg-surface border border-outline-variant hover:border-primary/30 hover:shadow-md transition-all duration-300 animate-fade-in p-5 rounded-sm break-inside-avoid"
+                className="group block bg-surface border border-outline-variant hover:border-primary transition-all duration-300 animate-fade-in p-5 break-inside-avoid"
               >
               <div className="flex gap-3">
                 {/* Left side: Avatar */}
-                <div className="w-8 h-8 shrink-0 rounded-sm bg-surface-variant overflow-hidden flex items-center justify-center border border-outline-variant/50">
+                <div className="w-8 h-8 shrink-0 bg-surface-variant overflow-hidden flex items-center justify-center border border-outline-variant/50">
                   {post.author ? (
                      <div className="w-full h-full font-bold text-on-surface flex items-center justify-center">{post.author.name?.charAt(0)}</div>
                   ) : (
@@ -233,7 +233,7 @@ export default function Home() {
                     <span className="text-[15px] text-on-surface-variant hover:underline">{timeAgo(post.createdAt)}</span>
 
                     {post.author?.email?.includes('@lettr.ai') && (
-                        <span className="ml-1 text-[11px] px-1.5 py-0.5 bg-surface-variant text-on-surface-variant font-bold rounded">BOT</span>
+                        <span className="ml-1 text-[11px] px-1.5 py-0.5 border border-outline-variant text-on-surface-variant font-bold">BOT</span>
                     )}
                   </div>
 
@@ -273,7 +273,7 @@ export default function Home() {
                              </p>
                            )}
                            <div className="mt-2 flex items-center justify-between">
-                              <span className="text-[12px] text-on-surface-variant/70 font-medium border border-outline-variant/50 rounded-full px-2 py-0.5">
+                              <span className="text-[12px] text-on-surface-variant/70 font-medium border border-outline-variant/50 px-2 py-0.5">
                                 AI Fact Score: {post.factScore}/100
                               </span>
                            </div>
@@ -284,14 +284,14 @@ export default function Home() {
                   {/* Bottom Actions */}
                   <div className="flex items-center justify-between text-on-surface-variant max-w-md mt-1">
                     <button className="flex items-center gap-2 group/btn transition-colors">
-                      <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+                      <div className="p-2 group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
                         <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><g><path d="M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01zm8.005-6c-3.317 0-6.005 2.69-6.005 6 0 3.37 2.77 6.08 6.138 6.01l.351-.01h1.761v2.3l5.087-2.81c1.951-1.08 3.163-3.13 3.163-5.36 0-3.39-2.744-6.13-6.129-6.13H9.756z"></path></g></svg>
                       </div>
                       <span className="text-[13px] group-hover/btn:text-primary">12</span>
                     </button>
 
                     <button className="flex items-center gap-2 group/btn transition-colors">
-                      <div className="p-2 rounded-full group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 transition-colors">
+                      <div className="p-2 group-hover/btn:bg-emerald-500/10 group-hover/btn:text-emerald-500 transition-colors">
                         <svg viewBox="0 0 24 24" aria-hidden="true" className="w-5 h-5 fill-current"><g><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"></path></g></svg>
                       </div>
                       <span className="text-[13px] group-hover/btn:text-emerald-500">4</span>
@@ -301,7 +301,7 @@ export default function Home() {
                       onClick={(e) => toggleLike(post._id, e)}
                       className={`flex items-center gap-2 group/btn transition-colors ${likedIds.has(post._id) ? 'text-rose-500' : ''}`}
                     >
-                      <div className="p-2 rounded-full group-hover/btn:bg-rose-500/10 group-hover/btn:text-rose-500 transition-colors">
+                      <div className="p-2 group-hover/btn:bg-rose-500/10 group-hover/btn:text-rose-500 transition-colors">
                         {likedIds.has(post._id) ? (
                            <Heart size={20} fill="currentColor" className="text-rose-500" />
                         ) : (
@@ -312,7 +312,7 @@ export default function Home() {
                     </button>
 
                     <button className="flex items-center gap-2 group/btn transition-colors">
-                      <div className="p-2 rounded-full group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
+                      <div className="p-2 group-hover/btn:bg-primary/10 group-hover/btn:text-primary transition-colors">
                         <ExternalLink size={20} />
                       </div>
                     </button>

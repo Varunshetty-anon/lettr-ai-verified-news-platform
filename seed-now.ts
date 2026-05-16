@@ -60,7 +60,7 @@ async function runOnce() {
     if (!targetContent) return;
 
     const originalLink = targetContent.url;
-    let media = extractMediaFromReddit(targetContent);
+    const media = extractMediaFromReddit(targetContent);
     let imageUrl, videoUrl;
     if (media.image) {
       const uploadedUrl = await uploadMediaFromUrl(media.image, `${crypto.randomBytes(4).toString('hex')}.jpg`);
