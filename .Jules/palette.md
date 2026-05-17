@@ -1,0 +1,3 @@
+## 2024-05-17 - Initial Exploration
+**Learning:** Found several icon-only buttons lacking `aria-label`s for screen readers in components like `MobileNav.tsx`, `TopNavigation.tsx`, and `app/author/[id]/page.tsx` (the social links). Also noticed that the search form in `TopNavigation.tsx` and `MobileNav.tsx` doesn't seem to be a real form, just a button.
+**Action:** The most impactful small change I can make is adding `aria-label`s to the icon-only buttons across the layout and author pages. This significantly improves accessibility for screen reader users with minimal code changes. Let's focus on `app/author/[id]/page.tsx` where there are message, mail, and globe buttons without aria-labels.

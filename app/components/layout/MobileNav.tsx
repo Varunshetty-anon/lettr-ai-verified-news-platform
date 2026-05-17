@@ -21,7 +21,7 @@ export function MobileNav() {
       {/* Mobile Top Bar */}
       <header className="md:hidden fixed top-0 left-0 z-50 w-full bg-surface border-b-2 border-on-surface flex items-center justify-between px-[16px] h-[80px]">
         <div className="w-16 flex items-center justify-start">
-          <button className="text-on-surface"><Menu size={24} strokeWidth={2} /></button>
+          <button aria-label="Open menu" className="text-on-surface"><Menu size={24} strokeWidth={2} /></button>
         </div>
         <Link href="/" className="flex items-center justify-center flex-1">
           <span className="font-display text-[32px] font-bold tracking-[-0.01em] text-on-surface">
@@ -29,7 +29,7 @@ export function MobileNav() {
           </span>
         </Link>
         <div className="w-16 flex items-center justify-end gap-3">
-          <button className="text-on-surface"><Search size={24} strokeWidth={2} /></button>
+          <button aria-label="Search" className="text-on-surface"><Search size={24} strokeWidth={2} /></button>
           {/* Hide theme toggle on tight mobile top bars to match Stitch, but we keep it here if room permits or in hamburger menu. We'll leave it for accessibility. */}
           <ThemeToggle />
         </div>

@@ -147,13 +147,13 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
           </p>
 
           <div className="flex gap-4">
-            <button className="w-[48px] h-[48px] border-2 border-on-surface flex items-center justify-center text-on-surface hover:bg-on-surface hover:text-surface transition-colors">
+            <button aria-label="Send message" className="w-[48px] h-[48px] border-2 border-on-surface flex items-center justify-center text-on-surface hover:bg-on-surface hover:text-surface transition-colors">
                <MessageCircle size={20} />
             </button>
-            <button className="w-[48px] h-[48px] border-2 border-on-surface flex items-center justify-center text-on-surface hover:bg-on-surface hover:text-surface transition-colors">
+            <button aria-label="Send email" className="w-[48px] h-[48px] border-2 border-on-surface flex items-center justify-center text-on-surface hover:bg-on-surface hover:text-surface transition-colors">
                <Mail size={20} />
             </button>
-            <button className="w-[48px] h-[48px] border-2 border-on-surface flex items-center justify-center text-on-surface hover:bg-on-surface hover:text-surface transition-colors">
+            <button aria-label="Visit website" className="w-[48px] h-[48px] border-2 border-on-surface flex items-center justify-center text-on-surface hover:bg-on-surface hover:text-surface transition-colors">
                <Globe size={20} />
             </button>
           </div>

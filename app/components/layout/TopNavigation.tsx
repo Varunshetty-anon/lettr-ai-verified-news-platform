@@ -34,7 +34,7 @@ export function TopNavigation() {
       {/* Right: Search + Subscribe */}
       <div className="flex items-center gap-6 w-[200px] justify-end">
         <ThemeToggle />
-        <button className="text-on-surface hover:text-primary transition-colors">
+        <button aria-label="Search" className="text-on-surface hover:text-primary transition-colors">
           <Search size={24} strokeWidth={2} />
         </button>
         <button className="bg-on-surface text-surface type-label-md px-6 py-3 hover:opacity-90 transition-opacity whitespace-nowrap">
