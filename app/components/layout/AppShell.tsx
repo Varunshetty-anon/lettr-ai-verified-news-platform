@@ -14,7 +14,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const isNoShellRoute = NO_SHELL_ROUTES.some(route => pathname.startsWith(route));
 
-  if (isNoShellRoute || status === 'loading' || !session) {
+  if (isNoShellRoute || status === 'loading') {
     return (
       <div className="min-h-screen">
         {children}
@@ -30,7 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         Mobile requires padding for fixed header and bottom tab bar.
         Desktop relies on static TopNavigation.
       */}
-      <main className="flex-1 w-full pt-[53px] pb-[70px] md:pt-0 md:pb-0">
+      <main className="flex-1 w-full pt-[80px] pb-[80px] md:pt-0 md:pb-0">
         {children}
       </main>
     </div>

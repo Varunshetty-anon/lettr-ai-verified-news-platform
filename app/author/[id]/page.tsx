@@ -100,7 +100,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
         <div className="lg:col-span-4 flex flex-col">
           <div className="aspect-square bg-surface-container-highest mb-[24px] relative group overflow-hidden">
              {author.image ? (
-                <img src={author.image} alt={author.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300" />
+                <img src={author.image} alt={author.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
              ) : (
                 <div className="w-full h-full flex items-center justify-center type-display-xl text-on-surface-variant group-hover:text-primary transition-colors">
                   {author.name.charAt(0)}
@@ -178,7 +178,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
              {featuredPost && (
                 <div className="lg:col-span-8">
                   <Link href={`/post/${featuredPost._id}`} className="group block">
-                    <div className="aspect-video bg-surface-container-highest mb-[24px]">
+                    <div className=" overflow-hidden mb-[24px]">
                       {featuredPost.imageUrl && <img src={featuredPost.imageUrl} className="w-full h-full object-cover" alt="" />}
                     </div>
                     {featuredPost.category && (
@@ -213,8 +213,8 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
             <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px] border-t-2 border-on-surface pt-[48px]">
                {secondaryPosts.map(post => (
                  <Link key={post._id} href={`/post/${post._id}`} className="group block">
-                    <div className="aspect-square bg-surface-container-highest mb-[24px]">
-                       {post.imageUrl && <img src={post.imageUrl} className="w-full h-full object-cover grayscale brightness-90 group-hover:grayscale-0 transition-all duration-300" alt="" />}
+                    <div className=" overflow-hidden mb-[24px]">
+                       {post.imageUrl && <img src={post.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />}
                     </div>
                     <h4 className="type-headline-sm text-on-surface group-hover:text-primary transition-colors mb-2 line-clamp-2">
                        {post.headline}

@@ -97,7 +97,7 @@ export default function Account() {
          {/* col-span-8: Profile Image Card */}
          <div className="lg:col-span-8 border-2 border-on-surface relative group overflow-hidden aspect-[16/9] lg:aspect-auto">
             {user.image ? (
-               <img src={user.image} alt={user.name} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300" />
+               <img src={user.image} alt={user.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             ) : (
                <div className="w-full h-full bg-surface-container-highest flex items-center justify-center type-display-xl text-on-surface-variant">
                   {user.name.charAt(0)}
@@ -142,8 +142,8 @@ export default function Account() {
                </div>
                <div className="flex items-center justify-between">
                   <div className="flex flex-col">
-                     <span className="type-body-md font-bold">Weekly Analysis</span>
-                     <span className="type-caption text-surface/70">Deep dives every Sunday.</span>
+                     <span className="type-body-md font-bold">Push Notifications</span>
+                     <span className="type-caption text-surface/70">Breaking news alerts.</span>
                   </div>
                   <div className="w-12 h-6 bg-surface/30 rounded-full relative cursor-pointer">
                      <div className="absolute left-1 top-1 w-4 h-4 bg-surface rounded-full"></div>
@@ -160,7 +160,7 @@ export default function Account() {
                   {user.likedPosts.map((post: any) => (
                      <Link key={post._id} href={`/post/${post._id}`} className="group block">
                         <div className="aspect-video bg-surface-container-highest mb-[16px] overflow-hidden">
-                           {post.imageUrl && <img src={post.imageUrl} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300" alt="" />}
+                           {post.imageUrl && <img src={post.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />}
                         </div>
                         <span className="type-label-md text-on-surface-variant mb-2 block">{post.category || 'NEWS'}</span>
                         <h4 className="type-headline-sm text-on-surface group-hover:text-primary transition-colors line-clamp-2">
