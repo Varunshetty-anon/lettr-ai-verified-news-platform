@@ -36,6 +36,16 @@ function sourceHost(url: string) {
   }
 }
 
+const cleanSummary = (text: string) => text
+  ?.replace(/https?:\/\/\S+/g, '')
+  ?.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+  ?.replace(/Link posted:.*$/gm, '')
+  ?.replace(/Source:.*$/gm, '')
+  ?.replace(/[\*\_#`~>+\-\=]/g, '')
+  ?.replace(/\s+/g, ' ')
+  ?.trim()
+  ?.slice(0, 240) || '';
+
 function EditorialImage({ src, alt = '', className = '', aspect = 'aspect-video' }: { src?: string; alt?: string; className?: string; aspect?: string }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -234,30 +244,10 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
   return (
     <div className="w-full min-h-screen bg-surface pb-[80px] md:pb-0 relative">
-      {/* Hero Image - full width, natural ratio */}
-      {post.videoUrl ? (
-        <div className="w-full mb-8 overflow-hidden bg-surface-container">
-          <video
-            src={post.videoUrl}
-            controls
-            playsInline
-            className="w-full h-auto"
-            style={{ maxHeight: '480px', objectFit: 'contain', objectPosition: 'center' }}
-            onError={(e) => {
-              e.currentTarget.parentElement!.innerHTML = 
-                '<div class="w-full h-full flex items-center justify-center text-on-surface-variant" style="min-height:200px">VIDEO UNAVAILABLE</div>';
-            }}
-          />
-        </div>
-      ) : post.imageUrl ? (
-        <div className="w-full mb-8 overflow-hidden bg-surface-container max-h-[480px]">
-          <EditorialImage src={post.imageUrl} alt={post.headline} aspect="w-full h-auto" className="max-h-[480px] object-contain" />
-        </div>
-      ) : null}
-
-      <article className="max-w-[720px] mx-auto px-4 pt-12 md:pt-16">
-        {/* ── 2. Category + Read Time ── */}
-        <div className="flex items-center justify-between mb-6">
+      <article className="max-w-[800px] mx-auto px-4 pt-8 md:pt-12">
+        
+        {/* ── 1. Category + Read Time ── */}
+        <div className="flex items-center justify-between mb-4">
           {post.category ? (
             <span className="type-label-md border border-on-surface px-3 py-1 text-on-surface uppercase">
               {post.category}
@@ -266,16 +256,23 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           <span className="type-caption text-on-surface-variant uppercase">{post.readTime || '5'} MIN READ</span>
         </div>
 
-        {/* ── 3. Headline ── */}
+        {/* ── 2. Headline ── */}
         <h1 
-          className="type-headline-lg normal-case mb-8 leading-tight"
-          style={{ fontSize: 'clamp(28px, 3.5vw, 48px)' }}
+          className="type-headline-lg normal-case mb-4 leading-tight font-bold font-display"
+          style={{ fontSize: 'clamp(28px, 4.5vw, 56px)' }}
         >
           {post.headline}
         </h1>
 
-        {/* ── 4. Author Row ── */}
-        <div className="flex items-center justify-between w-full border-b border-outline-variant pb-6 mb-8">
+        {/* ── 3. Dek / Short Description ── */}
+        {post.description && (
+          <p className="type-body-lg text-on-surface-variant/80 mb-6 font-body leading-relaxed max-w-[720px]">
+            {cleanSummary(post.description)}
+          </p>
+        )}
+
+        {/* ── 4. Author + Metadata Row ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full border-y border-outline-variant py-4 mb-6 gap-4">
           <div className="flex items-center gap-4">
             <AuthorAvatar name={post.author?.name} image={post.author?.image} size="sm" />
             <div>
@@ -288,28 +285,86 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
                   post.author?.name
                 )}
               </p>
-              <p className="type-caption text-on-surface-variant mt-1 uppercase">
-                {post.author?.role === 'BOT' ? 'BOT' : 'AUTHOR'} · {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="type-caption text-on-surface-variant uppercase">
+                  {authorLabel}
+                </span>
+                {post.author?.isVerifiedAuthor && (
+                  <span className="text-tertiary flex items-center">
+                    <VerifiedBadge size={14} />
+                  </span>
+                )}
+                <span className="text-on-surface-variant/40">·</span>
+                <span className="type-caption text-on-surface-variant uppercase">
+                  {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="scale-110 origin-right">
-            <FactScoreBadge score={post.factScore} />
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="scale-110">
+              <FactScoreBadge score={post.factScore} size="md" />
+            </div>
           </div>
         </div>
 
-        {/* ── 6. Article Body ── */}
-        <div className="content-measure mb-12">
+        {/* ── 5. AI Verification Summary Card (instantly visible, text-first above media) ── */}
+        {post.factSummary && post.factSummary !== 'Analysis complete.' && (
+          <div className="border border-outline-variant bg-surface-container p-5 mb-8">
+            <div className="flex items-center justify-between mb-3">
+              <span className="type-label-md text-on-surface font-bold uppercase tracking-wider">AI VERIFICATION DEK</span>
+              <span className="type-caption text-on-surface-variant uppercase">FACT CHECKED</span>
+            </div>
+            <p className="type-body-md text-on-surface-variant leading-relaxed">
+              {post.factSummary}
+            </p>
+            {post.issues && post.issues.length > 0 && (
+              <ul className="mt-3 space-y-1">
+                {post.issues.map((issue: string, i: number) => (
+                  <li key={i} className="type-caption text-error flex items-start gap-2">
+                    <span>⚠</span> {issue}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {/* ── 6. Media Section (Responsive, restricted size, editorial 16:9 / 21:9 container) ── */}
+        {post.videoUrl ? (
+          <div className="w-full mb-8 overflow-hidden bg-surface-container aspect-video max-h-[50vh] relative border border-outline-variant/30">
+            <video
+              src={post.videoUrl}
+              poster={post.imageUrl}
+              controls
+              playsInline
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.parentElement!.innerHTML = 
+                  '<div class="w-full h-full flex items-center justify-center text-on-surface-variant" style="min-height:200px">VIDEO UNAVAILABLE</div>';
+              }}
+            />
+          </div>
+        ) : post.imageUrl ? (
+          <div className="w-full mb-8 overflow-hidden bg-surface-container aspect-[21/9] max-h-[45vh] relative border border-outline-variant/30">
+            <EditorialImage 
+              src={post.imageUrl} 
+              alt={post.headline} 
+              aspect="w-full h-full" 
+              className="object-cover w-full h-full" 
+            />
+          </div>
+        ) : null}
+
+        {/* ── 7. Article Body ── */}
+        <div className="content-measure mb-12 max-w-[720px] mx-auto">
           {renderContent()}
         </div>
 
-        {/* ── 7. Divider line ── */}
-        <div className="border-t-2 border-on-surface pt-8" />
-
         {/* ── 8. Source Links ── */}
         {sourceLinks.length > 0 && (
-          <div className="mb-[48px]">
-            <h3 className="type-label-md text-on-surface mb-[16px]">SOURCE LINKS</h3>
+          <div className="mb-[48px] border-t border-outline-variant pt-8">
+            <h3 className="type-label-md text-on-surface mb-[16px] uppercase tracking-wider font-bold">SOURCE LINKS</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {sourceLinks.map((source) => (
                 <a
@@ -317,7 +372,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
                   href={source}
                   target="_blank"
                   rel="noreferrer"
-                  className="group border border-outline-variant p-4 hover:border-primary transition-colors"
+                  className="group border border-outline-variant p-4 hover:border-primary transition-colors bg-surface-container-low"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -332,39 +387,16 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           </div>
         )}
 
-        {/* ── 9. AI Verification Summary ── */}
-        {post.factSummary && post.factSummary !== 'Analysis complete.' && (
-          <div className="border border-outline-variant bg-surface-container p-6 my-8">
-            <div className="flex items-center justify-between mb-4">
-              <span className="type-label-md text-on-surface-variant">AI VERIFICATION SUMMARY</span>
-              <FactScoreBadge score={post.factScore} />
-            </div>
-            <p className="type-body-md text-on-surface-variant leading-relaxed">
-              {post.factSummary}
-            </p>
-            {post.issues && post.issues.length > 0 && (
-              <ul className="mt-4 space-y-1">
-                {post.issues.map((issue: string, i: number) => (
-                  <li key={i} className="type-caption text-error flex items-start gap-2">
-                    <span>⚠</span> {issue}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
-
-        {/* ── 10. Tags Row ── */}
-        <div className="pt-[24px] border-t border-outline-variant flex flex-wrap gap-3">
+        {/* ── 9. Tags Row ── */}
+        <div className="pt-[24px] border-t border-outline-variant flex flex-wrap gap-3 mb-[48px]">
           <span className="type-label-md border border-outline-variant px-3 py-1.5 text-on-surface-variant">REPORTING</span>
           {post.category && (
             <span className="type-label-md border border-outline-variant px-3 py-1.5 text-on-surface-variant uppercase">{post.category}</span>
           )}
         </div>
-
       </article>
 
-      {/* ── 8. More Like This ── */}
+      {/* ── 10. More Like This ── */}
       {morePosts.length > 0 && (
         <div className="w-full bg-surface-container-low border-t-2 border-on-surface py-[64px] px-[16px] md:px-[64px]">
           <div className="max-w-[1440px] mx-auto">
@@ -390,7 +422,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         </div>
       )}
 
-      {/* ── 9. Interaction Row (Sticky Bottom) ── */}
+      {/* ── 11. Interaction Row (Sticky Bottom) ── */}
       <div className="fixed bottom-[64px] md:bottom-0 left-0 w-full bg-surface border-t-2 border-on-surface z-40 p-[12px] md:px-[64px] flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <div className="max-w-[720px] w-full mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
