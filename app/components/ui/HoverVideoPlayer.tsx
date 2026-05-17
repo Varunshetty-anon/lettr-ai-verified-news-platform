@@ -1,10 +1,7 @@
 'use client';
 
-import React from 'react';
-import dynamic from 'next/dynamic';
-import 'plyr/dist/plyr.css';
-
-const Plyr = dynamic(() => import('plyr-react').then(mod => mod.Plyr), { ssr: false });
+import React, { useRef, useState } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 
 interface HoverVideoPlayerProps {
   src: string;
@@ -14,31 +11,41 @@ interface HoverVideoPlayerProps {
 
 export default function HoverVideoPlayer({ src, poster, mode = 'preview' }: HoverVideoPlayerProps) {
   const isPreview = mode === 'preview';
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isMuted, setIsMuted] = useState(false); // Default unmuted for full mode as requested
 
-  const plyrOptions = {
-    controls: isPreview ? [] : ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen'],
-    autoplay: isPreview,
-    muted: isPreview,
-    loop: { active: isPreview },
-    clickToPlay: !isPreview,
-    keyboard: { focused: !isPreview, global: !isPreview },
+  const toggleMute = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(videoRef.current.muted);
+    }
   };
 
   return (
-    <div className={`relative w-full aspect-video overflow-hidden bg-surface-container-highest flex items-center justify-center ${isPreview ? 'pointer-events-none' : ''}`}>
-      <Plyr
-        source={{
-          type: 'video',
-          sources: [
-            {
-              src: src,
-              provider: 'html5',
-            },
-          ],
-          poster: poster,
-        }}
-        options={plyrOptions}
+    <div className={`relative w-full  overflow-hidden flex items-center justify-center ${isPreview ? 'pointer-events-none' : ''}`}>
+      <video
+        ref={videoRef}
+        src={src}
+        poster={poster}
+        className="w-full h-full object-cover"
+        autoPlay={isPreview}
+        loop={isPreview}
+        muted={isPreview ? true : isMuted}
+        playsInline
+        controls={!isPreview}
       />
+
+      {!isPreview && (
+        <button
+          onClick={toggleMute}
+          className="absolute bottom-4 right-4 z-10 w-[40px] h-[40px] rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+          aria-label="Toggle Sound"
+        >
+          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        </button>
+      )}
     </div>
   );
 }

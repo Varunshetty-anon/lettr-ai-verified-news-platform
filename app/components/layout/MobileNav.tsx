@@ -4,7 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Compass, Home, PenTool, User as UserIcon, Menu, Search } from 'lucide-react';
-import { ThemeToggle } from '../ui/ThemeToggle';
 
 export function MobileNav() {
   const pathname = usePathname();
@@ -18,7 +17,6 @@ export function MobileNav() {
 
   return (
     <>
-      {/* Mobile Top Bar */}
       <header className="md:hidden fixed top-0 left-0 z-50 w-full bg-surface border-b-2 border-on-surface flex items-center justify-between px-[16px] h-[80px]">
         <div className="w-16 flex items-center justify-start">
           <button aria-label="Open menu" className="text-on-surface"><Menu size={24} strokeWidth={2} /></button>
@@ -33,7 +31,6 @@ export function MobileNav() {
         </div>
       </header>
 
-      {/* Mobile Bottom Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full bg-surface border-t-2 border-on-surface z-50 flex items-center justify-around h-[64px] pb-[env(safe-area-inset-bottom)]">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -46,6 +43,7 @@ export function MobileNav() {
               }`}
             >
               <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+              <span className="type-caption mt-1 font-bold">{item.label}</span>
             </Link>
           );
         })}
