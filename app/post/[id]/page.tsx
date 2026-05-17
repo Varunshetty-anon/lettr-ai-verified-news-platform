@@ -9,6 +9,7 @@ import { useSession } from 'next-auth/react';
 import { FactScoreBadge } from '@/app/components/ui/FactScoreBadge';
 import { VerifiedBadge } from '@/app/components/ui/VerifiedBadge';
 import { PostSkeleton } from '@/app/components/ui/PostSkeleton';
+import { AuthorAvatar } from '@/app/components/ui/AuthorAvatar';
 import { Bot, Check, ExternalLink, Heart, Share2, UserPlus } from 'lucide-react';
 
 const fetcher = async (url: string) => {
@@ -140,11 +141,13 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   // Content formatting
   const cleanBody = (text: string) => {
     return text
+      ?.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
       ?.replace(/https?:\/\/\S+/g, '')
+      ?.replace(/www\.\S+/g, '')
       ?.replace(/Link posted:.*$/gm, '')
       ?.replace(/Source:.*$/gm, '')
-      ?.replace(/\[.*?\]\(.*?\)/g, '')
-      ?.replace(/www\.\S+/g, '')
+      ?.replace(/^\s*N\s*$/gm, '')
+      ?.replace(/\n{3,}/g, '\n\n')
       ?.trim() || '';
   };
   
@@ -197,99 +200,77 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
       
       {/* ── 1. Full-width Hero Media ── */}
       {post.videoUrl ? (
-        <div className="w-full h-[300px] md:h-[620px] relative bg-black">
+        <div className="w-full overflow-hidden bg-black" style={{maxHeight: '45vh'}}>
           <DynamicPlayer src={post.videoUrl} poster={post.imageUrl} />
         </div>
       ) : (
-        <div className="relative w-full aspect-video max-h-[500px] bg-surface-container overflow-hidden">
-          {post.imageUrl ? (
-            <img
-              src={post.imageUrl}
-              alt={post.headline}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
-          ) : null}
-          <div className={`${post.imageUrl ? 'hidden' : ''} w-full h-full flex items-center justify-center bg-surface-container`}>
-            <span className="type-label-md text-on-surface-variant">{post.category || 'MEDIA UNAVAILABLE'}</span>
-          </div>
+        <div className="w-full overflow-hidden" style={{maxHeight: '45vh'}}>
+          <img
+            src={post.imageUrl}
+            alt={post.headline}
+            className="w-full h-full object-cover object-center"
+            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none' }}
+          />
         </div>
       )}
 
       <article className="max-w-[720px] mx-auto px-[16px] md:px-0 py-[48px] md:py-[64px]">
         
-        {/* ── 2. Article Header ── */}
-        <div className="mb-[64px] relative">
-          {post.category && (
-            <div className="mb-6 flex justify-between items-start">
-              <span className="type-label-md border border-on-surface px-3 py-1.5 text-on-surface uppercase inline-block">
-                {post.category}
-              </span>
-              <div className="md:hidden">
-                <FactScoreBadge score={post.factScore} size="md" />
-              </div>
-            </div>
-          )}
-          
-          <h1 className="type-headline-lg text-on-surface mb-8">
-            {post.headline}
-          </h1>
+        {/* ── 2. Category tag + Read time ── */}
+        <div className="flex items-center justify-between mb-6">
+          {post.category ? (
+            <span className="type-label-md border border-on-surface px-3 py-1.5 text-on-surface uppercase">
+              {post.category}
+            </span>
+          ) : <div/>}
+          <span className="type-label-md text-on-surface-variant uppercase">{post.readTime || '5'} MIN READ</span>
+        </div>
+        
+        {/* ── 3. Headline ── */}
+        <h1 className="type-headline-lg text-on-surface mb-8">
+          {post.headline}
+        </h1>
 
-          <div className="flex flex-col md:flex-row md:items-center justify-between border-y-2 border-on-surface py-6 gap-6 relative">
-            <div className="flex items-center gap-4">
-              <div className="w-[48px] h-[48px] bg-surface-container-highest flex items-center justify-center type-headline-sm">
-                {post.author?.name?.charAt(0)}
-              </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  {post.author?._id ? (
-                    <Link href={`/author/${post.author._id}`} className="type-label-md text-on-surface hover:text-primary transition-colors">
-                      {post.author?.name}
-                    </Link>
-                  ) : (
-                    <span className="type-label-md text-on-surface">{post.author?.name}</span>
-                  )}
-                  {post.author?.isVerifiedAuthor && <VerifiedBadge size={16} />}
-                  {isBotAuthor && <Bot size={14} className="text-on-surface-variant" />}
-                </div>
-                <span className="type-caption text-on-surface-variant uppercase">{authorLabel} · 5 MIN READ</span>
-              </div>
+        {/* ── 4. Author Row ── */}
+        <div className="flex items-center justify-between w-full border-b border-outline-variant pb-6 mb-8">
+          <div className="flex items-center gap-4">
+            <AuthorAvatar name={post.author?.name} image={post.author?.image} size="md" />
+            <div>
+              <p className="type-label-md text-on-surface font-bold">
+                {post.author?._id ? (
+                  <Link href={`/author/${post.author._id}`} className="hover:text-primary transition-colors">
+                    {post.author?.name}
+                  </Link>
+                ) : (
+                  post.author?.name
+                )}
+              </p>
+              <p className="type-caption text-on-surface-variant mt-1 uppercase">
+                {post.author?.role === 'BOT' ? 'BOT' : 'AUTHOR'} · {post.readTime || '5'} MIN READ
+              </p>
             </div>
-            <div className="hidden md:flex items-center gap-4">
-              <span className="type-label-md text-on-surface-variant uppercase">{new Date(post.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="type-caption text-on-surface-variant hidden md:inline">
+              {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </span>
+            <div className="scale-125 origin-right">
               <FactScoreBadge score={post.factScore} size="md" />
             </div>
           </div>
-          
-          {post.factSummary && post.factSummary !== 'Analysis complete.' && (
-            <div className="mt-4 p-4 border border-outline-variant bg-surface-container">
-              <p className="type-label-md text-on-surface-variant mb-2">AI FACT CHECK REASONING</p>
-              <p className="type-body-md text-on-surface">{post.factSummary}</p>
-              {post.issues && post.issues.length > 0 && (
-                <ul className="mt-3 space-y-1">
-                  {post.issues.map((issue: string, i: number) => (
-                    <li key={i} className="type-caption text-error flex items-start gap-2">
-                      <span>⚠</span> {issue}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
         </div>
 
-        {/* ── 4. Body Content ── */}
-
-        <div className="content-measure">
+        {/* ── 6. Article Body ── */}
+        <div className="content-measure mb-12">
           {renderContent()}
         </div>
 
-        {/* ── 5. Source Cards ── */}
+        {/* ── 7. Divider line ── */}
+        <div className="border-t-2 border-on-surface pt-8" />
+
+        {/* ── 8. Source Links ── */}
         {sourceLinks.length > 0 && (
-          <div className="mt-[48px] border-y-2 border-on-surface py-[24px]">
+          <div className="mb-[48px]">
             <h3 className="type-label-md text-on-surface mb-[16px]">SOURCE LINKS</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {sourceLinks.map((source) => (
@@ -313,26 +294,30 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           </div>
         )}
 
-        {/* ── 6. AI Verification Summary ── */}
-        <div className="mt-[48px] border-2 border-on-surface p-[24px] bg-surface-container">
-          <div className="flex items-center justify-between border-b-2 border-on-surface pb-[12px] mb-[24px]">
-            <h3 className="type-label-md text-on-surface">AI VERIFICATION SUMMARY</h3>
-            <FactScoreBadge score={post.factScore} size="sm" showLabel />
+        {/* ── 9. AI Verification Summary ── */}
+        {post.factSummary && post.factSummary !== 'Analysis complete.' && (
+          <div className="border border-outline-variant bg-surface-container p-6 my-8">
+            <div className="flex items-center justify-between mb-4">
+              <span className="type-label-md text-on-surface-variant">AI VERIFICATION SUMMARY</span>
+              <FactScoreBadge score={post.factScore} />
+            </div>
+            <p className="type-body-md text-on-surface-variant leading-relaxed">
+              {post.factSummary}
+            </p>
+            {post.issues && post.issues.length > 0 && (
+              <ul className="mt-4 space-y-1">
+                {post.issues.map((issue: string, i: number) => (
+                  <li key={i} className="type-caption text-error flex items-start gap-2">
+                    <span>⚠</span> {issue}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <p className="type-body-md text-on-surface-variant mb-4">
-            {post.factSummary || post.reasoning || 'Verification details were not stored for this older post.'}
-          </p>
-          {post.issues?.length > 0 && (
-            <ul className="border-t border-outline-variant pt-4 space-y-2">
-              {post.issues.map((issue: string) => (
-                <li key={issue} className="type-caption text-on-surface-variant">{issue}</li>
-              ))}
-            </ul>
-          )}
-        </div>
+        )}
 
-        {/* ── 7. Tags Row ── */}
-        <div className="mt-[48px] pt-[24px] border-t border-outline-variant flex flex-wrap gap-3">
+        {/* ── 10. Tags Row ── */}
+        <div className="pt-[24px] border-t border-outline-variant flex flex-wrap gap-3">
           <span className="type-label-md border border-outline-variant px-3 py-1.5 text-on-surface-variant">REPORTING</span>
           {post.category && (
             <span className="type-label-md border border-outline-variant px-3 py-1.5 text-on-surface-variant uppercase">{post.category}</span>
