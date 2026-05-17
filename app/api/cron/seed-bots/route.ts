@@ -147,49 +147,31 @@ export async function GET(request: Request) {
     };
 
     try {
-      const rewriteResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            {
-              role: "system",
-              content: `You are a senior news editor at a premium, fact-based news platform. Your writing is clear, authoritative, and detailed. You never use clickbait or sensational language. You write in a factual, analytical tone similar to Reuters or The Economist.`
-            },
-            {
-              role: "user",
-              content: `Rewrite the following raw content into a professional news article. Do NOT copy raw text verbatim. Write original, well-structured content. If the content implies a video or image, verify the facts in context of the described media.
+      const callGroq = async (promptMsg: string) => {
+        return fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+              {
+                role: "system",
+                content: `You are a senior news editor at a premium, fact-based news platform. Your writing is clear, authoritative, and detailed. You never use clickbait or sensational language. You write in a factual, analytical tone similar to Reuters or The Economist.`
+              },
+              { role: "user", content: promptMsg }
+            ],
+            temperature: 0.4,
+            max_tokens: 1500
+          })
+        });
+      };
 
-Raw Title: ${rawTitle}
-Raw Text: ${rawText.substring(0, 1200)}
-Source URL: ${originalLink}
-Bot Specialty: ${config.category}
-Media Presence: ${media.video ? 'Contains Video' : media.image ? 'Contains Image' : 'Text Only'}
-
-Return EXACTLY in this format (use the exact labels):
-
-Headline: <A strong, clear, professional news headline. Maximum 12 words and strictly under 100 characters. Do not summarize the entire article. No paragraph formatting.>
-
-Summary: <A comprehensive 5-8 line summary of the key facts. Cover who, what, when, where, why, and the significance. Each line should add new information.>
-
-Article: <A detailed 3-5 paragraph article body. Include background context, expert analysis, implications, and what comes next. Write at least 250 words. Structure with clear paragraphs. DO NOT include any URLs, links, or sources inside the Article body.>
-
-Source Note: <A one-line credibility assessment of the source, e.g. "Sourced from r/technology, corroborated by multiple news outlets.">
-
-Category: <Generate a highly specific, trending 1-3 word category based on the article content (e.g. "Indian Economy", "Tech India", "Generative AI", "Space Tourism"). Do NOT just use the bot specialty.>`
-            }
-          ],
-          temperature: 0.4,
-          max_tokens: 1500
-        })
-      });
-
-      if (rewriteResponse.ok) {
-        const rewriteData = await rewriteResponse.json();
+      const parseGroqResponse = async (response: Response) => {
+        if (!response.ok) return;
+        const rewriteData = await response.json();
         const outputText = rewriteData.choices[0]?.message?.content || "";
         
         const headMatch = outputText.match(/Headline:\s*(.*)/i);
@@ -204,15 +186,48 @@ Category: <Generate a highly specific, trending 1-3 word category based on the a
         if (sourceNoteMatch) rewriteContent.sourceNote = sourceNoteMatch[1].trim();
         if (categoryMatch) rewriteContent.dynamicCategory = categoryMatch[1].trim();
         
-        // Fallback: if no body parsed but there's substantial text after summary
         if (!rewriteContent.fullBody && outputText.length > 200) {
-          // Try to extract everything after Summary
           const afterSummary = outputText.split(/Summary:/i)[1] || '';
           const parts = afterSummary.split('\n\n');
           if (parts.length > 1) {
             rewriteContent.fullBody = parts.slice(1).join('\n\n').trim();
           }
         }
+      };
+
+      const mainPrompt = `Rewrite the following raw content into a professional news article. Do NOT copy raw text verbatim. Write original, well-structured content. If the content implies a video or image, verify the facts in context of the described media.
+
+Raw Title: ${rawTitle}
+Raw Text: ${rawText.substring(0, 1200)}
+Source URL: ${originalLink}
+Bot Specialty: ${config.category}
+Media Presence: ${media.video ? 'Contains Video' : media.image ? 'Contains Image' : 'Text Only'}
+
+STRICT RULES:
+- Minimum 400 characters in the article body
+- Do NOT include any URLs, links, or "Link posted:" text in the body
+- Do NOT include markdown link syntax [text](url)
+- Write complete sentences with context and background
+
+Return EXACTLY in this format (use the exact labels):
+
+Headline: <A strong, clear, professional news headline. Maximum 12 words and strictly under 100 characters. Do not summarize the entire article. No paragraph formatting.>
+
+Summary: <A comprehensive 5-8 line summary of the key facts. Cover who, what, when, where, why, and the significance. Each line should add new information.>
+
+Article: <A detailed 3-5 paragraph article body. Include background context, expert analysis, implications, and what comes next. Write at least 250 words. Structure with clear paragraphs. DO NOT include any URLs, links, or sources inside the Article body.>
+
+Source Note: <A one-line credibility assessment of the source, e.g. "Sourced from r/technology, corroborated by multiple news outlets.">
+
+Category: <Generate a highly specific, trending 1-3 word category based on the article content (e.g. "Indian Economy", "Tech India", "Generative AI", "Space Tourism"). Do NOT just use the bot specialty.>`;
+
+      let rewriteResponse = await callGroq(mainPrompt);
+      await parseGroqResponse(rewriteResponse);
+
+      if (rewriteContent.fullBody.length < 400) {
+        const retryPrompt = `The previous summary was too short. Write a detailed news article of at least 400 characters covering: ${rewriteContent.cleanHeadline}. Include context, background, and implications. Do not include any URLs or links in the body text.`;
+        let retryResponse = await callGroq(retryPrompt);
+        await parseGroqResponse(retryResponse);
       }
     } catch (e) {
       console.error("Groq Rewrite Failed, using raw title.", e);

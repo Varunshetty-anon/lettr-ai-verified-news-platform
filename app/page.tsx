@@ -49,6 +49,14 @@ const getCategoryColorClass = (cat?: string) => {
   return 'bg-secondary text-on-primary';
 };
 
+const cleanSummary = (text: string) => text
+  ?.replace(/https?:\/\/\S+/g, '')
+  ?.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+  ?.replace(/Link posted:.*$/gm, '')
+  ?.replace(/Source:.*$/gm, '')
+  ?.trim()
+  ?.slice(0, 200) || '';
+
 const isBot = (author: any) => {
   if (!author) return false;
   return author.role?.toLowerCase() === 'bot' || author.email?.includes('@lettr.ai') || author.name?.toLowerCase().includes('bot');
@@ -144,7 +152,7 @@ export default function Home() {
             {post.headline}
           </h3>
           <p className="type-body-md text-on-surface-variant line-clamp-2 mb-6 flex-grow">
-            {post.description}
+            {cleanSummary(post.description)}
           </p>
 
           <div className="flex items-center justify-between pt-4 border-t border-outline-variant mt-auto">
@@ -190,48 +198,58 @@ export default function Home() {
         )}
       </div>
       
-      {/* ══════════ HERO SECTION (12-COL GRID) ══════════ */}
+      {/* ══════════ HERO SECTION ══════════ */}
       {heroPost && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-[48px] mb-[64px]">
-          <div className="lg:col-span-8 flex flex-col relative">
-            <ImpressTracker postId={heroPost._id}>
-              <Link href={`/post/${heroPost._id}`} className="group block">
-                {heroPost.imageUrl ? (
-                  <div className="aspect-[16/9] w-full mb-6 overflow-hidden bg-surface-container-highest">
-                    <img src={heroPost.imageUrl} alt={heroPost.headline} onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  </div>
-                ) : (
-                  <div className={`aspect-[16/9] w-full mb-6 ${getCategoryColorClass(heroPost.category)} opacity-20`} />
-                )}
-                {heroPost.category && (
-                  <span className={`type-label-md inline-block px-2 py-1 mb-4 ${getCategoryColorClass(heroPost.category)}`}>
-                    {heroPost.category}
-                  </span>
-                )}
-                <h2 className="text-[clamp(28px,4vw,56px)] font-headline font-bold leading-[1.05] tracking-tight text-on-surface mb-4 group-hover:text-primary transition-colors normal-case">
-                  {heroPost.headline}
-                </h2>
-                <p className="type-body-lg text-on-surface-variant line-clamp-3 mb-6 max-w-[800px]">
-                  {heroPost.description}
-                </p>
-                <div className="flex items-center gap-4 pt-6 border-t-2 border-on-surface mt-auto">
-                  <div className="flex items-center gap-2">
-                    <span className="type-label-md">{heroPost.author?.name || 'Editorial'}</span>
-                    {heroPost.author?.isVerifiedAuthor && <VerifiedBadge size={16} />}
-                    {isBot(heroPost.author) && <Bot size={16} className="text-on-surface-variant" />}
-                  </div>
-                  <FactScoreBadge score={heroPost.factScore} size="md" />
-                  <span className="type-caption text-on-surface-variant hidden sm:inline ml-auto">{timeAgo(heroPost.createdAt)}</span>
-                </div>
-              </Link>
-            </ImpressTracker>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-outline-variant mb-8">
+          {/* Left: Image */}
+          <div className="relative overflow-hidden" style={{height: '500px'}}>
+            {heroPost.imageUrl ? (
+              <img
+                src={heroPost.imageUrl}
+                alt={heroPost.headline}
+                className="w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.style.display = 'none' }}
+              />
+            ) : (
+              <div className="w-full h-full bg-surface-container flex items-center justify-center">
+                <span className="type-label-md text-on-surface-variant">{heroPost.category}</span>
+              </div>
+            )}
           </div>
-          <div className="lg:col-span-4 flex flex-col gap-[48px] lg:border-l-2 lg:border-on-surface lg:pl-[48px]">
-            {stackedPost1 && renderCard(stackedPost1, false, true)}
-            {stackedPost2 && renderCard(stackedPost2, false, true)}
-          </div>
+          {/* Right: Content */}
+          <Link href={`/post/${heroPost._id}`} className="p-8 flex flex-col justify-center bg-surface group">
+            <span className="type-label-md text-primary mb-4 uppercase">{heroPost.category}</span>
+            <h1 className="type-headline-lg mb-6 normal-case group-hover:text-primary transition-colors">{heroPost.headline}</h1>
+            <p className="type-body-md text-on-surface-variant mb-6 line-clamp-4">{cleanSummary(heroPost.description)}</p>
+            <div className="flex items-center gap-4">
+              <span className="type-label-md text-on-surface-variant">{heroPost.author?.name}</span>
+              <FactScoreBadge score={heroPost.factScore} size="sm" />
+            </div>
+          </Link>
         </div>
       )}
+
+      {/* ══════════ SECONDARY POSTS (LIST) ══════════ */}
+      <div className="flex flex-col gap-6 mb-12">
+        {[stackedPost1, stackedPost2].filter(Boolean).map(post => (
+          <Link key={post._id} href={`/post/${post._id}`} className="grid grid-cols-1 sm:grid-cols-12 gap-6 group hover:bg-surface-container-low transition-colors p-4 -mx-4">
+            <div className="sm:col-span-4 aspect-video bg-surface-container overflow-hidden">
+               {post.imageUrl && (
+                 <img src={post.imageUrl} alt="" onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+               )}
+            </div>
+            <div className="sm:col-span-8 flex flex-col justify-center">
+               <span className="type-label-md text-primary mb-2 uppercase">{post.category}</span>
+               <h3 className="type-headline-sm normal-case mb-2 group-hover:text-primary transition-colors">{post.headline}</h3>
+               <p className="type-body-md text-on-surface-variant line-clamp-2 mb-4">{cleanSummary(post.description)}</p>
+               <div className="flex items-center gap-3">
+                  <span className="type-label-md text-on-surface-variant">{post.author?.name}</span>
+                  <FactScoreBadge score={post.factScore} size="sm" />
+               </div>
+            </div>
+          </Link>
+        ))}
+      </div>
 
       {/* ══════════ THE BRIEF (3-COL GRID) ══════════ */}
       {briefPosts.length > 0 && (

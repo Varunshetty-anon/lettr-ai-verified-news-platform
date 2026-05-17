@@ -1,62 +1,28 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
-
 interface HoverVideoPlayerProps {
   src: string;
   poster?: string;
-  mode?: 'preview' | 'full';
 }
 
-export default function HoverVideoPlayer({ src, poster, mode = 'preview' }: HoverVideoPlayerProps) {
-  const isPreview = mode === 'preview';
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isMuted, setIsMuted] = useState(false); // Default unmuted for full mode as requested
-
-  const toggleMute = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(videoRef.current.muted);
-    }
-  };
-
-
+export default function HoverVideoPlayer({ src, poster }: HoverVideoPlayerProps) {
   return (
-    <div className={`relative w-full h-full overflow-hidden flex items-center justify-center ${isPreview ? 'pointer-events-none' : ''}`}>
+    <div className="relative w-full overflow-hidden bg-surface-container" style={{aspectRatio: '16/9'}}>
       <video
-        ref={videoRef}
         src={src}
         poster={poster}
-        className="w-full h-full object-cover"
-        autoPlay={isPreview}
-        loop={isPreview}
-        muted={isPreview ? true : isMuted}
+        controls
         playsInline
-        controls={!isPreview}
+        preload="metadata"
+        className="w-full h-full object-cover"
+        style={{maxHeight: '420px'}}
         onError={(e) => {
-          if (e.currentTarget.parentElement) {
-            e.currentTarget.parentElement.innerHTML = 
-              '<div class="w-full h-full flex items-center justify-center text-on-surface-variant type-label-md">VIDEO UNAVAILABLE</div>';
-          }
+          const container = e.currentTarget.parentElement!;
+          container.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#888;font-size:12px;letter-spacing:0.1em">VIDEO UNAVAILABLE</div>';
         }}
-      />
-      
-      {!isPreview && (
-        <button
-          onClick={toggleMute}
-          className="absolute bottom-4 right-4 z-10 w-[40px] h-[40px] border border-white/30 bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
-          aria-label="Toggle Sound"
-        >
-          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-        </button>
-      )}
+      >
+        Your browser does not support video playback.
+      </video>
     </div>
   );
-}
-
-export function DynamicPlayer({ src, poster }: { src: string, poster?: string }) {
-  return <HoverVideoPlayer src={src} poster={poster} mode="full" />;
 }

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Shield, FileText, Link as LinkIcon, Image as ImageIcon, Video, AlertTriangle, CheckCircle, ArrowUpRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const CATEGORIES = [
   'AI & Tech', 'Startups', 'Finance', 'Crypto', 'Geopolitics',
@@ -33,20 +34,14 @@ export default function PublishPage() {
 
   if (!session || !isVerified) {
     return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center p-5 bg-surface-container-lowest">
-        <div className="text-center max-w-md border border-outline-variant bg-surface-container-low p-10 shadow-sm">
-          <Shield size={48} className="mx-auto mb-6 text-primary/40" />
-          <h2 className="font-display text-2xl font-bold mb-3 text-on-surface">Author Verification Required</h2>
-          <p className="font-body text-sm text-on-surface-variant/70 mb-8 leading-relaxed">
-            You must pass our AI journalism evaluation to publish articles. This ensures the LETTR feed remains highly factual and professional.
-          </p>
-          <button 
-            onClick={() => router.push('/verify')}
-            className="w-full inline-flex items-center justify-center gap-2 bg-primary text-on-primary h-14 font-label text-xs uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/10"
-          >
-            Start Verification <ArrowUpRight size={14} />
-          </button>
-        </div>
+      <div className="max-w-[720px] mx-auto px-4 py-20 text-center">
+        <h1 className="type-headline-md mb-4">Verification Required</h1>
+        <p className="type-body-md text-on-surface-variant mb-8">
+          You need to be a verified author to publish on LETTR.
+        </p>
+        <Link href="/verify" className="bg-primary text-on-primary type-label-md px-8 py-4 inline-block">
+          GET VERIFIED
+        </Link>
       </div>
     );
   }

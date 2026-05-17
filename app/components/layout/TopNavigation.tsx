@@ -63,8 +63,11 @@ export function TopNavigation() {
     { label: 'HOME', href: '/' },
     { label: 'EXPLORE', href: '/explore' },
     { label: 'PUBLISH', href: '/publish' },
-    { label: 'VERIFY', href: '/verify' },
   ];
+
+  if (!session || !(session.user as any)?.isVerifiedAuthor) {
+    navLinks.push({ label: 'VERIFY', href: '/verify' });
+  }
 
   return (
     <>

@@ -4,7 +4,7 @@ import React, { use, useState, useEffect } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { DynamicPlayer } from '@/app/components/ui/HoverVideoPlayer';
+
 import { useSession } from 'next-auth/react';
 import { FactScoreBadge } from '@/app/components/ui/FactScoreBadge';
 import { VerifiedBadge } from '@/app/components/ui/VerifiedBadge';
@@ -197,68 +197,68 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
   return (
     <div className="w-full min-h-screen bg-surface pb-[80px] md:pb-0 relative">
-      
-      {/* ── 1. Full-width Hero Media ── */}
-      {post.videoUrl ? (
-        <div className="w-full overflow-hidden bg-black" style={{maxHeight: '45vh'}}>
-          <DynamicPlayer src={post.videoUrl} poster={post.imageUrl} />
-        </div>
-      ) : (
-        <div className="w-full overflow-hidden" style={{maxHeight: '45vh'}}>
-          <img
-            src={post.imageUrl}
-            alt={post.headline}
-            className="w-full h-full object-cover object-center"
-            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none' }}
-          />
-        </div>
-      )}
-
-      <article className="max-w-[720px] mx-auto px-[16px] md:px-0 py-[48px] md:py-[64px]">
-        
-        {/* ── 2. Category tag + Read time ── */}
-        <div className="flex items-center justify-between mb-6">
-          {post.category ? (
-            <span className="type-label-md border border-on-surface px-3 py-1.5 text-on-surface uppercase">
-              {post.category}
-            </span>
-          ) : <div/>}
-          <span className="type-label-md text-on-surface-variant uppercase">{post.readTime || '5'} MIN READ</span>
-        </div>
-        
-        {/* ── 3. Headline ── */}
-        <h1 className="type-headline-lg text-on-surface mb-8">
-          {post.headline}
-        </h1>
-
-        {/* ── 4. Author Row ── */}
-        <div className="flex items-center justify-between w-full border-b border-outline-variant pb-6 mb-8">
-          <div className="flex items-center gap-4">
-            <AuthorAvatar name={post.author?.name} image={post.author?.image} size="md" />
-            <div>
-              <p className="type-label-md text-on-surface font-bold">
-                {post.author?._id ? (
-                  <Link href={`/author/${post.author._id}`} className="hover:text-primary transition-colors">
-                    {post.author?.name}
-                  </Link>
-                ) : (
-                  post.author?.name
-                )}
-              </p>
-              <p className="type-caption text-on-surface-variant mt-1 uppercase">
-                {post.author?.role === 'BOT' ? 'BOT' : 'AUTHOR'} · {post.readTime || '5'} MIN READ
-              </p>
+      {/* Top section: image left, headline right */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 mb-12 border-b border-outline-variant">
+        {/* Left: Image or Video */}
+        <div className="relative overflow-hidden bg-surface-container" style={{height: '420px'}}>
+          {post.videoUrl ? (
+            <video
+              src={post.videoUrl}
+              controls
+              playsInline
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.parentElement!.innerHTML = 
+                  '<div class="w-full h-full flex items-center justify-center text-on-surface-variant">VIDEO UNAVAILABLE</div>';
+              }}
+            />
+          ) : post.imageUrl ? (
+            <img
+              src={post.imageUrl}
+              alt={post.headline}
+              className="w-full h-full object-cover"
+              onError={(e) => { e.currentTarget.parentElement!.style.background = '#111' }}
+            />
+          ) : (
+            <div className="w-full h-full bg-surface-container flex items-center justify-center">
+              <span className="type-label-md text-on-surface-variant">{post.category}</span>
             </div>
+          )}
+        </div>
+
+        {/* Right: Meta + Headline */}
+        <div className="p-8 lg:p-12 flex flex-col justify-center">
+          <div className="flex items-center gap-3 mb-6">
+            {post.category && <span className="border border-on-surface px-3 py-1 type-label-md uppercase">{post.category}</span>}
+            <span className="type-caption text-on-surface-variant uppercase">{post.readTime || 5} MIN READ</span>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="type-caption text-on-surface-variant hidden md:inline">
-              {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-            </span>
-            <div className="scale-125 origin-right">
-              <FactScoreBadge score={post.factScore} size="md" />
+          <h1 className="type-headline-lg normal-case mb-8 leading-tight">{post.headline}</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AuthorAvatar name={post.author?.name} image={post.author?.image} size="sm" />
+              <div>
+                <p className="type-label-md">
+                  {post.author?._id ? (
+                    <Link href={`/author/${post.author._id}`} className="hover:text-primary transition-colors">
+                      {post.author?.name}
+                    </Link>
+                  ) : (
+                    post.author?.name
+                  )}
+                </p>
+                <p className="type-caption text-on-surface-variant mt-1 uppercase">
+                  {post.author?.role === 'BOT' ? 'BOT' : 'AUTHOR'} · {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              </div>
+            </div>
+            <div className="scale-110">
+              <FactScoreBadge score={post.factScore} />
             </div>
           </div>
         </div>
+      </div>
+
+      <article className="max-w-[720px] mx-auto px-4">
 
         {/* ── 6. Article Body ── */}
         <div className="content-measure mb-12">
