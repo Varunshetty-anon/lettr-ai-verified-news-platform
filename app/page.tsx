@@ -34,7 +34,13 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) {
+    throw new Error('Unable to load feed');
+  }
+  return res.json();
+};
 
 // Category Color Helper for badges
 const getCategoryColorClass = (cat?: string) => {
@@ -62,13 +68,36 @@ export default function Home() {
     }
   }, [session, status, router]);
 
-  const { data, isLoading } = useSWR(`/api/posts`, fetcher, { 
+  const { data, isLoading, mutate } = useSWR(`/api/posts`, fetcher, {
     refreshInterval: 0,
-    revalidateOnFocus: true, 
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
   });
 
   const posts: PostData[] = data?.posts || [];
   const loading = isLoading && posts.length === 0;
+  const [hasNewPosts, setHasNewPosts] = useState(false);
+  const latestPostId = posts[0]?._id;
+  const firstName = session?.user?.name?.split(' ')[0] || 'there';
+
+  useEffect(() => {
+    if (!latestPostId) return;
+
+    const checkForNewPosts = async () => {
+      try {
+        const res = await fetch('/api/posts?sort=recent', { cache: 'no-store' });
+        if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) return;
+        const nextData = await res.json();
+        const newestId = nextData?.posts?.[0]?._id;
+        if (newestId && newestId !== latestPostId) {
+          setHasNewPosts(true);
+        }
+      } catch {}
+    };
+
+    const interval = window.setInterval(checkForNewPosts, 60000);
+    return () => window.clearInterval(interval);
+  }, [latestPostId]);
 
   if (loading || status === 'loading') {
     return (
@@ -86,6 +115,24 @@ export default function Home() {
 
   return (
     <div className="w-full max-w-[1440px] mx-auto px-[16px] md:px-[64px] py-[24px] md:py-[64px]">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-[32px] border-b-2 border-on-surface pb-[16px]">
+        <div>
+          <span className="type-label-md text-primary">Personalized feed</span>
+          <h1 className="type-headline-sm text-on-surface mt-1">Hello, {firstName}</h1>
+        </div>
+        {hasNewPosts && (
+          <button
+            type="button"
+            onClick={() => {
+              setHasNewPosts(false);
+              mutate();
+            }}
+            className="type-label-md bg-primary text-white px-5 py-3 hover:bg-on-surface transition-colors"
+          >
+            New Posts Available
+          </button>
+        )}
+      </div>
       
       {/* ══════════ HERO SECTION (12-COL GRID) ══════════ */}
       {heroPost && (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Shield, FileText, CheckCircle, AlertTriangle, Link as LinkIcon, Image as ImageIcon, Video } from 'lucide-react';
@@ -8,7 +8,7 @@ import { Button } from '../components/ui/Button';
 import { InputField } from '../components/ui/InputField';
 
 export default function VerifyAuthor() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,6 +21,13 @@ export default function VerifyAuthor() {
     imageUrl: '',
     videoUrl: ''
   });
+
+  useEffect(() => {
+    const isVerified = (session?.user as any)?.isVerifiedAuthor || (session?.user as any)?.role === 'AUTHOR';
+    if (isVerified) {
+      router.replace('/publish');
+    }
+  }, [session, router]);
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,9 +49,11 @@ export default function VerifyAuthor() {
         setResult(data);
         if (data.isVerified) {
           setTimeout(() => {
-            router.push('/account');
-            router.refresh();
-          }, 3000);
+            update().finally(() => {
+              router.push('/publish');
+              router.refresh();
+            });
+          }, 1800);
         }
       }
     } catch (err) {

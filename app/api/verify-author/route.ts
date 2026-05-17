@@ -13,8 +13,8 @@ export async function POST(req: Request) {
 
     const { headline, body, sources, imageUrl, videoUrl } = await req.json();
 
-    if (!headline || !body) {
-      return NextResponse.json({ error: 'Headline and Body are required' }, { status: 400 });
+    if (!headline || !body || !sources) {
+      return NextResponse.json({ error: 'Headline, body, and source links are required' }, { status: 400 });
     }
 
     // Use centralized verification library
@@ -28,9 +28,20 @@ export async function POST(req: Request) {
       await User.findOneAndUpdate(
         { email: session.user.email },
         { 
-          isVerifiedAuthor: true,
-          role: 'AUTHOR'
-        }
+          $set: {
+            isVerifiedAuthor: true,
+            role: 'AUTHOR',
+          },
+          $setOnInsert: {
+            name: session.user.name || session.user.email.split('@')[0],
+            email: session.user.email,
+            image: session.user.image || '',
+            preferences: [],
+            categoryAffinity: {},
+            trustScore: verification.factScore,
+          },
+        },
+        { upsert: true, new: true }
       );
     }
 

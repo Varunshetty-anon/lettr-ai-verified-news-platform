@@ -5,6 +5,10 @@ import { Post } from '@/models/Post';
 import { User } from '@/models/User';
 import { auth } from '@/auth';
 
+function wordCount(value: string) {
+  return value.trim().split(/\s+/).filter(Boolean).length;
+}
+
 export async function POST(request: Request) {
   await dbConnect();
 
@@ -16,8 +20,12 @@ export async function POST(request: Request) {
 
     const { headline, body, sourceLink, imageUrl, videoUrl, category } = await request.json();
 
-    if (!headline || !body) {
-      return NextResponse.json({ error: 'Headline and Body are required.' }, { status: 400 });
+    if (!headline || !body || !sourceLink) {
+      return NextResponse.json({ error: 'Headline, article body, and source links are required.' }, { status: 400 });
+    }
+
+    if (wordCount(headline) > 15) {
+      return NextResponse.json({ error: 'Headline must be 15 words or fewer.' }, { status: 400 });
     }
 
     // Find the author

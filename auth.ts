@@ -80,6 +80,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.role = dbUser.role;
           token.id = dbUser._id.toString();
           token.image = dbUser.image || "";
+          token.isVerifiedAuthor = dbUser.isVerifiedAuthor;
           token.preferencesCount = (dbUser.preferences || []).length;
         }
       }
@@ -90,6 +91,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         (session.user as any).role = token.role;
         (session.user as any).id = token.id;
         (session.user as any).image = token.image || "";
+        (session.user as any).isVerifiedAuthor = token.isVerifiedAuthor || false;
         (session.user as any).preferencesCount = token.preferencesCount || 0;
       }
       return session;

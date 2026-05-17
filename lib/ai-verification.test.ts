@@ -21,6 +21,7 @@ describe('verifyFact', () => {
               factScore: 85,
               summary: "Verified correctly.",
               confidence: "High",
+              sourcesChecked: 2,
               issues: ["test issue"]
             })
           }
@@ -34,11 +35,11 @@ describe('verifyFact', () => {
       json: async () => mockResponse
     });
 
-    const result = await verifyFact('Headline', 'Body');
+    const result = await verifyFact('Headline', 'Body', 'https://example.com https://source.test');
     assert.strictEqual(result.factScore, 85);
     assert.strictEqual(result.factSummary, "Verified correctly.");
     assert.strictEqual(result.confidence, "High");
-    assert.strictEqual(result.sourcesChecked, 1);
+    assert.strictEqual(result.sourcesChecked, 2);
     assert.deepStrictEqual(result.issues, ["test issue"]);
   });
 
@@ -61,11 +62,11 @@ describe('verifyFact', () => {
 
     const result = await verifyFact('Headline', 'Body');
     // This should trigger the catch (parseError) block
-    assert.strictEqual(result.factScore, 50);
-    assert.strictEqual(result.factSummary, "Analysis complete (fallback formatting).");
-    assert.strictEqual(result.confidence, "Medium");
-    assert.strictEqual(result.sourcesChecked, 1);
-    assert.deepStrictEqual(result.issues, []);
+    assert.strictEqual(result.factScore, 25);
+    assert.match(result.factSummary, /unreadable response/);
+    assert.strictEqual(result.confidence, "Low");
+    assert.strictEqual(result.sourcesChecked, 0);
+    assert.strictEqual(result.issues?.length, 2);
   });
 
   test('should handle empty or missing content by using "{}" default', async () => {
@@ -89,8 +90,9 @@ describe('verifyFact', () => {
     // content || "{}" -> "{}" -> JSON.parse -> {}
     // defaults from parsed object should be used
     assert.strictEqual(result.factScore, 50);
-    assert.strictEqual(result.factSummary, "Analysis complete.");
+    assert.match(result.factSummary, /omitted a written justification/);
     assert.strictEqual(result.confidence, "Medium");
+    assert.strictEqual(result.sourcesChecked, 0);
   });
 
   test('should return error fallback for network failure', async () => {
@@ -100,8 +102,8 @@ describe('verifyFact', () => {
     };
 
     const result = await verifyFact('Headline', 'Body');
-    assert.strictEqual(result.factScore, 50);
-    assert.strictEqual(result.factSummary, "System evaluation incomplete due to an internal error.");
+    assert.strictEqual(result.factScore, 25);
+    assert.match(result.factSummary, /request failed before completion/);
     assert.strictEqual(result.confidence, "Low");
     assert.strictEqual(result.sourcesChecked, 0);
   });
@@ -112,8 +114,8 @@ describe('verifyFact', () => {
 
     try {
       const result = await verifyFact('Headline', 'Body');
-      assert.strictEqual(result.factScore, 50);
-      assert.strictEqual(result.factSummary, "Verification skipped: Service unavailable.");
+      assert.strictEqual(result.factScore, 25);
+      assert.match(result.factSummary, /no verification API key is configured/);
       assert.strictEqual(result.confidence, "Low");
       assert.strictEqual(result.sourcesChecked, 0);
     } finally {

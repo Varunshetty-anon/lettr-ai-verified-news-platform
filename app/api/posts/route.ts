@@ -120,44 +120,43 @@ export async function GET(request: Request) {
     if (userFollowing.length > 0) {
       hydrated.forEach((p: any) => {
         if (userFollowing.includes(p.authorId)) {
-          p.followBoost = 30;
+          p.followBoost = 50;
         }
       });
     }
 
-    // Personalized ranking: preferences*5 + likedCategoryMatch*4 + viewedCategoryMatch*3 + factScore*2 + recency
-    if (userPrefs.length > 0 && !category && sort === 'recent') {
+    // Personalized ranking priority:
+    // followed authors > explicit preferences > liked categories > clicked categories > fact score > recency.
+    if ((userPrefs.length > 0 || userFollowing.length > 0 || userLikes.length > 0 || userViewed.length > 0) && !category && sort === 'recent') {
       const now = Date.now();
       hydrated.sort((a, b) => {
         const aCategory = a.category || '';
         const bCategory = b.category || '';
 
-        // Preference match (5 points)
-        const aPref = userPrefs.includes(aCategory) ? 5 : 0;
-        const bPref = userPrefs.includes(bCategory) ? 5 : 0;
+        const aFollow = a.followBoost || 0;
+        const bFollow = b.followBoost || 0;
 
-        // Liked category match (4 points)
-        const aLikeCat = likedCategorySet.has(aCategory) ? 4 : 0;
-        const bLikeCat = likedCategorySet.has(bCategory) ? 4 : 0;
+        const aPref = userPrefs.includes(aCategory) ? 30 : 0;
+        const bPref = userPrefs.includes(bCategory) ? 30 : 0;
 
-        // Viewed/clicked category match (3 points)
-        const aViewCat = viewedCategorySet.has(aCategory) ? 3 : 0;
-        const bViewCat = viewedCategorySet.has(bCategory) ? 3 : 0;
+        const aLikeCat = likedCategorySet.has(aCategory) ? 20 : 0;
+        const bLikeCat = likedCategorySet.has(bCategory) ? 20 : 0;
+
+        const aViewCat = viewedCategorySet.has(aCategory) ? 12 : 0;
+        const bViewCat = viewedCategorySet.has(bCategory) ? 12 : 0;
 
         // Category affinity boost
         const aAffinity = (categoryAffinity[aCategory] || 0) * 0.5;
         const bAffinity = (categoryAffinity[bCategory] || 0) * 0.5;
 
-        // Fact score (2 points, normalized)
-        const aFact = (a.factScore / 100) * 2;
-        const bFact = (b.factScore / 100) * 2;
+        const aFact = (a.factScore / 100) * 5;
+        const bFact = (b.factScore / 100) * 5;
 
-        // Recency (0-10 points, based on how recent, heavily skewed to last 24h)
-        const aRecency = Math.max(0, 10 * (1 - (now - new Date(a.createdAt).getTime()) / (3 * 24 * 60 * 60 * 1000)));
-        const bRecency = Math.max(0, 10 * (1 - (now - new Date(b.createdAt).getTime()) / (3 * 24 * 60 * 60 * 1000)));
+        const aRecency = Math.max(0, 3 * (1 - (now - new Date(a.createdAt).getTime()) / (3 * 24 * 60 * 60 * 1000)));
+        const bRecency = Math.max(0, 3 * (1 - (now - new Date(b.createdAt).getTime()) / (3 * 24 * 60 * 60 * 1000)));
 
-        const aScore = aPref + aLikeCat + aViewCat + aAffinity + aFact + aRecency + (a.followBoost || 0);
-        const bScore = bPref + bLikeCat + bViewCat + bAffinity + bFact + bRecency + (b.followBoost || 0);
+        const aScore = aFollow + aPref + aLikeCat + aViewCat + aAffinity + aFact + aRecency;
+        const bScore = bFollow + bPref + bLikeCat + bViewCat + bAffinity + bFact + bRecency;
 
         return bScore - aScore;
       });

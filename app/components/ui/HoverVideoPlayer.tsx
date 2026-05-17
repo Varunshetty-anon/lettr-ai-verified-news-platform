@@ -24,7 +24,7 @@ export default function HoverVideoPlayer({ src, poster, mode = 'preview' }: Hove
   };
 
   return (
-    <div className={`relative w-full  overflow-hidden flex items-center justify-center ${isPreview ? 'pointer-events-none' : ''}`}>
+    <div className={`relative w-full h-full overflow-hidden flex items-center justify-center ${isPreview ? 'pointer-events-none' : ''}`}>
       <video
         ref={videoRef}
         src={src}
@@ -40,7 +40,7 @@ export default function HoverVideoPlayer({ src, poster, mode = 'preview' }: Hove
       {!isPreview && (
         <button
           onClick={toggleMute}
-          className="absolute bottom-4 right-4 z-10 w-[40px] h-[40px] rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+          className="absolute bottom-4 right-4 z-10 w-[40px] h-[40px] border border-white/30 bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
           aria-label="Toggle Sound"
         >
           {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}

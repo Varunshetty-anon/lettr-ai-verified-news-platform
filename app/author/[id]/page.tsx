@@ -1,21 +1,137 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { MessageCircle, Mail, Globe } from 'lucide-react';
+import {
+  ArrowLeft,
+  Bot,
+  CalendarDays,
+  FileText,
+  Globe,
+  Mail,
+  MessageCircle,
+  PlayCircle,
+  ShieldCheck,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FactScoreBadge } from '@/app/components/ui/FactScoreBadge';
 import { VerifiedBadge } from '@/app/components/ui/VerifiedBadge';
 
+type Author = {
+  _id: string;
+  name: string;
+  image?: string;
+  email?: string;
+  trustScore?: number;
+  followersCount?: number;
+  isVerifiedAuthor?: boolean;
+  role?: string;
+  createdAt?: string;
+  avgScore?: number;
+  categories?: string[];
+  totalPosts?: number;
+};
+
+type Post = {
+  _id: string;
+  headline: string;
+  description?: string;
+  category?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  mediaType?: 'image' | 'video' | 'text';
+  factScore?: number;
+  createdAt?: string;
+};
+
+function formatDate(date?: string, options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' }) {
+  if (!date) return 'Recently';
+  return new Date(date).toLocaleDateString('en-US', options);
+}
+
+function formatCount(value?: number) {
+  return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value || 0);
+}
+
+function authorHandle(name?: string) {
+  return `@${(name || 'author').toLowerCase().replace(/[^a-z0-9]+/g, '')}`;
+}
+
+function ImageFallback({ label }: { label?: string }) {
+  return (
+    <div className="w-full h-full bg-surface-container flex items-center justify-center">
+      <span className="font-display text-6xl md:text-7xl text-primary/35">{label?.charAt(0) || 'L'}</span>
+    </div>
+  );
+}
+
+function mediaPriority(post: Post) {
+  if (post.videoUrl || post.mediaType === 'video') return 3;
+  if (post.imageUrl || post.mediaType === 'image') return 2;
+  return 1;
+}
+
+function AuthorPostCard({ post }: { post: Post }) {
+  const hasVideo = Boolean(post.videoUrl || post.mediaType === 'video');
+  const hasImage = Boolean(post.imageUrl);
+
+  return (
+    <Link href={`/post/${post._id}`} className="group relative block aspect-[4/5] overflow-hidden bg-on-surface text-surface">
+      {hasVideo && post.videoUrl ? (
+        <video
+          src={post.videoUrl}
+          poster={post.imageUrl}
+          className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500"
+          muted
+          loop
+          playsInline
+          preload="metadata"
+        />
+      ) : hasImage ? (
+        <img
+          src={post.imageUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-500"
+        />
+      ) : (
+        <ImageFallback label={post.category || post.headline} />
+      )}
+
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/45 to-black/5" />
+
+      <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4">
+        <span className="type-label-md bg-surface text-on-surface px-2 py-1">{post.category || 'News'}</span>
+        {typeof post.factScore === 'number' && <FactScoreBadge score={post.factScore} size="sm" />}
+      </div>
+
+      {hasVideo && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-14 h-14 border-2 border-white/80 bg-black/35 flex items-center justify-center text-white">
+            <PlayCircle size={28} />
+          </div>
+        </div>
+      )}
+
+      <div className="absolute inset-x-0 bottom-0 p-5">
+        <span className="type-caption text-white/70 uppercase">{formatDate(post.createdAt)}</span>
+        <h3 className="type-headline-sm text-white group-hover:text-primary transition-colors mt-2 line-clamp-3">
+          {post.headline}
+        </h3>
+      </div>
+    </Link>
+  );
+}
+
 export default function AuthorProfilePage({ params }: { params: Promise<{ id: string }> }) {
-  const unwrappedParams = React.use(params);
+  const unwrappedParams = use(params);
   const authorId = unwrappedParams.id;
   
   const { data: session } = useSession();
   const router = useRouter();
-  const [author, setAuthor] = useState<any>(null);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [author, setAuthor] = useState<Author | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -24,17 +140,20 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
     async function fetchData() {
       try {
         const res = await fetch(`/api/authors/${authorId}`);
+        if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) {
+          return;
+        }
         const data = await res.json();
-        if (res.ok) {
-          setAuthor(data.author);
-          setPosts(data.posts);
-          
-          if (session?.user?.email) {
-             const userRes = await fetch(`/api/user/me`);
-             const userData = await userRes.json();
-             if (userData.user && userData.user.following) {
-                setIsFollowing(userData.user.following.includes(authorId));
-             }
+        setAuthor(data.author);
+        setPosts(data.posts);
+
+        if (session?.user?.email) {
+          const userRes = await fetch(`/api/user/me`);
+          if (userRes.ok && userRes.headers.get('content-type')?.includes('application/json')) {
+            const userData = await userRes.json();
+            if (userData.user && userData.user.following) {
+              setIsFollowing(userData.user.following.includes(authorId));
+            }
           }
         }
       } catch (err) {
@@ -57,10 +176,10 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
        });
        if (res.ok) {
           setIsFollowing(!isFollowing);
-          setAuthor((prev: any) => ({
+          setAuthor((prev) => prev ? ({
              ...prev,
-             followersCount: isFollowing ? prev.followersCount - 1 : prev.followersCount + 1
-          }));
+             followersCount: Math.max(0, (prev.followersCount || 0) + (isFollowing ? -1 : 1))
+          }) : prev);
        }
     } catch (e) {
        console.error(e);
@@ -79,164 +198,167 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
 
   if (!author) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <h2 className="type-headline-md text-on-surface mb-2">Account Not Found</h2>
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
+        <h2 className="type-headline-md text-on-surface mb-3">Account Not Found</h2>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="type-label-md border-2 border-on-surface px-5 py-3 text-on-surface hover:bg-on-surface hover:text-surface transition-colors"
+        >
+          Go Back
+        </button>
       </div>
     );
   }
 
   const isBot = author.email?.includes('@lettr.ai');
-  const featuredPost = posts[0];
-  const sidebarPost = posts[1];
-  const secondaryPosts = posts.slice(2, 5);
+  const authorLabel = isBot ? 'BOT' : author.isVerifiedAuthor || author.role === 'AUTHOR' ? 'AUTHOR' : 'READER';
+  const sortedPosts = [...posts].sort((a, b) => {
+    const priorityDiff = mediaPriority(b) - mediaPriority(a);
+    if (priorityDiff !== 0) return priorityDiff;
+    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+  });
+  const averageScore = author.avgScore || author.trustScore || 0;
+  const categories = author.categories?.length ? author.categories : ['Editorial'];
 
   return (
-    <div className="w-full max-w-[1440px] mx-auto px-[16px] md:px-[64px] py-[24px] md:py-[64px]">
-      
-      {/* ── 1. Top Profile Info Grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-[24px] lg:gap-[64px] mb-[64px]">
-        
-        {/* col-span-4: Photo and Stats */}
-        <div className="lg:col-span-4 flex flex-col">
-          <div className="aspect-square bg-surface-container-highest mb-[24px] relative group overflow-hidden">
-             {author.image ? (
-                <img src={author.image} alt={author.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-             ) : (
-                <div className="w-full h-full flex items-center justify-center type-display-xl text-on-surface-variant group-hover:text-primary transition-colors">
-                  {author.name.charAt(0)}
-                </div>
-             )}
-          </div>
-          
-          <div className="flex flex-col border-t-2 border-on-surface pt-[12px]">
-             <div className="flex justify-between items-center py-3 border-b border-outline-variant">
-               <span className="type-label-md text-on-surface-variant">FOLLOWERS</span>
-               <span className="type-headline-sm text-on-surface">{author.followersCount || 0}</span>
-             </div>
-             <div className="flex justify-between items-center py-3 border-b border-outline-variant">
-               <span className="type-label-md text-on-surface-variant">ARTICLES</span>
-               <span className="type-headline-sm text-on-surface">{posts.length}</span>
-             </div>
+    <div className="w-full max-w-[1440px] mx-auto px-4 md:px-10 xl:px-16 py-6 md:py-14">
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="mb-6 inline-flex items-center gap-2 type-label-md text-on-surface-variant hover:text-primary transition-colors"
+      >
+        <ArrowLeft size={18} />
+        Back
+      </button>
+
+      <section className="grid grid-cols-1 lg:grid-cols-12 border-y-2 border-on-surface mb-12 md:mb-16">
+        <div className="lg:col-span-4 lg:border-r-2 lg:border-on-surface p-0 lg:pr-8 py-8">
+          <div className="aspect-[4/5] bg-surface-container overflow-hidden group">
+            {author.image ? (
+              <img
+                src={author.image}
+                alt={author.name}
+                className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
+              />
+            ) : (
+              <ImageFallback label={author.name} />
+            )}
           </div>
         </div>
 
-        {/* col-span-8: Name, Bio, Actions */}
-        <div className="lg:col-span-8 flex flex-col">
-          <div className="flex items-center justify-between mb-8 pb-8 border-b-2 border-on-surface">
-             <div className="flex items-center gap-4">
-               <h1 className="type-display-xl text-on-surface uppercase">{author.name}</h1>
-               {author.isVerifiedAuthor && <VerifiedBadge size={32} />}
-             </div>
-             <button
-               onClick={handleFollow}
-               disabled={followLoading}
-               className={`type-label-md px-[24px] py-[12px] transition-colors border-2 ${
-                 isFollowing
-                   ? 'border-outline-variant text-on-surface-variant hover:border-error hover:text-error'
-                   : 'bg-primary border-primary text-on-primary hover:bg-transparent hover:text-primary'
-               }`}
-             >
-               {isFollowing ? 'FOLLOWING' : 'FOLLOW'}
-             </button>
-          </div>
-
-          <p className="type-body-lg text-on-surface leading-relaxed max-w-[720px] mb-8">
-            {isBot
-             ? `Automated intelligence gathering. Focused on real-time data analysis and reporting.`
-             : `Independent Journalist & Researcher focusing on the intersection of culture and technology.`}
-          </p>
-
-          <div className="flex gap-4">
-            <button className="w-[48px] h-[48px] border-2 border-on-surface flex items-center justify-center text-on-surface hover:bg-on-surface hover:text-surface transition-colors">
-               <MessageCircle size={20} />
-            </button>
-            <button className="w-[48px] h-[48px] border-2 border-on-surface flex items-center justify-center text-on-surface hover:bg-on-surface hover:text-surface transition-colors">
-               <Mail size={20} />
-            </button>
-            <button className="w-[48px] h-[48px] border-2 border-on-surface flex items-center justify-center text-on-surface hover:bg-on-surface hover:text-surface transition-colors">
-               <Globe size={20} />
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ── 2. Selected Works Header ── */}
-      <div className="flex items-center justify-between border-b-2 border-on-surface pb-[12px] mb-[48px]">
-         <h2 className="type-headline-sm text-on-surface">SELECTED WORKS</h2>
-         <span className="type-label-md text-on-surface-variant">SORT BY: LATEST</span>
-      </div>
-
-      {/* ── 3. Articles Grid ── */}
-      {posts.length > 0 ? (
-        <div className="flex flex-col gap-[64px]">
-          
-          {/* Featured & Sidebar Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-[64px]">
-             
-             {/* col-span-8: Featured Card */}
-             {featuredPost && (
-                <div className="lg:col-span-8">
-                  <Link href={`/post/${featuredPost._id}`} className="group block">
-                    <div className=" overflow-hidden mb-[24px]">
-                      {featuredPost.imageUrl && <img src={featuredPost.imageUrl} className="w-full h-full object-cover" alt="" />}
-                    </div>
-                    {featuredPost.category && (
-                      <span className="type-label-md border border-on-surface px-2 py-1 mb-4 inline-block">{featuredPost.category}</span>
-                    )}
-                    <h3 className="type-headline-lg text-on-surface group-hover:text-primary transition-colors mb-4">{featuredPost.headline}</h3>
-                    <p className="type-body-md text-on-surface-variant line-clamp-2">{featuredPost.description}</p>
-                  </Link>
-                </div>
-             )}
-
-             {/* col-span-4: Sidebar Card */}
-             {sidebarPost && (
-                <div className="lg:col-span-4 border-l-2 border-on-surface pl-[24px] flex flex-col justify-center">
-                  <Link href={`/post/${sidebarPost._id}`} className="group block">
-                    {sidebarPost.category && (
-                      <span className="type-label-md text-primary mb-4 block">{sidebarPost.category}</span>
-                    )}
-                    <h4 className="type-headline-sm text-on-surface group-hover:text-primary transition-colors mb-4">
-                      {sidebarPost.headline}
-                    </h4>
-                    <span className="type-caption text-on-surface-variant">
-                      {new Date(sidebarPost.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                    </span>
-                  </Link>
-                </div>
-             )}
-          </div>
-
-          {/* Secondary Row: 3x Cards */}
-          {secondaryPosts.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px] border-t-2 border-on-surface pt-[48px]">
-               {secondaryPosts.map(post => (
-                 <Link key={post._id} href={`/post/${post._id}`} className="group block">
-                    <div className=" overflow-hidden mb-[24px]">
-                       {post.imageUrl && <img src={post.imageUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />}
-                    </div>
-                    <h4 className="type-headline-sm text-on-surface group-hover:text-primary transition-colors mb-2 line-clamp-2">
-                       {post.headline}
-                    </h4>
-                    <span className="type-caption text-on-surface-variant block">
-                      {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                 </Link>
-               ))}
+        <div className="lg:col-span-8 py-8 lg:pl-10 flex flex-col justify-between min-h-[520px]">
+          <div>
+            <div className="flex flex-wrap items-center gap-3 mb-5">
+              <span className="type-label-md text-primary">{authorHandle(author.name)}</span>
+              <span className="inline-flex items-center gap-2 type-label-md border border-outline-variant px-2 py-1 text-on-surface">
+                {isBot ? <Bot size={14} /> : <ShieldCheck size={14} />}
+                {authorLabel}
+              </span>
+              {author.isVerifiedAuthor && (
+                <span className="inline-flex items-center gap-2 type-label-md text-on-surface">
+                  <VerifiedBadge size={18} />
+                  Verified
+                </span>
+              )}
             </div>
-          )}
 
-          <div className="flex justify-center mt-[48px]">
-             <button className="border-2 border-on-surface px-[48px] py-[16px] type-label-md text-on-surface hover:bg-on-surface hover:text-surface transition-colors">
-               LOAD MORE ARCHIVE
-             </button>
+            <div className="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-8 border-b-2 border-on-surface pb-8">
+              <h1 className="font-display text-5xl md:text-7xl xl:text-8xl font-bold leading-none text-on-surface uppercase max-w-[920px] break-words">
+                {author.name}
+              </h1>
+              <button
+                type="button"
+                onClick={handleFollow}
+                disabled={followLoading}
+                className={`shrink-0 inline-flex items-center justify-center gap-2 type-label-md px-6 py-4 border-2 transition-colors disabled:opacity-50 ${
+                  isFollowing
+                    ? 'border-outline-variant text-on-surface-variant hover:border-error hover:text-error'
+                    : 'bg-primary border-primary text-white hover:bg-transparent hover:text-primary'
+                }`}
+              >
+                <Users size={18} />
+                {followLoading ? 'Saving' : isFollowing ? 'Following' : 'Follow'}
+              </button>
+            </div>
+
+            <p className="type-body-lg text-on-surface leading-relaxed max-w-[760px] mt-8">
+              {isBot
+                ? 'Automated intelligence gathering focused on real-time data analysis, source checks, and concise reporting.'
+                : 'Independent journalist and researcher publishing verified reporting for Lettr readers.'}
+            </p>
+
+            <div className="flex flex-wrap gap-2 mt-6">
+              {categories.map((category) => (
+                <span key={category} className="type-label-md border border-outline-variant px-3 py-2 text-on-surface-variant">
+                  {category}
+                </span>
+              ))}
+            </div>
           </div>
 
+          <div className="grid grid-cols-2 md:grid-cols-4 border-t border-outline-variant mt-10">
+            <div className="py-5 pr-4 border-r border-outline-variant">
+              <div className="flex items-center gap-2 text-on-surface-variant mb-3">
+                <Users size={18} />
+                <span className="type-label-md">Followers</span>
+              </div>
+              <span className="type-headline-sm text-on-surface">{formatCount(author.followersCount)}</span>
+            </div>
+            <div className="py-5 px-4 md:border-r border-outline-variant">
+              <div className="flex items-center gap-2 text-on-surface-variant mb-3">
+                <FileText size={18} />
+                <span className="type-label-md">Articles</span>
+              </div>
+              <span className="type-headline-sm text-on-surface">{formatCount(author.totalPosts || posts.length)}</span>
+            </div>
+            <div className="py-5 pr-4 md:px-4 border-t md:border-t-0 border-r border-outline-variant">
+              <div className="flex items-center gap-2 text-on-surface-variant mb-3">
+                <ShieldCheck size={18} />
+                <span className="type-label-md">Avg score</span>
+              </div>
+              <FactScoreBadge score={averageScore} size="lg" />
+            </div>
+            <div className="py-5 pl-4 border-t md:border-t-0 border-outline-variant">
+              <div className="flex items-center gap-2 text-on-surface-variant mb-3">
+                <CalendarDays size={18} />
+                <span className="type-label-md">Joined</span>
+              </div>
+              <span className="type-headline-sm text-on-surface">{formatDate(author.createdAt, { month: 'short', year: 'numeric' })}</span>
+            </div>
+          </div>
+
+          <div className="flex gap-3 mt-8">
+            <button type="button" title="Message" className="w-12 h-12 border-2 border-on-surface flex items-center justify-center text-on-surface hover:bg-on-surface hover:text-surface transition-colors">
+              <MessageCircle size={20} />
+            </button>
+            <a href={author.email ? `mailto:${author.email}` : undefined} title="Email" className="w-12 h-12 border-2 border-on-surface flex items-center justify-center text-on-surface hover:bg-on-surface hover:text-surface transition-colors">
+              <Mail size={20} />
+            </a>
+            <button type="button" title="Website" className="w-12 h-12 border-2 border-on-surface flex items-center justify-center text-on-surface hover:bg-on-surface hover:text-surface transition-colors">
+              <Globe size={20} />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 border-b-2 border-on-surface pb-4 mb-10">
+        <div>
+          <span className="type-label-md text-primary">Latest first</span>
+          <h2 className="type-headline-sm text-on-surface mt-1">Selected Works</h2>
+        </div>
+        <span className="type-label-md text-on-surface-variant">{posts.length} published</span>
+      </div>
+
+      {sortedPosts.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+          {sortedPosts.map(post => (
+            <AuthorPostCard key={post._id} post={post} />
+          ))}
         </div>
       ) : (
-        <div className="text-center py-20 text-on-surface-variant">
-          No articles published yet.
+        <div className="text-center py-20 border-2 border-dashed border-outline-variant text-on-surface-variant">
+          <p className="type-body-lg">No articles published yet.</p>
         </div>
       )}
 
