@@ -30,8 +30,6 @@ export function MobileNav() {
         </Link>
         <div className="w-16 flex items-center justify-end gap-3">
           <button aria-label="Search" className="text-on-surface"><Search size={24} strokeWidth={2} /></button>
-          {/* Hide theme toggle on tight mobile top bars to match Stitch, but we keep it here if room permits or in hamburger menu. We'll leave it for accessibility. */}
-          <ThemeToggle />
         </div>
       </header>
 
