@@ -72,6 +72,7 @@ export async function verifyFact(
           {
             role: "system",
             content: `You are an elite journalistic fact-checker. Analyze the news content, source links, image context, and video context.
+            Be strict and consistent. A score of 85+ means the content is well-sourced with verifiable facts. A score below 50 means the content has significant unverified claims or is opinion-based. Never give a score above 70 to content that contains no external source links.
             Return output exactly as a JSON object with no markdown formatting.
             {
               "factScore": <0-100>,

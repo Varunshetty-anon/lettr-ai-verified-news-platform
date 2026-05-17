@@ -68,6 +68,8 @@ export default function VerifyAuthor() {
     return null;
   }
 
+  const wordCount = formData.body.trim().split(/\s+/).filter(Boolean).length;
+
   return (
     <div className="w-full min-h-screen pt-[64px] pb-[128px]">
       <div className="max-w-[800px] mx-auto px-[20px] sm:px-0">
@@ -156,7 +158,7 @@ export default function VerifyAuthor() {
               <div>
                 <label className="flex items-center justify-between mb-4">
                   <span className="font-label text-[12px] uppercase tracking-[0.1em] text-on-surface-variant font-bold">EVIDENCE & ARTICLE BODY *</span>
-                  <span className="font-label text-[10px] text-on-surface-variant">{formData.body.length} CHARS</span>
+                  <span className="font-label text-[10px] text-on-surface-variant">{wordCount} / 300 WORDS</span>
                 </label>
                 <textarea
                   required
@@ -198,11 +200,14 @@ export default function VerifyAuthor() {
               </div>
             )}
 
-            <Button
+            <button
               type="submit"
-              disabled={loading}
-              variant="primary"
-              className="w-full h-[64px] text-[14px]"
+              disabled={loading || wordCount < 300}
+              className={`w-full h-[64px] font-label text-[14px] uppercase tracking-[0.1em] font-bold flex items-center justify-center gap-2 transition-all ${
+                wordCount < 300 
+                  ? 'bg-surface-dim text-on-surface-variant cursor-not-allowed opacity-40' 
+                  : 'bg-primary text-on-primary hover:opacity-90 cursor-pointer'
+              }`}
             >
               {loading ? (
                 <>
@@ -211,10 +216,10 @@ export default function VerifyAuthor() {
                 </>
               ) : (
                 <>
-                  <FileText size={20} /> SUBMIT VERIFICATION PORTFOLIO
+                  <FileText size={20} /> SUBMIT VERIFICATION PORTFOLIO ({wordCount}/300 WORDS)
                 </>
               )}
-            </Button>
+            </button>
           </form>
         )}
       </div>

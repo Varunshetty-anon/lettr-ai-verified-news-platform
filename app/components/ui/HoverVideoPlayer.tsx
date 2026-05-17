@@ -23,6 +23,7 @@ export default function HoverVideoPlayer({ src, poster, mode = 'preview' }: Hove
     }
   };
 
+
   return (
     <div className={`relative w-full h-full overflow-hidden flex items-center justify-center ${isPreview ? 'pointer-events-none' : ''}`}>
       <video
@@ -35,6 +36,12 @@ export default function HoverVideoPlayer({ src, poster, mode = 'preview' }: Hove
         muted={isPreview ? true : isMuted}
         playsInline
         controls={!isPreview}
+        onError={(e) => {
+          if (e.currentTarget.parentElement) {
+            e.currentTarget.parentElement.innerHTML = 
+              '<div class="w-full h-full flex items-center justify-center text-on-surface-variant type-label-md">VIDEO UNAVAILABLE</div>';
+          }
+        }}
       />
       
       {!isPreview && (

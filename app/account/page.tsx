@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
-
+import { LoadingQuotes } from '@/app/components/ui/LoadingQuotes';
 interface UserProfile {
   name: string;
   email: string;
@@ -40,11 +40,7 @@ export default function Account() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="w-full min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent animate-spin" />
-      </div>
-    );
+    return <LoadingQuotes />;
   }
 
   const user = profile || {

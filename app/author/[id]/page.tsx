@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FactScoreBadge } from '@/app/components/ui/FactScoreBadge';
 import { VerifiedBadge } from '@/app/components/ui/VerifiedBadge';
+import { LoadingQuotes } from '@/app/components/ui/LoadingQuotes';
 
 type Author = {
   _id: string;
@@ -189,11 +190,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent animate-spin" />
-      </div>
-    );
+    return <LoadingQuotes />;
   }
 
   if (!author) {

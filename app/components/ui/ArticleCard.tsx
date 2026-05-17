@@ -119,8 +119,23 @@ export function ArticleCard({ post, variant = 'feature', liked = false, onLikeTo
           {/* Media */}
           {(post.imageUrl || post.videoUrl) && (
             <div className="mb-5 overflow-hidden border border-outline-variant/50 relative bg-surface-dim max-h-[500px] rounded-none pointer-events-auto">
-              {post.imageUrl && !post.videoUrl && (
-                <img src={post.imageUrl} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover" />
+              {!post.videoUrl && (
+                <div className="relative w-full aspect-video bg-surface-container overflow-hidden">
+                  {post.imageUrl ? (
+                    <img
+                      src={post.imageUrl}
+                      alt={post.headline}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={`${post.imageUrl ? 'hidden' : ''} w-full h-full flex items-center justify-center bg-surface-container`}>
+                    <span className="type-label-md text-on-surface-variant">{post.category || 'MEDIA'}</span>
+                  </div>
+                </div>
               )}
               {post.videoUrl && (
                 <div className="w-full relative h-full">

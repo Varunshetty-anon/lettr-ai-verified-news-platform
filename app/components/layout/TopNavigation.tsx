@@ -70,8 +70,8 @@ export function TopNavigation() {
     <>
       <header className="sticky top-0 z-40 w-full bg-surface border-b-2 border-on-surface h-[80px] flex items-center justify-between px-[16px] md:px-[64px]">
         {/* Mobile: Hamburger Left */}
-        <div className="flex md:hidden w-[60px]">
-          <button onClick={() => setMenuOpen(true)} className="text-on-surface hover:text-primary transition-colors">
+        <div className="flex md:hidden w-[60px] relative z-[60]">
+          <button onClick={() => setMenuOpen(true)} className="text-on-surface hover:text-primary transition-colors touch-manipulation p-2 -ml-2">
             <Menu size={24} strokeWidth={2} />
           </button>
         </div>
@@ -98,7 +98,7 @@ export function TopNavigation() {
             <ThemeToggle />
           </div>
           
-          <button onClick={() => setSearchOpen(true)} className="text-on-surface hover:text-primary transition-colors">
+          <button onClick={() => setSearchOpen(true)} className="text-on-surface hover:text-primary transition-colors touch-manipulation p-2 -mr-2">
             <Search size={24} strokeWidth={2} />
           </button>
           
@@ -135,10 +135,10 @@ export function TopNavigation() {
 
       {/* Mobile Menu Drawer */}
       {menuOpen && (
-        <div className="fixed inset-0 z-50 flex">
+        <div className="fixed inset-0 z-[9999] flex">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)}></div>
-          <div className="relative w-[280px] h-full bg-surface border-r-2 border-on-surface flex flex-col pt-6">
-            <button onClick={() => setMenuOpen(false)} className="absolute top-6 right-6 text-on-surface">
+          <div className="relative w-[280px] h-full bg-surface border-r-2 border-on-surface flex flex-col pt-6 pointer-events-auto">
+            <button onClick={() => setMenuOpen(false)} className="absolute top-6 right-6 text-on-surface touch-manipulation p-2">
               <X size={24} strokeWidth={2} />
             </button>
             <div className="px-6 mb-8">
@@ -146,21 +146,21 @@ export function TopNavigation() {
             </div>
             <nav className="flex flex-col border-t-2 border-on-surface">
               {navLinks.map((link) => (
-                <Link key={link.label} href={link.href} onClick={() => setMenuOpen(false)} className="px-6 py-4 type-headline-sm text-on-surface border-b-2 border-on-surface hover:bg-surface-container-low transition-colors">
+                <Link key={link.label} href={link.href} onClick={() => setMenuOpen(false)} className="px-6 py-4 type-headline-sm text-on-surface border-b-2 border-on-surface hover:bg-surface-container-low transition-colors touch-manipulation">
                   {link.label}
                 </Link>
               ))}
               {session ? (
                 <>
-                  <Link href="/account" onClick={() => setMenuOpen(false)} className="px-6 py-4 type-headline-sm text-on-surface border-b-2 border-on-surface hover:bg-surface-container-low transition-colors">
+                  <Link href="/account" onClick={() => setMenuOpen(false)} className="px-6 py-4 type-headline-sm text-on-surface border-b-2 border-on-surface hover:bg-surface-container-low transition-colors touch-manipulation">
                     ACCOUNT
                   </Link>
-                  <button onClick={() => signOut({ callbackUrl: '/' })} className="px-6 py-4 type-headline-sm text-error border-b-2 border-on-surface hover:bg-red-500/10 transition-colors text-left">
+                  <button onClick={() => signOut({ callbackUrl: '/' })} className="px-6 py-4 type-headline-sm text-error border-b-2 border-on-surface hover:bg-red-500/10 transition-colors text-left touch-manipulation">
                     SIGN OUT
                   </button>
                 </>
               ) : (
-                <Link href="/auth" onClick={() => setMenuOpen(false)} className="px-6 py-4 type-headline-sm text-on-surface border-b-2 border-on-surface hover:bg-surface-container-low transition-colors">
+                <Link href="/auth" onClick={() => setMenuOpen(false)} className="px-6 py-4 type-headline-sm text-on-surface border-b-2 border-on-surface hover:bg-surface-container-low transition-colors touch-manipulation">
                   LOG IN
                 </Link>
               )}

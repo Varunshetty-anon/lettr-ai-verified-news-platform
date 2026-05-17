@@ -17,19 +17,7 @@ export function MobileNav() {
 
   return (
     <>
-      <header className="md:hidden fixed top-0 left-0 z-50 w-full bg-surface border-b-2 border-on-surface flex items-center justify-between px-[16px] h-[80px]">
-        <div className="w-16 flex items-center justify-start">
-          <button className="text-on-surface"><Menu size={24} strokeWidth={2} /></button>
-        </div>
-        <Link href="/" className="flex items-center justify-center flex-1">
-          <span className="font-display text-[32px] font-bold tracking-[-0.01em] text-on-surface">
-            LETTR.
-          </span>
-        </Link>
-        <div className="w-16 flex items-center justify-end gap-3">
-          <button className="text-on-surface"><Search size={24} strokeWidth={2} /></button>
-        </div>
-      </header>
+
 
       <nav className="md:hidden fixed bottom-0 left-0 w-full bg-surface border-t-2 border-on-surface z-50 flex items-center justify-around h-[64px] pb-[env(safe-area-inset-bottom)]">
         {navItems.map((item) => {

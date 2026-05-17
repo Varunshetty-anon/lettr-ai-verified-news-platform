@@ -138,8 +138,20 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   };
 
   // Content formatting
-  const rawContent = post.body || post.description || '';
-  const cleanContent = rawContent.replace(/https?:\/\/\S+/g, '').replace(/Link posted:.*$/gm, '').trim();
+  const cleanBody = (text: string) => {
+    return text
+      ?.replace(/https?:\/\/\S+/g, '')
+      ?.replace(/Link posted:.*$/gm, '')
+      ?.replace(/Source:.*$/gm, '')
+      ?.replace(/\[.*?\]\(.*?\)/g, '')
+      ?.replace(/www\.\S+/g, '')
+      ?.trim() || '';
+  };
+  
+  const cleanFullBody = cleanBody(post.fullBody || '');
+  const cleanSummary = cleanBody(post.summary || post.description || post.body || '');
+  const cleanContent = cleanFullBody.length > cleanSummary.length && cleanFullBody.length > 100 ? cleanFullBody : cleanSummary;
+  
   const paragraphs = cleanContent.split('\n\n').filter((p: string) => p.trim() !== '');
   const sourceLinks = getSourceLinks(post.sourceLink);
   const isBotAuthor = post.author?.email?.includes('@lettr.ai') || post.author?.role?.toLowerCase() === 'bot' || post.author?.name?.toLowerCase().includes('bot');
@@ -188,14 +200,22 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         <div className="w-full h-[300px] md:h-[620px] relative bg-black">
           <DynamicPlayer src={post.videoUrl} poster={post.imageUrl} />
         </div>
-      ) : post.imageUrl && (
-        <div className="w-full max-h-[500px] relative bg-surface-container-highest">
-          <img 
-            src={post.imageUrl} 
-            alt={post.headline}
-            onError={(e) => { e.currentTarget.style.display = 'none' }}
-            className="w-full h-full max-h-[500px] object-cover"
-          />
+      ) : (
+        <div className="relative w-full aspect-video max-h-[500px] bg-surface-container overflow-hidden">
+          {post.imageUrl ? (
+            <img
+              src={post.imageUrl}
+              alt={post.headline}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <div className={`${post.imageUrl ? 'hidden' : ''} w-full h-full flex items-center justify-center bg-surface-container`}>
+            <span className="type-label-md text-on-surface-variant">{post.category || 'MEDIA UNAVAILABLE'}</span>
+          </div>
         </div>
       )}
 
@@ -243,6 +263,22 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
               <FactScoreBadge score={post.factScore} size="md" />
             </div>
           </div>
+          
+          {post.factSummary && post.factSummary !== 'Analysis complete.' && (
+            <div className="mt-4 p-4 border border-outline-variant bg-surface-container">
+              <p className="type-label-md text-on-surface-variant mb-2">AI FACT CHECK REASONING</p>
+              <p className="type-body-md text-on-surface">{post.factSummary}</p>
+              {post.issues && post.issues.length > 0 && (
+                <ul className="mt-3 space-y-1">
+                  {post.issues.map((issue: string, i: number) => (
+                    <li key={i} className="type-caption text-error flex items-start gap-2">
+                      <span>⚠</span> {issue}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── 4. Body Content ── */}
