@@ -93,7 +93,7 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-[24px] mb-[48px] md:mb-[64px] border-b border-outline-variant pb-[48px]">
             
             {/* Desktop col-span-8: Image with badge overlay */}
-            <div className="lg:col-span-8 order-2 lg:order-1 relative aspect-video bg-surface-container-highest">
+            <div className="lg:col-span-8 order-2 lg:order-1 relative  overflow-hidden">
               {heroPost.imageUrl ? (
                 <img src={heroPost.imageUrl} alt={heroPost.headline} className="w-full h-full object-cover" />
               ) : (
@@ -182,8 +182,8 @@ export default function Home() {
                     <span className="type-caption text-on-surface-variant">{timeAgo(stackedPost1.createdAt)}</span>
                   </div>
                 </div>
-                <div className="aspect-square bg-surface-container-highest order-1 md:order-2">
-                  {stackedPost1.imageUrl && <img src={stackedPost1.imageUrl} alt="" className="w-full h-full object-cover grayscale brightness-90" />}
+                <div className=" overflow-hidden order-1 md:order-2">
+                  {stackedPost1.imageUrl && <img src={stackedPost1.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
                 </div>
               </Link>
             </ImpressTracker>
@@ -201,7 +201,7 @@ export default function Home() {
                 <h3 className="type-headline-lg-mobile md:type-headline-lg text-on-surface group-hover:text-primary transition-colors mb-4">
                   {stackedPost2.headline}
                 </h3>
-                <div className="aspect-video bg-surface-container-highest mb-6">
+                <div className=" overflow-hidden mb-6">
                   {stackedPost2.imageUrl && <img src={stackedPost2.imageUrl} alt="" className="w-full h-full object-cover" />}
                 </div>
                 <div className="flex items-center justify-between">
@@ -256,7 +256,7 @@ export default function Home() {
           {lifestylePost && (
             <ImpressTracker postId={lifestylePost._id}>
               <Link href={`/post/${lifestylePost._id}`} className="group block">
-                <div className="aspect-[4/3] bg-surface-container-highest mb-4">
+                <div className=" overflow-hidden mb-4">
                   {lifestylePost.imageUrl && <img src={lifestylePost.imageUrl} alt="" className="w-full h-full object-cover" />}
                 </div>
                 {lifestylePost.category && (

@@ -1,33 +1,64 @@
 import React from 'react';
+import { LoadingQuotes } from './LoadingQuotes';
 
-export function PostSkeleton({ variant = 'card' }: { variant?: 'card' | 'hero' | 'brief' }) {
-  if (variant === 'hero') {
+export function PostSkeleton({ variant = 'feed' }: { variant?: 'feed' | 'hero' | 'detail' }) {
+  if (variant === 'feed') {
     return (
-      <div className="animate-pulse px-6 pt-10 pb-12 border-b border-outline-variant">
-        <div className="h-3 bg-surface-container-high w-20 mb-6" />
-        <div className="h-12 bg-surface-container-high w-4/5 mb-4" />
-        <div className="h-12 bg-surface-container-high w-3/5 mb-6" />
-        <div className="h-5 bg-surface-container-high w-full mb-2" />
-        <div className="h-5 bg-surface-container-high w-4/5" />
+      <div className="w-full flex flex-col gap-[48px] animate-pulse">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="flex flex-col border-b border-outline-variant pb-[48px]">
+             <div className="w-[100px] h-[24px] bg-surface-container-highest mb-4"></div>
+             <div className="w-[90%] h-[32px] bg-surface-container-highest mb-2"></div>
+             <div className="w-[70%] h-[32px] bg-surface-container-highest mb-6"></div>
+             <div className="w-full  overflow-hidden mb-4"></div>
+             <div className="w-full h-[16px] bg-surface-container-highest mb-2"></div>
+             <div className="w-[80%] h-[16px] bg-surface-container-highest mb-6"></div>
+             <div className="flex items-center gap-3">
+                <div className="w-[32px] h-[32px] bg-surface-container-highest"></div>
+                <div className="w-[120px] h-[16px] bg-surface-container-highest"></div>
+             </div>
+          </div>
+        ))}
+        <LoadingQuotes />
       </div>
     );
   }
 
-  if (variant === 'brief') {
+  if (variant === 'detail') {
     return (
-      <div className="animate-pulse py-5 border-t border-outline-variant/30">
-        <div className="h-5 bg-surface-container-high w-3/4 mb-2" />
-        <div className="h-3 bg-surface-container-high w-full" />
+      <div className="w-full animate-pulse">
+        <div className="w-full h-[400px] bg-surface-container-highest mb-8"></div>
+        <div className="max-w-[720px] mx-auto px-4">
+          <div className="w-[100px] h-[24px] bg-surface-container-highest mb-6"></div>
+          <div className="w-full h-[48px] bg-surface-container-highest mb-3"></div>
+          <div className="w-[80%] h-[48px] bg-surface-container-highest mb-8"></div>
+          <div className="flex items-center gap-4 mb-12 border-y border-outline-variant py-4">
+            <div className="w-[48px] h-[48px] bg-surface-container-highest"></div>
+            <div className="flex-1">
+               <div className="w-[150px] h-[20px] bg-surface-container-highest mb-2"></div>
+               <div className="w-[100px] h-[16px] bg-surface-container-highest"></div>
+            </div>
+          </div>
+          <div className="space-y-4">
+             <div className="w-full h-[16px] bg-surface-container-highest"></div>
+             <div className="w-full h-[16px] bg-surface-container-highest"></div>
+             <div className="w-[90%] h-[16px] bg-surface-container-highest"></div>
+          </div>
+          <LoadingQuotes />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="animate-pulse p-6 border-b border-outline-variant">
-      <div className="h-3 bg-surface-container-high w-20 mb-4" />
-      <div className="h-6 bg-surface-container-high w-4/5 mb-3" />
-      <div className="h-4 bg-surface-container-high w-full mb-2" />
-      <div className="h-4 bg-surface-container-high w-3/5" />
+    <div className="w-full animate-pulse">
+      <div className="w-full h-[400px] bg-surface-container-highest mb-8"></div>
+      <div className="flex flex-col gap-4">
+        <div className="w-[60%] h-[40px] bg-surface-container-highest"></div>
+        <div className="w-full h-[20px] bg-surface-container-highest"></div>
+        <div className="w-[80%] h-[20px] bg-surface-container-highest"></div>
+      </div>
+      <LoadingQuotes />
     </div>
   );
 }

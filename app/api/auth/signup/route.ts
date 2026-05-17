@@ -13,6 +13,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Name, email, and password are required.' }, { status: 400 });
     }
 
+    // NoSQL Injection protection: ensure inputs are strictly strings
+    if (typeof name !== 'string' || typeof email !== 'string' || typeof password !== 'string') {
+      return NextResponse.json({ error: 'Invalid input types.' }, { status: 400 });
+    }
+
     // Input length validation (DoS protection)
     if (name.length > 100 || email.length > 254 || password.length > 128) {
       return NextResponse.json({ error: 'Input exceeds maximum length.' }, { status: 400 });
