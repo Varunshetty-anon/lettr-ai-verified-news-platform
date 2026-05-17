@@ -112,7 +112,7 @@ export function ArticleCard({ post, variant = 'feature', liked = false, onLikeTo
           </div>
 
           {/* Content: Headline and Body */}
-          <h3 className="font-display text-3xl font-bold text-on-surface leading-[1.2] tracking-[-0.01em] mb-3 group-hover:text-primary transition-colors pointer-events-auto">
+          <h3 className="font-display text-3xl font-bold text-on-surface leading-[1.2] tracking-[-0.01em] mb-3 group-hover:text-primary transition-colors pointer-events-auto headline-clamp">
             <Link href={`/post/${post._id}`}>{post.headline}</Link>
           </h3>
           <p className="font-body text-[16px] text-on-surface-variant leading-[1.6] mb-5 whitespace-pre-wrap pointer-events-auto">

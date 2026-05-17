@@ -197,9 +197,19 @@ STRICT RULES:
 - Do NOT include markdown link syntax [text](url).
 - Write complete sentences with context and background.
 
+HEADLINE RULES (strictly enforce):
+- Maximum 8 words
+- Must be a hook that makes the reader want to click
+- Use numbers when possible (e.g. "$7 Billion", "3 Countries", "40% Drop")
+- Use power words: Exposed, Banned, Collapsed, Surge, Crisis, Record, Leaked
+- Never end with a period
+- Never repeat the same words twice in the headline
+- Format: [Impact word/number] + [Subject] + [Consequence/Action]
+- Examples: "Pentagon Quietly Cancels European Troop Deployment", "Quantum Chip Breaks 50-Year Encryption Record", "India's Solar Capacity Doubles in 18 Months"
+
 Return EXACTLY in this format (use the exact labels):
 
-Headline: <A strong, clear, professional news headline. Maximum 12 words and strictly under 100 characters. Do not summarize the entire article. No paragraph formatting.>
+Headline: <The generated headline following the HEADLINE RULES>
 
 Summary: <A comprehensive 5-8 line summary of the key facts. Cover who, what, when, where, why, and the significance. Each line should add new information.>
 

@@ -20,6 +20,20 @@ export function TopNavigation() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult>({ posts: [], authors: [] });
   const [isSearching, setIsSearching] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetch('/api/user/me')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data) {
+            setIsVerified(data.user?.isVerifiedAuthor || data.user?.role === 'AUTHOR' || data.isVerifiedAuthor || data.role === 'AUTHOR');
+          }
+        })
+        .catch(() => {});
+    }
+  }, [session]);
 
   // Close overlay on ESC
   useEffect(() => {
@@ -64,8 +78,6 @@ export function TopNavigation() {
     { label: 'EXPLORE', href: '/explore' },
     { label: 'PUBLISH', href: '/publish' },
   ];
-
-  const isVerified = (session?.user as any)?.isVerifiedAuthor || (session?.user as any)?.role === 'AUTHOR';
 
   if (!isVerified) {
     navLinks.push({ label: 'VERIFY', href: '/verify' });

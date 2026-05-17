@@ -206,85 +206,78 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
   return (
     <div className="w-full min-h-screen bg-surface pb-[80px] md:pb-0 relative">
-      <div className="w-full">
-        {/* ── Top: Image left, Headline right — always visible above fold ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 min-h-0 border-b border-outline-variant">
-          
-          {/* Image column */}
-          <div 
-            className="relative overflow-hidden bg-surface-container lg:h-auto"
-            style={{ height: 'min(40vh, 300px)' }}
-          >
-            {post.videoUrl ? (
-              <video
-                src={post.videoUrl}
-                controls
-                playsInline
-                className="w-full h-full"
-                style={{ objectFit: 'cover', objectPosition: 'center top' }}
-                onError={(e) => {
-                  e.currentTarget.parentElement!.style.display = 'none';
-                }}
-              />
-            ) : post.imageUrl ? (
-              <img
-                src={post.imageUrl}
-                alt={post.headline}
-                className="w-full h-full"
-                style={{ objectFit: 'cover', objectPosition: 'center top' }}
-                onError={(e) => {
-                  e.currentTarget.parentElement!.style.display = 'none';
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <span className="type-label-md text-on-surface-variant">{post.category}</span>
-              </div>
-            )}
-          </div>
+      {/* Hero Image - full width, natural ratio */}
+      {post.videoUrl ? (
+        <div className="w-full mb-8 overflow-hidden bg-surface-container">
+          <video
+            src={post.videoUrl}
+            controls
+            playsInline
+            className="w-full h-auto"
+            style={{ maxHeight: '480px', objectFit: 'contain', objectPosition: 'center' }}
+            onError={(e) => {
+              e.currentTarget.parentElement!.innerHTML = 
+                '<div class="w-full h-full flex items-center justify-center text-on-surface-variant" style="min-height:200px">VIDEO UNAVAILABLE</div>';
+            }}
+          />
+        </div>
+      ) : post.imageUrl ? (
+        <div className="w-full mb-8 overflow-hidden bg-surface-container">
+          <img
+            src={post.imageUrl}
+            alt={post.headline}
+            className="w-full h-auto"
+            style={{ maxHeight: '480px', objectFit: 'contain', objectPosition: 'center' }}
+            onError={(e) => {
+              const el = e.currentTarget;
+              el.parentElement!.style.display = 'none';
+            }}
+          />
+        </div>
+      ) : null}
 
-          {/* Headline column */}
-          <div 
-            className="flex flex-col justify-center p-8 lg:p-12"
-            style={{ minHeight: 'min(45vh, 480px)' }}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <span className="border border-on-surface px-3 py-1 type-label-md uppercase">
-                {post.category}
-              </span>
-              <span className="type-caption text-on-surface-variant">
-                {post.readTime || 5} MIN READ
-              </span>
-            </div>
-            <h1 
-              className="normal-case font-bold leading-tight mb-6"
-              style={{ fontSize: 'clamp(22px, 2.8vw, 42px)' }}
-            >
-              {post.headline}
-            </h1>
-            <div className="flex items-center justify-between mt-auto">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center overflow-hidden">
-                  {post.author?.image ? (
-                    <img src={post.author.image} className="w-full h-full object-cover" alt="" />
-                  ) : (
-                    <span className="type-label-md">{post.author?.name?.charAt(0)}</span>
-                  )}
-                </div>
-                <div>
-                  <p className="type-label-md">{post.author?.name}</p>
-                  <p className="type-caption text-on-surface-variant">
-                    {post.author?.role === 'BOT' ? '🤖 BOT' : '✍️ AUTHOR'} · {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                  </p>
-                </div>
-              </div>
-              <FactScoreBadge score={post.factScore} />
-            </div>
-          </div>
+      <article className="max-w-[720px] mx-auto px-4 pt-12 md:pt-16">
+        {/* ── 2. Category + Read Time ── */}
+        <div className="flex items-center justify-between mb-6">
+          {post.category ? (
+            <span className="type-label-md border border-on-surface px-3 py-1 text-on-surface uppercase">
+              {post.category}
+            </span>
+          ) : <div/>}
+          <span className="type-caption text-on-surface-variant uppercase">{post.readTime || '5'} MIN READ</span>
         </div>
 
-        {/* ── Body below, full width ── */}
-        <article className="max-w-[720px] mx-auto px-4 py-12">
+        {/* ── 3. Headline ── */}
+        <h1 
+          className="type-headline-lg normal-case mb-8 leading-tight"
+          style={{ fontSize: 'clamp(28px, 3.5vw, 48px)' }}
+        >
+          {post.headline}
+        </h1>
+
+        {/* ── 4. Author Row ── */}
+        <div className="flex items-center justify-between w-full border-b border-outline-variant pb-6 mb-8">
+          <div className="flex items-center gap-4">
+            <AuthorAvatar name={post.author?.name} image={post.author?.image} size="sm" />
+            <div>
+              <p className="type-label-md text-on-surface font-bold">
+                {post.author?._id ? (
+                  <Link href={`/author/${post.author._id}`} className="hover:text-primary transition-colors">
+                    {post.author?.name}
+                  </Link>
+                ) : (
+                  post.author?.name
+                )}
+              </p>
+              <p className="type-caption text-on-surface-variant mt-1 uppercase">
+                {post.author?.role === 'BOT' ? 'BOT' : 'AUTHOR'} · {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              </p>
+            </div>
+          </div>
+          <div className="scale-110 origin-right">
+            <FactScoreBadge score={post.factScore} />
+          </div>
+        </div>
 
         {/* ── 6. Article Body ── */}
         <div className="content-measure mb-12">
@@ -413,7 +406,6 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         </div>
       </div>
 
-    </div>
     </div>
   );
 }

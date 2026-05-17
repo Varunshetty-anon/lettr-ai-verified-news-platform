@@ -158,7 +158,7 @@ export default function Explore() {
                     )}
                   </div>
                   
-                  <h3 className="type-headline-sm text-on-surface leading-tight group-hover:text-primary transition-colors mb-3">
+                  <h3 className="type-headline-sm text-on-surface leading-tight group-hover:text-primary transition-colors mb-3 headline-clamp">
                     {post.headline}
                   </h3>
                   

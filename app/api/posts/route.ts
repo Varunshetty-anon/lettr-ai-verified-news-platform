@@ -127,9 +127,28 @@ export async function GET(request: Request) {
 
     // Personalized ranking priority:
     // followed authors > explicit preferences > liked categories > clicked categories > fact score > recency.
-    if ((userPrefs.length > 0 || userFollowing.length > 0 || userLikes.length > 0 || userViewed.length > 0) && !category && sort === 'recent') {
-      const now = Date.now();
-      hydrated.sort((a, b) => {
+    const isNewUser = !(userPrefs.length > 0 || userFollowing.length > 0 || userLikes.length > 0 || userViewed.length > 0);
+    const now = Date.now();
+
+    if (!category && sort === 'recent') {
+      if (isNewUser) {
+        // Sort purely by factScore DESC + recency so they still get good content
+        hydrated.sort((a, b) => {
+          const aFact = a.factScore || 0;
+          const bFact = b.factScore || 0;
+
+          const aAgeInHours = (now - new Date(a.createdAt).getTime()) / (1000 * 60 * 60);
+          const aRecency = Math.max(0, 10 - (aAgeInHours / 24) * 2);
+
+          const bAgeInHours = (now - new Date(b.createdAt).getTime()) / (1000 * 60 * 60);
+          const bRecency = Math.max(0, 10 - (bAgeInHours / 24) * 2);
+
+          const aScore = aFact + aRecency * 5;
+          const bScore = bFact + bRecency * 5;
+          return bScore - aScore;
+        });
+      } else {
+        hydrated.sort((a, b) => {
         const aCategory = a.category || '';
         const bCategory = b.category || '';
 
@@ -152,17 +171,32 @@ export async function GET(request: Request) {
         const aFact = (a.factScore / 100) * 5;
         const bFact = (b.factScore / 100) * 5;
 
-        const aRecency = Math.max(0, 3 * (1 - (now - new Date(a.createdAt).getTime()) / (3 * 24 * 60 * 60 * 1000)));
-        const bRecency = Math.max(0, 3 * (1 - (now - new Date(b.createdAt).getTime()) / (3 * 24 * 60 * 60 * 1000)));
+        const aAgeInHours = (now - new Date(a.createdAt).getTime()) / (1000 * 60 * 60);
+        const aRecency = Math.max(0, 10 - (aAgeInHours / 24) * 2);
+
+        const bAgeInHours = (now - new Date(b.createdAt).getTime()) / (1000 * 60 * 60);
+        const bRecency = Math.max(0, 10 - (bAgeInHours / 24) * 2);
 
         const aScore = aFollow + aPref + aLikeCat + aViewCat + aAffinity + aFact + aRecency;
         const bScore = bFollow + bPref + bLikeCat + bViewCat + bAffinity + bFact + bRecency;
 
         return bScore - aScore;
       });
+      }
     }
 
-    return NextResponse.json({ posts: hydrated }, { status: 200 });
+    // Category diversity: don't show same category more than 3 times in first 10 posts
+    const categoryCounts: Record<string, number> = {};
+    const diversifiedPosts = hydrated.reduce((acc, post) => {
+      const cat = post.category || 'Uncategorized';
+      const count = categoryCounts[cat] || 0;
+      if (acc.length < 10 && count >= 3) return acc; // skip if same category appears 3+ times in top 10
+      categoryCounts[cat] = count + 1;
+      acc.push(post);
+      return acc;
+    }, [] as typeof hydrated);
+
+    return NextResponse.json({ posts: diversifiedPosts }, { status: 200 });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     return NextResponse.json({ error: errorMessage }, { status: 500 });
