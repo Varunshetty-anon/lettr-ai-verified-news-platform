@@ -153,6 +153,30 @@ export async function GET(request: Request) {
           return bScore - aScore;
         });
       } else {
+        const adjacentMap: Record<string, string[]> = {
+          'AI & Tech': ['Startups India', 'Finance', 'Space'],
+          'Indian Politics': ['Indian Economy', 'Geopolitics'],
+          'Indian Economy': ['Indian Politics', 'Startups India', 'Finance'],
+          'Startups India': ['AI & Tech', 'Indian Economy', 'Finance'],
+          'Geopolitics': ['Indian Politics', 'Indian Economy'],
+          'Finance': ['Indian Economy', 'Startups India'],
+          'Space': ['AI & Tech', 'Health'],
+          'Health': ['Space', 'AI & Tech'],
+          'Entertainment': ['Sports'],
+          'Sports': ['Entertainment'],
+        };
+
+        const getAdjacents = (prefs: string[]) => {
+          const adjs = new Set<string>();
+          prefs.forEach(p => {
+            const list = adjacentMap[p] || [];
+            list.forEach(item => adjs.add(item));
+          });
+          return Array.from(adjs);
+        };
+
+        const userAdjacents = getAdjacents(userPrefs);
+
         hydrated.sort((a, b) => {
           const aCategory = a.category || '';
           const bCategory = b.category || '';
@@ -160,8 +184,11 @@ export async function GET(request: Request) {
           const aFollow = a.followBoost || 0;
           const bFollow = b.followBoost || 0;
 
-          const aPref = userPrefs.includes(aCategory) ? 30 : 0;
-          const bPref = userPrefs.includes(bCategory) ? 30 : 0;
+          const aPref = userPrefs.includes(aCategory) ? 1000 : 0;
+          const bPref = userPrefs.includes(bCategory) ? 1000 : 0;
+
+          const aAdj = userAdjacents.includes(aCategory) ? 300 : 0;
+          const bAdj = userAdjacents.includes(bCategory) ? 300 : 0;
 
           const aLikeCat = likedCategorySet.has(aCategory) ? 20 : 0;
           const bLikeCat = likedCategorySet.has(bCategory) ? 20 : 0;
@@ -187,8 +214,8 @@ export async function GET(request: Request) {
           const aBoost = isBotA ? 1.0 : 1.5;
           const bBoost = isBotB ? 1.0 : 1.5;
 
-          const aScore = (aFollow + aPref + aLikeCat + aViewCat + aAffinity + aFact + aRecency) * aBoost;
-          const bScore = (bFollow + bPref + bLikeCat + bViewCat + bAffinity + bFact + bRecency) * bBoost;
+          const aScore = (aFollow + aPref + aAdj + aLikeCat + aViewCat + aAffinity + aFact + aRecency) * aBoost;
+          const bScore = (bFollow + bPref + bAdj + bLikeCat + bViewCat + bAffinity + bFact + bRecency) * bBoost;
 
           return bScore - aScore;
         });

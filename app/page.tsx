@@ -97,6 +97,9 @@ export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [displayCount, setDisplayCount] = useState(20);
+  const [localPosts, setLocalPosts] = useState<PostData[]>([]);
+  const [newStoriesCount, setNewStoriesCount] = useState(0);
+  const [pendingNewPosts, setPendingNewPosts] = useState<PostData[]>([]);
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.email) {
@@ -111,16 +114,23 @@ export default function Home() {
     }
   }, [session, status, router]);
 
-  const { data, isLoading, mutate } = useSWR(`/api/posts?limit=${displayCount}&sort=ranked`, fetcher, {
+  const { data, isLoading } = useSWR(`/api/posts?limit=${displayCount}&sort=ranked`, fetcher, {
     refreshInterval: 0,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
+    keepPreviousData: true,
   });
 
-  const posts: PostData[] = data?.posts || [];
-  const loading = isLoading && posts.length === 0;
-  const [hasNewPosts, setHasNewPosts] = useState(false);
-  const latestPostId = posts[0]?._id;
+  const rawPosts: PostData[] = data?.posts || [];
+
+  useEffect(() => {
+    if (rawPosts.length > 0) {
+      setLocalPosts(rawPosts);
+    }
+  }, [rawPosts]);
+
+  const loading = isLoading && localPosts.length === 0;
+  const latestPostId = localPosts[0]?._id;
   const firstName = session?.user?.name?.split(' ')[0] || 'there';
 
   useEffect(() => {
@@ -131,16 +141,18 @@ export default function Home() {
         const res = await fetch('/api/posts?sort=recent', { cache: 'no-store' });
         if (!res.ok || !res.headers.get('content-type')?.includes('application/json')) return;
         const nextData = await res.json();
-        const newestId = nextData?.posts?.[0]?._id;
-        if (newestId && newestId !== latestPostId) {
-          setHasNewPosts(true);
+        const nextPosts = nextData?.posts || [];
+        const newPostsList = nextPosts.filter((np: any) => !localPosts.some(p => p._id === np._id));
+        if (newPostsList.length > 0) {
+          setNewStoriesCount(newPostsList.length);
+          setPendingNewPosts(newPostsList);
         }
       } catch {}
     };
 
     const interval = window.setInterval(checkForNewPosts, 60000);
     return () => window.clearInterval(interval);
-  }, [latestPostId]);
+  }, [latestPostId, localPosts]);
 
   if (loading || status === 'loading') {
     return (
@@ -150,7 +162,7 @@ export default function Home() {
     );
   }
 
-  const readyPosts = posts.filter(post => {
+  const readyPosts = localPosts.filter(post => {
     if (!post.headline || !post.description) return false;
     if (typeof post.factScore !== 'number') return false;
     if (!post.imageUrl) return false; // Ensure feed posts are fully loaded with media
@@ -212,6 +224,15 @@ export default function Home() {
     );
   };
 
+  const handleMergeNewPosts = () => {
+    setLocalPosts(prev => {
+      const uniquePending = pendingNewPosts.filter(np => !prev.some(p => p._id === np._id));
+      return [...uniquePending, ...prev];
+    });
+    setNewStoriesCount(0);
+    setPendingNewPosts([]);
+  };
+
   return (
     <div className="w-full max-w-[1440px] mx-auto px-[16px] md:px-[64px] py-[24px] md:py-[64px]">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-[32px] border-b-2 border-on-surface pb-[16px]">
@@ -219,16 +240,13 @@ export default function Home() {
           <span className="type-label-md text-primary">Personalized feed</span>
           <h1 className="type-headline-sm text-on-surface mt-1">Hello, {firstName}</h1>
         </div>
-        {hasNewPosts && (
+        {newStoriesCount > 0 && (
           <button
             type="button"
-            onClick={() => {
-              setHasNewPosts(false);
-              mutate();
-            }}
-            className="type-label-md bg-primary text-white px-5 py-3 hover:bg-on-surface transition-colors"
+            onClick={handleMergeNewPosts}
+            className="type-label-md bg-primary text-white px-5 py-3 hover:bg-on-surface transition-colors animate-pulse"
           >
-            New Posts Available
+            {newStoriesCount} new stories
           </button>
         )}
       </div>

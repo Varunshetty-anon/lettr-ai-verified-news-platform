@@ -82,11 +82,12 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
   const { data, error, isLoading } = useSWR(`/api/posts/${postId}`, fetcher);
   const post = data?.post;
-  const { data: moreLikeThisData } = useSWR(`/api/posts?sort=recent`, fetcher);
+  const { data: moreLikeThisData } = useSWR(`/api/posts?limit=25`, fetcher);
 
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
 
@@ -132,7 +133,20 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
     );
   }
 
-  const morePosts = (moreLikeThisData?.posts || []).filter((p: any) => p._id !== post._id).slice(0, 3);
+  const morePosts = (moreLikeThisData?.posts || [])
+    .filter((p: any) => p._id !== post._id)
+    .sort((a: any, b: any) => {
+      const aCat = a.category === post.category ? 1 : 0;
+      const bCat = b.category === post.category ? 1 : 0;
+      if (aCat !== bCat) return bCat - aCat;
+
+      const aAuth = a.author?._id === post.author?._id ? 1 : 0;
+      const bAuth = b.author?._id === post.author?._id ? 1 : 0;
+      if (aAuth !== bAuth) return bAuth - aAuth;
+
+      return (b.factScore || 0) - (a.factScore || 0);
+    })
+    .slice(0, 4);
 
   const handleLike = async () => {
     if (!session) return router.push('/auth');
@@ -147,10 +161,39 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
     }
   };
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+  const handleShare = async () => {
+    const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const shareData = {
+      title: post.headline,
+      text: post.description,
+      url: shareUrl,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.warn('Navigator share failed:', err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+        return;
+      }
+    } catch (err) {
+      console.warn('Clipboard write failed:', err);
+    }
+
+    setShowShareModal(true);
   };
 
   const handleFollow = async () => {
@@ -401,10 +444,10 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         <div className="w-full bg-surface-container-low border-t-2 border-on-surface py-[64px] px-[16px] md:px-[64px]">
           <div className="max-w-[1440px] mx-auto">
             <h3 className="type-headline-sm mb-[48px] text-on-surface text-center uppercase">More Like This</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[24px]">
               {morePosts.map((p: any) => (
                 <Link key={p._id} href={`/post/${p._id}`} className="group block">
-                  <div className="overflow-hidden mb-[16px]">
+                  <div className="overflow-hidden mb-[16px] bg-surface-container border border-outline-variant/30">
                     {p.imageUrl && (
                       <EditorialImage src={p.imageUrl} alt={p.headline} aspect="aspect-video" className="group-hover:scale-105 transition-transform duration-500" />
                     )}
@@ -428,6 +471,8 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           <div className="flex items-center gap-4">
             <button 
               onClick={handleLike}
+              aria-label="Like this article"
+              title="Like this article"
               className={`flex items-center gap-2 px-4 py-2 type-label-md transition-colors ${isLiked ? 'text-primary' : 'text-on-surface hover:text-primary'}`}
             >
               <Heart size={20} fill={isLiked ? "currentColor" : "none"} strokeWidth={2} />
@@ -435,6 +480,8 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
             </button>
             <button 
               onClick={handleShare}
+              aria-label="Share this article"
+              title="Share this article"
               className="flex items-center gap-2 px-4 py-2 type-label-md text-on-surface hover:text-primary transition-colors"
             >
               {isCopied ? <Check size={20} /> : <Share2 size={20} />}
@@ -448,6 +495,8 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
             <button
               onClick={handleFollow}
               disabled={followLoading}
+              aria-label="Follow this author"
+              title="Follow this author"
               className="bg-on-surface text-surface type-label-md px-6 py-2 flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {isFollowing ? <Check size={16} /> : <UserPlus size={16} />}
@@ -456,6 +505,44 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           </div>
         </div>
       </div>
+
+      {/* ── 12. Robust Share Fallback Modal ── */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-surface border-2 border-on-surface p-6 max-w-md w-full relative">
+            <button 
+              onClick={() => setShowShareModal(false)}
+              className="absolute top-4 right-4 text-on-surface hover:text-primary"
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+            <h3 className="type-headline-sm mb-4 uppercase">Share Article</h3>
+            <p className="type-caption text-on-surface-variant mb-4">Copy the direct link below to share this report:</p>
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                readOnly 
+                value={typeof window !== 'undefined' ? window.location.href : ''} 
+                className="flex-1 bg-surface-container border border-outline-variant px-3 py-2 type-body-md text-on-surface focus:outline-none"
+                onClick={(e) => e.currentTarget.select()}
+              />
+              <button 
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    navigator.clipboard.writeText(window.location.href);
+                    setIsCopied(true);
+                    setTimeout(() => setIsCopied(false), 2000);
+                  }
+                }}
+                className="bg-on-surface text-surface px-4 py-2 type-label-md hover:bg-on-surface/90 transition-colors"
+              >
+                COPY
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

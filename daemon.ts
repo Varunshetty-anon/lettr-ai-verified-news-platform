@@ -30,6 +30,33 @@ const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
   'Startup Bot': { sources: ['https://www.reddit.com/r/startups/hot.json?limit=15', 'https://www.reddit.com/r/StartUpIndia/hot.json?limit=15'], category: 'Startups India' },
 };
 
+function sanitizeEditorialContent(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]+)\]/g, '$1')
+    .replace(/Article URL:\s*\S*/gi, '')
+    .replace(/Comments URL:\s*\S*/gi, '')
+    .replace(/Points:\s*\d+/gi, '')
+    .replace(/\d+\s*Comments?:?/gi, '')
+    .replace(/Link posted:.*$/gim, '')
+    .replace(/Source:.*$/gim, '')
+    .replace(/Submitted by\s*\S*/gi, '')
+    .replace(/[\*\_#`~>+\-\=]/g, '')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
+}
+
+function sanitizeEditorialBody(text: string): string {
+  if (!text) return '';
+  return text
+    .split('\n')
+    .map(para => sanitizeEditorialContent(para))
+    .filter(para => para.trim().length > 0)
+    .join('\n\n');
+}
+
 function hashUrl(url: string): string {
   return crypto.createHash('md5').update(url).digest('hex');
 }
@@ -195,8 +222,16 @@ Source Note: <A one-line credibility assessment of the source, e.g. "Sourced fro
       console.error("[Daemon] Groq Rewrite Failed", e);
     }
 
-    if (rewriteContent.cleanSummary.length < 50) {
-      rewriteContent.cleanSummary = `${rawTitle}. ${rawText.substring(0, 300)}`;
+    // Sanitize summary and body
+    rewriteContent.cleanSummary = sanitizeEditorialContent(rewriteContent.cleanSummary);
+    rewriteContent.fullBody = sanitizeEditorialBody(rewriteContent.fullBody);
+
+    const paragraphsCount = rewriteContent.fullBody.split('\n\n').filter(p => p.trim().length > 0).length;
+
+    // Skip post entirely if body generation is incomplete or has fewer than 3 paragraphs
+    if (!rewriteContent.fullBody || rewriteContent.fullBody.length < 300 || paragraphsCount < 3) {
+      console.log(`[Daemon] Skip post: body generation incomplete (length: ${rewriteContent.fullBody?.length}, paragraphs: ${paragraphsCount})`);
+      return;
     }
 
     // 2. FACT VERIFICATION
