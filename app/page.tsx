@@ -65,6 +65,34 @@ const isBot = (author: any) => {
   return author.role?.toLowerCase() === 'bot' || author.email?.includes('@lettr.ai') || author.name?.toLowerCase().includes('bot');
 };
 
+function EditorialImage({ src, alt = '', className = '', aspect = 'aspect-video' }: { src?: string; alt?: string; className?: string; aspect?: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  if (!src || error) {
+    return (
+      <div className={`w-full h-full ${aspect} bg-surface-container flex items-center justify-center border border-outline-variant/30`}>
+        <span className="type-label-md text-on-surface-variant/40">NO MEDIA AVAILABLE</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative w-full h-full ${aspect} overflow-hidden bg-surface-container`}>
+      {!loaded && (
+        <div className="absolute inset-0 shimmer-bg" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`w-full h-full object-cover transition-all duration-700 ease-in-out ${className} ${loaded ? 'opacity-100 blur-none scale-100' : 'opacity-0 blur-md scale-105'}`}
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+      />
+    </div>
+  );
+}
+
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -122,12 +150,19 @@ export default function Home() {
     );
   }
 
-  const heroPost = posts[0];
-  const stackedPost1 = posts[1];
-  const stackedPost2 = posts[2];
-  const briefPosts = posts.slice(3, 6);
-  const lifestylePost = posts[6];
-  const remainingPosts = posts.slice(7);
+  const readyPosts = posts.filter(post => {
+    if (!post.headline || !post.description) return false;
+    if (typeof post.factScore !== 'number') return false;
+    if (!post.imageUrl) return false; // Ensure feed posts are fully loaded with media
+    return true;
+  });
+
+  const heroPost = readyPosts[0];
+  const stackedPost1 = readyPosts[1];
+  const stackedPost2 = readyPosts[2];
+  const briefPosts = readyPosts.slice(3, 6);
+  const lifestylePost = readyPosts[6];
+  const remainingPosts = readyPosts.slice(7);
 
   const renderCard = (post: PostData, isHero = false, isStacked = false) => {
     const headlineClass = isHero 
@@ -138,12 +173,9 @@ export default function Home() {
       <ImpressTracker postId={post._id} key={post._id}>
         <Link href={`/post/${post._id}`} className={`group block ${isStacked ? 'border-b border-outline-variant pb-[48px] lg:border-none lg:pb-0' : 'h-full flex flex-col'}`}>
           {!isHero && !isStacked && post.imageUrl && (
-            <div className="aspect-video w-full mb-4 overflow-hidden bg-surface-container-highest">
-              <img src={post.imageUrl} alt={post.headline} onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            <div className="aspect-video w-full mb-4 overflow-hidden">
+              <EditorialImage src={post.imageUrl} alt={post.headline} className="group-hover:scale-105 transition-transform duration-500" />
             </div>
-          )}
-          {!isHero && !isStacked && !post.imageUrl && (
-            <div className={`aspect-video w-full mb-4 flex items-center justify-center ${getCategoryColorClass(post.category)} opacity-20`}></div>
           )}
 
           {post.category && (
@@ -206,18 +238,7 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 border-b border-outline-variant mb-8">
           {/* Left: Image */}
           <div className="relative overflow-hidden" style={{height: '500px'}}>
-            {heroPost.imageUrl ? (
-              <img
-                src={heroPost.imageUrl}
-                alt={heroPost.headline}
-                className="w-full h-full object-cover"
-                onError={(e) => { e.currentTarget.style.display = 'none' }}
-              />
-            ) : (
-              <div className="w-full h-full bg-surface-container flex items-center justify-center">
-                <span className="type-label-md text-on-surface-variant">{heroPost.category}</span>
-              </div>
-            )}
+            <EditorialImage src={heroPost.imageUrl} alt={heroPost.headline} aspect="h-full w-full" />
           </div>
           {/* Right: Content */}
           <Link href={`/post/${heroPost._id}`} className="p-8 flex flex-col justify-center bg-surface group">
@@ -238,13 +259,8 @@ export default function Home() {
           <article key={post._id} className="flex gap-4 border-b border-outline-variant py-6 cursor-pointer hover:bg-surface-container transition-colors px-4 -mx-4"
             onClick={() => router.push(`/post/${post._id}`)}>
             {post.imageUrl && (
-              <div className="w-32 h-24 flex-shrink-0 overflow-hidden bg-surface-container">
-                <img
-                  src={post.imageUrl}
-                  alt={post.headline}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                  onError={(e) => { e.currentTarget.parentElement!.style.display = 'none' }}
-                />
+              <div className="w-32 h-24 flex-shrink-0 overflow-hidden">
+                <EditorialImage src={post.imageUrl} alt={post.headline} aspect="w-full h-full" />
               </div>
             )}
             <div className="flex-1 min-w-0">
@@ -281,7 +297,7 @@ export default function Home() {
              <div className="lg:col-span-6 order-1 lg:order-2">
                 {lifestylePost.imageUrl && (
                    <div className="aspect-[4/3] w-full overflow-hidden border-2 border-on-surface">
-                     <img src={lifestylePost.imageUrl} alt="" onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover" />
+                     <EditorialImage src={lifestylePost.imageUrl} alt="" aspect="w-full h-full" />
                    </div>
                 )}
              </div>

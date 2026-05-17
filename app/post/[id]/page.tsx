@@ -36,6 +36,34 @@ function sourceHost(url: string) {
   }
 }
 
+function EditorialImage({ src, alt = '', className = '', aspect = 'aspect-video' }: { src?: string; alt?: string; className?: string; aspect?: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  if (!src || error) {
+    return (
+      <div className={`w-full h-full ${aspect} bg-surface-container flex items-center justify-center border border-outline-variant/30`}>
+        <span className="type-label-md text-on-surface-variant/40">NO MEDIA AVAILABLE</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative w-full h-full ${aspect} overflow-hidden bg-surface-container`}>
+      {!loaded && (
+        <div className="absolute inset-0 shimmer-bg" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`w-full h-full object-cover transition-all duration-700 ease-in-out ${className} ${loaded ? 'opacity-100 blur-none scale-100' : 'opacity-0 blur-md scale-105'}`}
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+      />
+    </div>
+  );
+}
+
 export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const resolvedParams = use(params);
@@ -222,17 +250,8 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           />
         </div>
       ) : post.imageUrl ? (
-        <div className="w-full mb-8 overflow-hidden bg-surface-container">
-          <img
-            src={post.imageUrl}
-            alt={post.headline}
-            className="w-full h-auto"
-            style={{ maxHeight: '480px', objectFit: 'contain', objectPosition: 'center' }}
-            onError={(e) => {
-              const el = e.currentTarget;
-              el.parentElement!.style.display = 'none';
-            }}
-          />
+        <div className="w-full mb-8 overflow-hidden bg-surface-container max-h-[480px]">
+          <EditorialImage src={post.imageUrl} alt={post.headline} aspect="w-full h-auto" className="max-h-[480px] object-contain" />
         </div>
       ) : null}
 
@@ -353,9 +372,9 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
             <div className="grid grid-cols-1 md:grid-cols-3 gap-[24px]">
               {morePosts.map((p: any) => (
                 <Link key={p._id} href={`/post/${p._id}`} className="group block">
-                  <div className=" overflow-hidden mb-[16px]">
+                  <div className="overflow-hidden mb-[16px]">
                     {p.imageUrl && (
-                      <img src={p.imageUrl} alt={p.headline} onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover group-hover:opacity-90 transition-all" />
+                      <EditorialImage src={p.imageUrl} alt={p.headline} aspect="aspect-video" className="group-hover:scale-105 transition-transform duration-500" />
                     )}
                   </div>
                   {p.category && (

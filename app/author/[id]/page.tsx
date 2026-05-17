@@ -75,6 +75,34 @@ function mediaPriority(post: Post) {
   return 1;
 }
 
+function EditorialImage({ src, alt = '', className = '', aspect = 'aspect-video' }: { src?: string; alt?: string; className?: string; aspect?: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  if (!src || error) {
+    return (
+      <div className={`w-full h-full ${aspect} bg-surface-container flex items-center justify-center border border-outline-variant/30`}>
+        <span className="type-label-md text-on-surface-variant/40">NO MEDIA AVAILABLE</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative w-full h-full ${aspect} overflow-hidden bg-surface-container`}>
+      {!loaded && (
+        <div className="absolute inset-0 shimmer-bg" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`w-full h-full object-cover transition-all duration-700 ease-in-out ${className} ${loaded ? 'opacity-100 blur-none scale-100' : 'opacity-0 blur-md scale-105'}`}
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+      />
+    </div>
+  );
+}
+
 function AuthorPostCard({ post }: { post: Post }) {
   const hasVideo = Boolean(post.videoUrl || post.mediaType === 'video');
   const hasImage = Boolean(post.imageUrl);
@@ -92,11 +120,9 @@ function AuthorPostCard({ post }: { post: Post }) {
           preload="metadata"
         />
       ) : hasImage ? (
-        <img
-          src={post.imageUrl}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-500"
-        />
+        <div className="absolute inset-0 w-full h-full">
+          <EditorialImage src={post.imageUrl} alt="" aspect="w-full h-full" className="opacity-85 group-hover:scale-105 transition-transform duration-500" />
+        </div>
       ) : (
         <ImageFallback label={post.category || post.headline} />
       )}
@@ -234,11 +260,7 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
         <div className="lg:col-span-4 lg:border-r-2 lg:border-on-surface p-0 lg:pr-8 py-8">
           <div className="aspect-[4/5] bg-surface-container overflow-hidden group">
             {author.image ? (
-              <img
-                src={author.image}
-                alt={author.name}
-                className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
-              />
+              <EditorialImage src={author.image} alt={author.name} aspect="w-full h-full" className="grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500" />
             ) : (
               <ImageFallback label={author.name} />
             )}

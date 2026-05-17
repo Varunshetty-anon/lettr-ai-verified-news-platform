@@ -135,13 +135,13 @@ export function ArticleCard({ post, variant = 'feature', liked = false, onLikeTo
               {!post.videoUrl && (
                 <div className="relative w-full aspect-video overflow-hidden bg-surface-container">
                   {!imgLoaded && !imgError && (
-                    <div className="absolute inset-0 bg-surface-container animate-pulse" />
+                    <div className="absolute inset-0 shimmer-bg" />
                   )}
                   {!imgError && post.imageUrl && (
                     <img
                       src={post.imageUrl}
                       alt={post.headline}
-                      className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+                      className={`w-full h-full object-cover transition-all duration-700 ease-in-out ${imgLoaded ? 'opacity-100 blur-none scale-100' : 'opacity-0 blur-md scale-105'}`}
                       onLoad={() => setImgLoaded(true)}
                       onError={() => setImgError(true)}
                     />

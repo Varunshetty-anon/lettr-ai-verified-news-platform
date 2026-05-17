@@ -40,6 +40,34 @@ const cleanSummary = (text: string) => text
   ?.trim()
   ?.slice(0, 160) || '';
 
+function EditorialImage({ src, alt = '', className = '', aspect = 'aspect-video' }: { src?: string; alt?: string; className?: string; aspect?: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  if (!src || error) {
+    return (
+      <div className={`w-full h-full ${aspect} bg-surface-container flex items-center justify-center border border-outline-variant/30`}>
+        <span className="type-label-md text-on-surface-variant/40">NO MEDIA AVAILABLE</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative w-full h-full ${aspect} overflow-hidden bg-surface-container`}>
+      {!loaded && (
+        <div className="absolute inset-0 shimmer-bg" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        className={`w-full h-full object-cover transition-all duration-700 ease-in-out ${className} ${loaded ? 'opacity-100 blur-none scale-100' : 'opacity-0 blur-md scale-105'}`}
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+      />
+    </div>
+  );
+}
+
 export default function Explore() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [query, setQuery] = useState('');
@@ -153,14 +181,8 @@ export default function Explore() {
                   href={`/post/${post._id}`}
                   className="group flex flex-col h-full border-b border-outline-variant pb-[32px] lg:border-none lg:pb-0"
                 >
-                  <div className="aspect-[4/3] w-full bg-surface-container-highest mb-4 overflow-hidden relative">
-                    {post.imageUrl ? (
-                      <img src={post.imageUrl} alt={post.headline} onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-primary/10">
-                        <span className="type-display text-primary/40">{post.category?.charAt(0) || 'N'}</span>
-                      </div>
-                    )}
+                  <div className="aspect-[4/3] w-full mb-4 overflow-hidden relative">
+                    <EditorialImage src={post.imageUrl} alt={post.headline} aspect="w-full h-full" className="group-hover:scale-105 transition-transform duration-500" />
                     {post.category && (
                       <div className="absolute top-0 left-0 bg-surface px-3 py-1.5 border-b border-r border-on-surface">
                         <span className="type-label-md">{post.category}</span>
