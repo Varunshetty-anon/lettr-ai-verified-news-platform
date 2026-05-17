@@ -139,9 +139,10 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
   // Content formatting
   const rawContent = post.body || post.description || '';
-  const paragraphs = rawContent.split('\n\n').filter((p: string) => p.trim() !== '');
+  const cleanContent = rawContent.replace(/https?:\/\/\S+/g, '').replace(/Link posted:.*$/gm, '').trim();
+  const paragraphs = cleanContent.split('\n\n').filter((p: string) => p.trim() !== '');
   const sourceLinks = getSourceLinks(post.sourceLink);
-  const isBotAuthor = post.author?.email?.includes('@lettr.ai');
+  const isBotAuthor = post.author?.email?.includes('@lettr.ai') || post.author?.role?.toLowerCase() === 'bot' || post.author?.name?.toLowerCase().includes('bot');
   const authorLabel = isBotAuthor ? 'BOT' : post.author?.isVerifiedAuthor ? 'AUTHOR' : 'READER';
 
   const renderContent = () => {
@@ -188,11 +189,12 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           <DynamicPlayer src={post.videoUrl} poster={post.imageUrl} />
         </div>
       ) : post.imageUrl && (
-        <div className="w-full h-[300px] md:h-[600px] relative bg-surface-container-highest">
+        <div className="w-full max-h-[500px] relative bg-surface-container-highest">
           <img 
             src={post.imageUrl} 
-            alt={post.headline} 
-            className="w-full h-full object-cover"
+            alt={post.headline}
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
+            className="w-full h-full max-h-[500px] object-cover"
           />
         </div>
       )}
@@ -244,11 +246,6 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         </div>
 
         {/* ── 4. Body Content ── */}
-        {post.description && (
-          <p className="type-body-lg text-on-surface mb-[40px] border-l-4 border-primary pl-5">
-            {post.description}
-          </p>
-        )}
 
         <div className="content-measure">
           {renderContent()}
@@ -318,7 +315,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
                 <Link key={p._id} href={`/post/${p._id}`} className="group block">
                   <div className=" overflow-hidden mb-[16px]">
                     {p.imageUrl && (
-                      <img src={p.imageUrl} alt={p.headline} className="w-full h-full object-cover group-hover:opacity-90 transition-all" />
+                      <img src={p.imageUrl} alt={p.headline} onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover group-hover:opacity-90 transition-all" />
                     )}
                   </div>
                   {p.category && (

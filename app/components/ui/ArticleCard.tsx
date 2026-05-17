@@ -120,7 +120,7 @@ export function ArticleCard({ post, variant = 'feature', liked = false, onLikeTo
           {(post.imageUrl || post.videoUrl) && (
             <div className="mb-5 overflow-hidden border border-outline-variant/50 relative bg-surface-dim max-h-[500px] rounded-none pointer-events-auto">
               {post.imageUrl && !post.videoUrl && (
-                <img src={post.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+                <img src={post.imageUrl} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover" />
               )}
               {post.videoUrl && (
                 <div className="w-full relative h-full">

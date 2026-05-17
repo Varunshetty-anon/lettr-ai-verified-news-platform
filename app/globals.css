@@ -39,10 +39,12 @@
 }
 
 .dark {
+  background: #000000;
   --bg: #000000;
-  --surface: #0a0a0a;
+  --surface: #111111;
+  --surface-container: #111111;
   --card: #111111;
-  --border: #222222;
+  --border: #1e1e1e;
   --border-strong: #444444;
   --text: #f0f0f0;
   --muted: #888888;

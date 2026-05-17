@@ -145,7 +145,7 @@ export default function Explore() {
                 >
                   <div className="aspect-[4/3] w-full bg-surface-container-highest mb-4 overflow-hidden relative">
                     {post.imageUrl ? (
-                      <img src={post.imageUrl} alt={post.headline} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img src={post.imageUrl} alt={post.headline} onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-primary/10">
                         <span className="type-display text-primary/40">{post.category?.charAt(0) || 'N'}</span>
