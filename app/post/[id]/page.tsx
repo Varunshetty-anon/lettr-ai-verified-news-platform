@@ -54,10 +54,10 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
   useEffect(() => {
     if (post) {
-      setLikeCount(post.engagement || 0);
-      setIsLiked(post.isLiked || false);
+      setLikeCount(post.likes?.length || post.engagement || 0);
+      setIsLiked(post.likes?.includes((session?.user as any)?.id) || false);
     }
-  }, [post]);
+  }, [post, session]);
 
   useEffect(() => {
     if (postId && session?.user?.email) {
@@ -102,12 +102,8 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
     setIsLiked(newLiked);
     setLikeCount(prev => newLiked ? prev + 1 : prev - 1);
     try {
-      await fetch('/api/user/interact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ postId, action: newLiked ? 'like' : 'unlike' })
-      });
-    } catch (e) {
+      await fetch(`/api/posts/${post._id}/like`, { method: 'POST' });
+    } catch {
       setIsLiked(!newLiked);
       setLikeCount(prev => !newLiked ? prev + 1 : prev - 1);
     }
@@ -151,16 +147,29 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
       ?.trim() || '';
   };
   
-  const cleanFullBody = cleanBody(post.fullBody || '');
-  const cleanSummary = cleanBody(post.summary || post.description || post.body || '');
-  const cleanContent = cleanFullBody.length > cleanSummary.length && cleanFullBody.length > 100 ? cleanFullBody : cleanSummary;
+  const bodyText = cleanBody(
+    post.fullBody && post.fullBody.length > 200 && post.fullBody !== post.headline
+      ? post.fullBody
+      : post.summary && post.summary.length > 200
+      ? post.summary
+      : post.headline
+  );
   
-  const paragraphs = cleanContent.split('\n\n').filter((p: string) => p.trim() !== '');
+  const bodyIsJustHeadline = bodyText.trim() === post.headline?.trim();
+  const paragraphs = bodyText.split('\n\n').filter((p: string) => p.trim() !== '');
   const sourceLinks = getSourceLinks(post.sourceLink);
   const isBotAuthor = post.author?.email?.includes('@lettr.ai') || post.author?.role?.toLowerCase() === 'bot' || post.author?.name?.toLowerCase().includes('bot');
   const authorLabel = isBotAuthor ? 'BOT' : post.author?.isVerifiedAuthor ? 'AUTHOR' : 'READER';
 
   const renderContent = () => {
+    if (bodyIsJustHeadline) {
+      return (
+        <p className="type-body-md text-on-surface-variant italic">
+          Full article content is being processed. View the original source below.
+        </p>
+      );
+    }
+
     return paragraphs.map((p: string, idx: number) => {
       const isBlockquote = p.startsWith('"') || p.startsWith('>');
       const cleanText = p.replace(/^> /, '').trim();
@@ -197,68 +206,72 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
   return (
     <div className="w-full min-h-screen bg-surface pb-[80px] md:pb-0 relative">
-      {/* Top section: image left, headline right */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 mb-12 border-b border-outline-variant">
-        {/* Left: Image or Video */}
-        <div className="relative overflow-hidden bg-surface-container" style={{height: '420px'}}>
-          {post.videoUrl ? (
-            <video
-              src={post.videoUrl}
-              controls
-              playsInline
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.parentElement!.innerHTML = 
-                  '<div class="w-full h-full flex items-center justify-center text-on-surface-variant">VIDEO UNAVAILABLE</div>';
-              }}
-            />
-          ) : post.imageUrl ? (
-            <img
-              src={post.imageUrl}
-              alt={post.headline}
-              className="w-full h-full object-cover"
-              onError={(e) => { e.currentTarget.parentElement!.style.background = '#111' }}
-            />
-          ) : (
-            <div className="w-full h-full bg-surface-container flex items-center justify-center">
-              <span className="type-label-md text-on-surface-variant">{post.category}</span>
-            </div>
-          )}
+      {/* ── 1. Hero Image / Video (Natural Ratio Stacked) ── */}
+      {post.videoUrl ? (
+        <div className="w-full overflow-hidden bg-surface-container">
+          <video
+            src={post.videoUrl}
+            controls
+            playsInline
+            className="w-full h-auto object-contain"
+            style={{ maxHeight: '500px', width: '100%' }}
+            onError={(e) => {
+              e.currentTarget.parentElement!.innerHTML = 
+                '<div class="w-full h-full flex items-center justify-center text-on-surface-variant" style="min-height:200px">VIDEO UNAVAILABLE</div>';
+            }}
+          />
+        </div>
+      ) : post.imageUrl ? (
+        <div className="w-full overflow-hidden bg-surface-container">
+          <img
+            src={post.imageUrl}
+            alt={post.headline}
+            className="w-full h-auto object-contain"
+            style={{ maxHeight: '500px', width: '100%' }}
+            onError={(e) => { e.currentTarget.parentElement!.style.display = 'none' }}
+          />
+        </div>
+      ) : null}
+
+      <article className="max-w-[720px] mx-auto px-4 pt-12 md:pt-16">
+        {/* ── 2. Category + Read Time ── */}
+        <div className="flex items-center justify-between mb-6">
+          {post.category ? (
+            <span className="type-label-md border border-on-surface px-3 py-1 text-on-surface uppercase">
+              {post.category}
+            </span>
+          ) : <div/>}
+          <span className="type-caption text-on-surface-variant uppercase">{post.readTime || '5'} MIN READ</span>
         </div>
 
-        {/* Right: Meta + Headline */}
-        <div className="p-8 lg:p-12 flex flex-col justify-center">
-          <div className="flex items-center gap-3 mb-6">
-            {post.category && <span className="border border-on-surface px-3 py-1 type-label-md uppercase">{post.category}</span>}
-            <span className="type-caption text-on-surface-variant uppercase">{post.readTime || 5} MIN READ</span>
+        {/* ── 3. Headline ── */}
+        <h1 className="type-headline-lg normal-case mb-8 leading-tight">
+          {post.headline}
+        </h1>
+
+        {/* ── 4. Author Row ── */}
+        <div className="flex items-center justify-between w-full border-b border-outline-variant pb-6 mb-8">
+          <div className="flex items-center gap-4">
+            <AuthorAvatar name={post.author?.name} image={post.author?.image} size="sm" />
+            <div>
+              <p className="type-label-md text-on-surface font-bold">
+                {post.author?._id ? (
+                  <Link href={`/author/${post.author._id}`} className="hover:text-primary transition-colors">
+                    {post.author?.name}
+                  </Link>
+                ) : (
+                  post.author?.name
+                )}
+              </p>
+              <p className="type-caption text-on-surface-variant mt-1 uppercase">
+                {post.author?.role === 'BOT' ? 'BOT' : 'AUTHOR'} · {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              </p>
+            </div>
           </div>
-          <h1 className="type-headline-lg normal-case mb-8 leading-tight">{post.headline}</h1>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <AuthorAvatar name={post.author?.name} image={post.author?.image} size="sm" />
-              <div>
-                <p className="type-label-md">
-                  {post.author?._id ? (
-                    <Link href={`/author/${post.author._id}`} className="hover:text-primary transition-colors">
-                      {post.author?.name}
-                    </Link>
-                  ) : (
-                    post.author?.name
-                  )}
-                </p>
-                <p className="type-caption text-on-surface-variant mt-1 uppercase">
-                  {post.author?.role === 'BOT' ? 'BOT' : 'AUTHOR'} · {new Date(post.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                </p>
-              </div>
-            </div>
-            <div className="scale-110">
-              <FactScoreBadge score={post.factScore} />
-            </div>
+          <div className="scale-110 origin-right">
+            <FactScoreBadge score={post.factScore} />
           </div>
         </div>
-      </div>
-
-      <article className="max-w-[720px] mx-auto px-4">
 
         {/* ── 6. Article Body ── */}
         <div className="content-measure mb-12">

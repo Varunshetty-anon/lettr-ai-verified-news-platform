@@ -187,10 +187,15 @@ Bot Specialty: ${config.category}
 Media Presence: ${media.video ? 'Contains Video' : media.image ? 'Contains Image' : 'Text Only'}
 
 STRICT RULES:
-- Minimum 400 characters in the article body
-- Do NOT include any URLs, links, or "Link posted:" text in the body
-- Do NOT include markdown link syntax [text](url)
-- Write complete sentences with context and background
+- Write a complete news article with a minimum of 3 paragraphs and at least 500 characters.
+- The article must contain:
+  - Paragraph 1: What happened and key facts
+  - Paragraph 2: Background and context
+  - Paragraph 3: Implications and what happens next
+- Do NOT repeat the headline as the body.
+- Do NOT include any URLs, links, or "Link posted:" text in the body.
+- Do NOT include markdown link syntax [text](url).
+- Write complete sentences with context and background.
 
 Return EXACTLY in this format (use the exact labels):
 

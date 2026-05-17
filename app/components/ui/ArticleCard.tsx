@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Shield, Heart, ExternalLink, ArrowUpRight, CheckCircle } from 'lucide-react';
 import { FactScoreBadge } from './FactScoreBadge';
@@ -23,6 +23,7 @@ export interface Post {
   factScore: number;
   reasoning?: string;
   engagement: number;
+  likes?: string[];
   sourceLink?: string;
   category?: string;
 }
@@ -46,6 +47,8 @@ function timeAgo(dateStr: string) {
 }
 
 export function ArticleCard({ post, variant = 'feature', liked = false, onLikeToggle, index }: ArticleCardProps) {
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const isFeature = variant === 'feature';
 
   if (!isFeature) {
@@ -120,21 +123,24 @@ export function ArticleCard({ post, variant = 'feature', liked = false, onLikeTo
           {(post.imageUrl || post.videoUrl) && (
             <div className="mb-5 overflow-hidden border border-outline-variant/50 relative bg-surface-dim max-h-[500px] rounded-none pointer-events-auto">
               {!post.videoUrl && (
-                <div className="relative w-full aspect-video bg-surface-container overflow-hidden">
-                  {post.imageUrl ? (
+                <div className="relative w-full aspect-video overflow-hidden bg-surface-container">
+                  {!imgLoaded && !imgError && (
+                    <div className="absolute inset-0 bg-surface-container animate-pulse" />
+                  )}
+                  {!imgError && post.imageUrl && (
                     <img
                       src={post.imageUrl}
                       alt={post.headline}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                      }}
+                      className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+                      onLoad={() => setImgLoaded(true)}
+                      onError={() => setImgError(true)}
                     />
-                  ) : null}
-                  <div className={`${post.imageUrl ? 'hidden' : ''} w-full h-full flex items-center justify-center bg-surface-container`}>
-                    <span className="type-label-md text-on-surface-variant">{post.category || 'MEDIA'}</span>
-                  </div>
+                  )}
+                  {(imgError || !post.imageUrl) && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-surface-container">
+                      <span className="type-label-md text-on-surface-variant">{post.category || 'MEDIA'}</span>
+                    </div>
+                  )}
                 </div>
               )}
               {post.videoUrl && (
@@ -162,7 +168,7 @@ export function ArticleCard({ post, variant = 'feature', liked = false, onLikeTo
               className={`flex items-center gap-2 group/btn transition-colors ${liked ? 'text-secondary' : 'hover:text-secondary'}`}
             >
               <Heart size={20} className={liked ? 'fill-secondary text-secondary' : ''} />
-              <span className="font-label text-[12px] font-bold">{post.engagement}</span>
+              <span className="font-label text-[12px] font-bold">{post.likes?.length || post.engagement || 0}</span>
             </button>
 
             {post.sourceLink && (

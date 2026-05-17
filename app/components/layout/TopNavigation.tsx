@@ -65,7 +65,9 @@ export function TopNavigation() {
     { label: 'PUBLISH', href: '/publish' },
   ];
 
-  if (!session || !(session.user as any)?.isVerifiedAuthor) {
+  const isVerified = (session?.user as any)?.isVerifiedAuthor || (session?.user as any)?.role === 'AUTHOR';
+
+  if (!isVerified) {
     navLinks.push({ label: 'VERIFY', href: '/verify' });
   }
 

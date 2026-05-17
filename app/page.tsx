@@ -19,6 +19,7 @@ interface PostData {
   category?: string;
   imageUrl?: string;
   engagement: number;
+  likes?: string[];
   createdAt: string;
   isLiked?: boolean;
   author: { _id: string; name: string; trustScore: number; role: string; email?: string; isVerifiedAuthor: boolean } | null;
@@ -168,7 +169,7 @@ export default function Home() {
               <span className="type-caption text-on-surface-variant">{timeAgo(post.createdAt)}</span>
               <div className="flex items-center gap-1 text-on-surface-variant">
                 <Heart size={14} />
-                <span className="type-caption">{post.engagement || 0}</span>
+                <span className="type-caption">{post.likes?.length || post.engagement || 0}</span>
               </div>
             </div>
           </div>
@@ -232,22 +233,29 @@ export default function Home() {
       {/* ══════════ SECONDARY POSTS (LIST) ══════════ */}
       <div className="flex flex-col gap-6 mb-12">
         {[stackedPost1, stackedPost2].filter(Boolean).map(post => (
-          <Link key={post._id} href={`/post/${post._id}`} className="grid grid-cols-1 sm:grid-cols-12 gap-6 group hover:bg-surface-container-low transition-colors p-4 -mx-4">
-            <div className="sm:col-span-4 aspect-video bg-surface-container overflow-hidden">
-               {post.imageUrl && (
-                 <img src={post.imageUrl} alt="" onError={(e) => { e.currentTarget.style.display = 'none' }} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-               )}
+          <article key={post._id} className="flex gap-4 border-b border-outline-variant py-6 cursor-pointer hover:bg-surface-container transition-colors px-4 -mx-4"
+            onClick={() => router.push(`/post/${post._id}`)}>
+            {post.imageUrl && (
+              <div className="w-32 h-24 flex-shrink-0 overflow-hidden bg-surface-container">
+                <img
+                  src={post.imageUrl}
+                  alt={post.headline}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  onError={(e) => { e.currentTarget.parentElement!.style.display = 'none' }}
+                />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <span className="type-label-md text-primary mb-1 block uppercase">{post.category}</span>
+              <h3 className="type-headline-sm normal-case mb-2 line-clamp-2">{post.headline}</h3>
+              <p className="type-caption text-on-surface-variant line-clamp-2 mb-2">{cleanSummary(post.description)}</p>
+              <div className="flex items-center gap-3 mt-2">
+                <span className="type-caption text-on-surface-variant">{post.author?.name}</span>
+                <FactScoreBadge score={post.factScore} size="sm" />
+                <span className="type-caption text-on-surface-variant ml-auto">{timeAgo(post.createdAt)}</span>
+              </div>
             </div>
-            <div className="sm:col-span-8 flex flex-col justify-center">
-               <span className="type-label-md text-primary mb-2 uppercase">{post.category}</span>
-               <h3 className="type-headline-sm normal-case mb-2 group-hover:text-primary transition-colors">{post.headline}</h3>
-               <p className="type-body-md text-on-surface-variant line-clamp-2 mb-4">{cleanSummary(post.description)}</p>
-               <div className="flex items-center gap-3">
-                  <span className="type-label-md text-on-surface-variant">{post.author?.name}</span>
-                  <FactScoreBadge score={post.factScore} size="sm" />
-               </div>
-            </div>
-          </Link>
+          </article>
         ))}
       </div>
 
