@@ -30,6 +30,16 @@ const CATEGORIES = [
   'Sports',
 ];
 
+const cleanSummary = (text: string) => text
+  ?.replace(/https?:\/\/\S+/g, '')
+  ?.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+  ?.replace(/Link posted:.*$/gm, '')
+  ?.replace(/Source:.*$/gm, '')
+  ?.replace(/[\*\_#`~>+\-\=]/g, '')
+  ?.replace(/\s+/g, ' ')
+  ?.trim()
+  ?.slice(0, 160) || '';
+
 export default function Explore() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [query, setQuery] = useState('');
@@ -163,7 +173,7 @@ export default function Explore() {
                   </h3>
                   
                   <p className="type-body-md text-on-surface-variant line-clamp-3 mb-4 flex-grow">
-                    {post.description}
+                    {cleanSummary(post.description)}
                   </p>
 
                   <div className="flex items-center justify-between mt-auto pt-4 border-t border-outline-variant">

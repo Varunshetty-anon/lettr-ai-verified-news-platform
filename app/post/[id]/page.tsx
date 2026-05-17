@@ -148,10 +148,10 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
   };
   
   const bodyText = cleanBody(
-    post.fullBody && post.fullBody.length > 200 && post.fullBody !== post.headline
-      ? post.fullBody
-      : post.summary && post.summary.length > 200
-      ? post.summary
+    post.body && post.body.length > 200 && post.body !== post.headline
+      ? post.body
+      : post.description && post.description.length > 200
+      ? post.description
       : post.headline
   );
   

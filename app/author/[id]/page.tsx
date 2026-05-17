@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation';
 import { FactScoreBadge } from '@/app/components/ui/FactScoreBadge';
 import { VerifiedBadge } from '@/app/components/ui/VerifiedBadge';
 import { LoadingQuotes } from '@/app/components/ui/LoadingQuotes';
+import { FactScoreRing } from '@/app/components/ui/FactScoreRing';
 
 type Author = {
   _id: string;
@@ -314,7 +315,9 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
                 <ShieldCheck size={18} />
                 <span className="type-label-md">Avg score</span>
               </div>
-              <FactScoreBadge score={averageScore} size="lg" />
+              <div className="mt-1">
+                <FactScoreRing score={averageScore} size={64} strokeWidth={6} />
+              </div>
             </div>
             <div className="py-5 pl-4 border-t md:border-t-0 border-outline-variant">
               <div className="flex items-center gap-2 text-on-surface-variant mb-3">

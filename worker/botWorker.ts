@@ -31,6 +31,21 @@ const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
   'Startup Bot': { sources: ['https://www.reddit.com/r/startups/hot.json?limit=15', 'https://www.reddit.com/r/Entrepreneur/hot.json?limit=15'], category: 'Startups' },
 };
 
+const RSS_FALLBACKS: Record<string, string[]> = {
+  'TechNews Bot': ['https://hnrss.org/frontpage', 'https://feeds.feedburner.com/TechCrunch/'],
+  'GlobalPolitics Bot': ['https://www.reutersagency.com/feed/', 'https://www.aljazeera.com/xml/rss/all.xml'],
+  'Finance Bot': ['https://search.cnbc.com/rs/search/view.xml?partnerId=2000&keywords=finance', 'https://www.moneycontrol.com/rss/latestnews.xml'],
+  'AI Insider Bot': ['https://hnrss.org/frontpage?q=AI', 'https://feeds.feedburner.com/TechCrunch/'],
+  'WorldNews Bot': ['https://www.reutersagency.com/feed/', 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml'],
+  'Science Bot': ['https://www.nasa.gov/rss/dyn/breaking_news.rss', 'https://hnrss.org/frontpage?q=science'],
+  'Crypto Bot': ['https://cointelegraph.com/rss', 'https://hnrss.org/frontpage?q=crypto'],
+  'Space Bot': ['https://www.nasa.gov/rss/dyn/breaking_news.rss', 'https://hnrss.org/frontpage?q=space'],
+  'Health Bot': ['https://hnrss.org/frontpage?q=health', 'https://www.reutersagency.com/feed/'],
+  'Energy Bot': ['https://hnrss.org/frontpage?q=energy', 'https://www.reutersagency.com/feed/'],
+  'Defense Bot': ['https://hnrss.org/frontpage?q=defense', 'https://www.reutersagency.com/feed/'],
+  'Startup Bot': ['https://hnrss.org/frontpage?q=startup', 'https://feeds.feedburner.com/TechCrunch/'],
+};
+
 function hashUrl(url: string): string {
   return crypto.createHash('md5').update(url).digest('hex');
 }
@@ -69,37 +84,85 @@ async function runBotTask() {
     const config = BOT_CONFIG[randomBot.name] || BOT_CONFIG['WorldNews Bot'];
     const sourceUrl = config.sources[Math.floor(Math.random() * config.sources.length)];
 
-    const response = await fetch(sourceUrl, { headers: { 'User-Agent': 'LettrBot/2.0' } });
-    if (!response.ok) throw new Error(`Reddit API failed with status ${response.status}`);
-    const redditData = await response.json();
-    const posts = redditData.data?.children;
-    if (!posts || posts.length === 0) throw new Error("No Reddit data");
+    let rawTitle = '';
+    let rawText = '';
+    let originalLink = '';
+    let originTag = '';
+    let media = { image: undefined, video: undefined } as any;
 
-    const shuffled = posts.sort(() => Math.random() - 0.5);
-    let targetContent = null;
+    try {
+      const response = await fetch(sourceUrl, { headers: { 'User-Agent': 'LettrBot/2.0' } });
+      if (!response.ok) throw new Error(`Reddit API failed with status ${response.status}`);
+      const redditData = await response.json();
+      const posts = redditData.data?.children;
+      if (!posts || posts.length === 0) throw new Error("No Reddit data");
 
-    for (const post of shuffled) {
-      const urlHash = hashUrl(post.data.url);
-      const existing = await Post.findOne({ sourceHash: urlHash });
-      if (!existing) {
-        targetContent = post.data;
-        break;
+      const shuffled = posts.sort(() => Math.random() - 0.5);
+      let targetContent = null;
+
+      for (const post of shuffled) {
+        const urlHash = hashUrl(post.data.url);
+        const existing = await Post.findOne({ sourceHash: urlHash });
+        if (!existing) {
+          targetContent = post.data;
+          break;
+        }
+      }
+
+      if (!targetContent) throw new Error("All Reddit posts already imported");
+
+      rawTitle = targetContent.title;
+      rawText = targetContent.selftext || `Link posted: ${targetContent.url}`;
+      originalLink = targetContent.url;
+      originTag = `Source: Reddit (r/${targetContent.subreddit})`;
+      media = extractMediaFromReddit(targetContent);
+
+    } catch (redditError: any) {
+      console.log(`[Worker] Reddit fetch failed or no posts available, falling back to RSS:`, redditError.message);
+      const rssList = RSS_FALLBACKS[randomBot.name] || RSS_FALLBACKS['WorldNews Bot'];
+      const rssUrl = rssList[Math.floor(Math.random() * rssList.length)];
+      console.log(`[Worker] Fetching RSS fallback from: ${rssUrl}`);
+      const rssRes = await fetch(rssUrl, { headers: { 'User-Agent': 'LettrBot/2.0' } });
+      if (!rssRes.ok) throw new Error(`RSS fallback failed with status ${rssRes.status}`);
+      const rssText = await rssRes.text();
+      const items = rssText.split('<item>').slice(1);
+      if (items.length === 0) throw new Error("No items in RSS feed");
+
+      let targetItem = null;
+      for (const item of items) {
+        const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
+        const link = linkMatch ? linkMatch[1].trim() : '';
+        if (link) {
+          const urlHash = hashUrl(link);
+          const existing = await Post.findOne({ sourceHash: urlHash });
+          if (!existing) {
+            targetItem = item;
+            break;
+          }
+        }
+      }
+
+      if (!targetItem) {
+        console.log(`[Worker] All RSS items already imported. Skipping task.`);
+        return;
+      }
+
+      const titleMatch = targetItem.match(/<title>([\s\S]*?)<\/title>/);
+      const descMatch = targetItem.match(/<description>([\s\S]*?)<\/description>/);
+      const linkMatch = targetItem.match(/<link>([\s\S]*?)<\/link>/);
+
+      rawTitle = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : 'Breaking News';
+      rawText = descMatch ? descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '').trim() : '';
+      originalLink = linkMatch ? linkMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : '';
+      originTag = `Source: RSS Feed (${new URL(rssUrl).hostname})`;
+      
+      const imgMatch = targetItem.match(/<media:content[^>]*url="([^"]+)"/) || targetItem.match(/<enclosure[^>]*url="([^"]+)"/) || targetItem.match(/<img[^>]*src="([^"]+)"/);
+      if (imgMatch) {
+        media.image = imgMatch[1];
       }
     }
 
-    if (!targetContent) {
-      console.log(`[Worker] All content from ${sourceUrl} already processed. Skipping.`);
-      return;
-    }
-
-    const rawTitle = targetContent.title;
-    const rawText = targetContent.selftext || `Link posted: ${targetContent.url}`;
-    const originalLink = targetContent.url;
-    const originTag = `Source: Reddit (r/${targetContent.subreddit})`;
     const urlHash = hashUrl(originalLink);
-    
-    // Extract media
-    const media = extractMediaFromReddit(targetContent);
 
     let imageUrl = undefined;
     let videoUrl = undefined;

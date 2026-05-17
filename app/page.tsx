@@ -55,8 +55,10 @@ const cleanSummary = (text: string) => text
   ?.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
   ?.replace(/Link posted:.*$/gm, '')
   ?.replace(/Source:.*$/gm, '')
+  ?.replace(/[\*\_#`~>+\-\=]/g, '')
+  ?.replace(/\s+/g, ' ')
   ?.trim()
-  ?.slice(0, 200) || '';
+  ?.slice(0, 160) || '';
 
 const isBot = (author: any) => {
   if (!author) return false;

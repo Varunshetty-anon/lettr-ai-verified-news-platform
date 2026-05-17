@@ -90,25 +90,59 @@ export default function Account() {
          </div>
       </div>
 
-      {/* ── Saved Articles ── */}
-      <div>
-         <h3 className="type-label-md text-on-surface border-b-2 border-on-surface pb-[12px] mb-[24px]">SAVED ARTICLES ({user.likedPosts.length})</h3>
-         {user.likedPosts.length > 0 ? (
-            <div className="flex flex-col">
-               {user.likedPosts.map((post: any) => (
-                  <Link key={post._id} href={`/post/${post._id}`} className="group flex items-center justify-between border-b border-outline-variant py-[16px] last:border-0 last:pb-0">
-                     <div className="flex flex-col">
-                        <span className="type-label-md text-primary mb-1 uppercase">{post.category || 'NEWS'}</span>
-                        <h4 className="type-headline-sm text-on-surface group-hover:text-primary transition-colors line-clamp-1">{post.headline}</h4>
-                     </div>
-                  </Link>
-               ))}
-            </div>
-         ) : (
-            <p className="type-body-md text-on-surface-variant text-center py-[48px] border-2 border-dashed border-outline-variant">
-               You haven't saved any articles yet.
-            </p>
-         )}
+      {/* ── Saved Articles & Reading History ── */}
+      <div className="space-y-[48px]">
+        {/* Liked Articles */}
+        <div>
+           <h3 className="type-label-md text-on-surface border-b-2 border-on-surface pb-[12px] mb-[24px]">LIKED STORIES ({user.likedPosts.length})</h3>
+           {user.likedPosts.length > 0 ? (
+              <div className="flex flex-col text-left">
+                 {user.likedPosts.map((post: any) => (
+                    <Link key={post._id} href={`/post/${post._id}`} className="group flex items-center justify-between border-b border-outline-variant py-[16px] last:border-0 last:pb-0">
+                       <div className="flex flex-col min-w-0 pr-4">
+                          <span className="type-label-md text-primary mb-1 uppercase">{post.category || 'NEWS'}</span>
+                          <h4 className="type-headline-sm text-on-surface group-hover:text-primary transition-colors line-clamp-1">{post.headline}</h4>
+                       </div>
+                       {post.factScore !== undefined && (
+                         <div className="shrink-0 font-display font-bold text-xs border border-primary text-primary px-2 py-0.5">
+                           {post.factScore}%
+                         </div>
+                       )}
+                    </Link>
+                 ))}
+              </div>
+           ) : (
+              <p className="type-body-md text-on-surface-variant text-center py-[48px] border-2 border-dashed border-outline-variant">
+                 You haven't liked any articles yet.
+              </p>
+           )}
+        </div>
+
+        {/* Reading History */}
+        <div>
+           <h3 className="type-label-md text-on-surface border-b-2 border-on-surface pb-[12px] mb-[24px]">READING HISTORY ({user.viewedPosts.length})</h3>
+           {user.viewedPosts.length > 0 ? (
+              <div className="flex flex-col text-left">
+                 {user.viewedPosts.map((post: any) => (
+                    <Link key={post._id} href={`/post/${post._id}`} className="group flex items-center justify-between border-b border-outline-variant py-[16px] last:border-0 last:pb-0">
+                       <div className="flex flex-col min-w-0 pr-4">
+                          <span className="type-label-md text-primary mb-1 uppercase">{post.category || 'NEWS'}</span>
+                          <h4 className="type-headline-sm text-on-surface group-hover:text-primary transition-colors line-clamp-1">{post.headline}</h4>
+                       </div>
+                       {post.factScore !== undefined && (
+                         <div className="shrink-0 font-display font-bold text-xs border border-outline-variant text-on-surface-variant px-2 py-0.5">
+                           {post.factScore}%
+                         </div>
+                       )}
+                    </Link>
+                 ))}
+              </div>
+           ) : (
+              <p className="type-body-md text-on-surface-variant text-center py-[48px] border-2 border-dashed border-outline-variant">
+                 Your reading history is empty.
+              </p>
+           )}
+        </div>
       </div>
 
     </div>

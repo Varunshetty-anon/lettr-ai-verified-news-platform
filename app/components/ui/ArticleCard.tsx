@@ -4,6 +4,16 @@ import { Shield, Heart, ExternalLink, ArrowUpRight, CheckCircle } from 'lucide-r
 import { FactScoreBadge } from './FactScoreBadge';
 import HoverVideoPlayer from './HoverVideoPlayer';
 
+const cleanSummary = (text: string) => text
+  ?.replace(/https?:\/\/\S+/g, '')
+  ?.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+  ?.replace(/Link posted:.*$/gm, '')
+  ?.replace(/Source:.*$/gm, '')
+  ?.replace(/[\*\_#`~>+\-\=]/g, '')
+  ?.replace(/\s+/g, ' ')
+  ?.trim()
+  ?.slice(0, 160) || '';
+
 interface Author {
   _id: string;
   name: string;
@@ -116,7 +126,7 @@ export function ArticleCard({ post, variant = 'feature', liked = false, onLikeTo
             <Link href={`/post/${post._id}`}>{post.headline}</Link>
           </h3>
           <p className="font-body text-[16px] text-on-surface-variant leading-[1.6] mb-5 whitespace-pre-wrap pointer-events-auto">
-            {post.description}
+            {cleanSummary(post.description)}
           </p>
 
           {/* Media */}

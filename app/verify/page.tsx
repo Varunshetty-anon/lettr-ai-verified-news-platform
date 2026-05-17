@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Shield, FileText, CheckCircle, AlertTriangle, Link as LinkIcon, Image as ImageIcon, Video } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { InputField } from '../components/ui/InputField';
+import { FactScoreRing } from '../components/ui/FactScoreRing';
 
 export default function VerifyAuthor() {
   const { data: session, status, update } = useSession();
@@ -106,9 +107,8 @@ export default function VerifyAuthor() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px] mb-[32px]">
               <div className="p-6 bg-surface-dim border border-outline-variant/50 rounded-none">
                 <span className="font-label text-[10px] uppercase tracking-[0.1em] text-on-surface-variant block mb-2 font-bold">FACT SCORE</span>
-                <div className="flex items-baseline gap-1">
-                   <span className={`font-display text-[48px] font-bold leading-[1.1] tracking-[-0.02em] ${result.isVerified ? 'text-[#485c00]' : 'text-red-500'}`}>{result.score}</span>
-                   <span className="font-label text-[14px] text-on-surface-variant">/100</span>
+                <div className="flex justify-center md:justify-start mt-2">
+                  <FactScoreRing score={result.score} size={72} strokeWidth={6} />
                 </div>
               </div>
               <div className="p-6 bg-surface-dim border border-outline-variant/50 rounded-none">

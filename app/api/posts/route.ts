@@ -143,45 +143,55 @@ export async function GET(request: Request) {
           const bAgeInHours = (now - new Date(b.createdAt).getTime()) / (1000 * 60 * 60);
           const bRecency = Math.max(0, 10 - (bAgeInHours / 24) * 2);
 
-          const aScore = aFact + aRecency * 5;
-          const bScore = bFact + bRecency * 5;
+          const isBotA = a.author?.role?.toLowerCase() === 'bot' || a.author?.email?.includes('@lettr.ai') || a.author?.name?.toLowerCase().includes('bot');
+          const isBotB = b.author?.role?.toLowerCase() === 'bot' || b.author?.email?.includes('@lettr.ai') || b.author?.name?.toLowerCase().includes('bot');
+          const aBoost = isBotA ? 1.0 : 1.5;
+          const bBoost = isBotB ? 1.0 : 1.5;
+
+          const aScore = (aFact + aRecency * 5) * aBoost;
+          const bScore = (bFact + bRecency * 5) * bBoost;
           return bScore - aScore;
         });
       } else {
         hydrated.sort((a, b) => {
-        const aCategory = a.category || '';
-        const bCategory = b.category || '';
+          const aCategory = a.category || '';
+          const bCategory = b.category || '';
 
-        const aFollow = a.followBoost || 0;
-        const bFollow = b.followBoost || 0;
+          const aFollow = a.followBoost || 0;
+          const bFollow = b.followBoost || 0;
 
-        const aPref = userPrefs.includes(aCategory) ? 30 : 0;
-        const bPref = userPrefs.includes(bCategory) ? 30 : 0;
+          const aPref = userPrefs.includes(aCategory) ? 30 : 0;
+          const bPref = userPrefs.includes(bCategory) ? 30 : 0;
 
-        const aLikeCat = likedCategorySet.has(aCategory) ? 20 : 0;
-        const bLikeCat = likedCategorySet.has(bCategory) ? 20 : 0;
+          const aLikeCat = likedCategorySet.has(aCategory) ? 20 : 0;
+          const bLikeCat = likedCategorySet.has(bCategory) ? 20 : 0;
 
-        const aViewCat = viewedCategorySet.has(aCategory) ? 12 : 0;
-        const bViewCat = viewedCategorySet.has(bCategory) ? 12 : 0;
+          const aViewCat = viewedCategorySet.has(aCategory) ? 12 : 0;
+          const bViewCat = viewedCategorySet.has(bCategory) ? 12 : 0;
 
-        // Category affinity boost
-        const aAffinity = (categoryAffinity[aCategory] || 0) * 0.5;
-        const bAffinity = (categoryAffinity[bCategory] || 0) * 0.5;
+          // Category affinity boost
+          const aAffinity = (categoryAffinity[aCategory] || 0) * 0.5;
+          const bAffinity = (categoryAffinity[bCategory] || 0) * 0.5;
 
-        const aFact = (a.factScore / 100) * 5;
-        const bFact = (b.factScore / 100) * 5;
+          const aFact = (a.factScore / 100) * 5;
+          const bFact = (b.factScore / 100) * 5;
 
-        const aAgeInHours = (now - new Date(a.createdAt).getTime()) / (1000 * 60 * 60);
-        const aRecency = Math.max(0, 10 - (aAgeInHours / 24) * 2);
+          const aAgeInHours = (now - new Date(a.createdAt).getTime()) / (1000 * 60 * 60);
+          const aRecency = Math.max(0, 10 - (aAgeInHours / 24) * 2);
 
-        const bAgeInHours = (now - new Date(b.createdAt).getTime()) / (1000 * 60 * 60);
-        const bRecency = Math.max(0, 10 - (bAgeInHours / 24) * 2);
+          const bAgeInHours = (now - new Date(b.createdAt).getTime()) / (1000 * 60 * 60);
+          const bRecency = Math.max(0, 10 - (bAgeInHours / 24) * 2);
 
-        const aScore = aFollow + aPref + aLikeCat + aViewCat + aAffinity + aFact + aRecency;
-        const bScore = bFollow + bPref + bLikeCat + bViewCat + bAffinity + bFact + bRecency;
+          const isBotA = a.author?.role?.toLowerCase() === 'bot' || a.author?.email?.includes('@lettr.ai') || a.author?.name?.toLowerCase().includes('bot');
+          const isBotB = b.author?.role?.toLowerCase() === 'bot' || b.author?.email?.includes('@lettr.ai') || b.author?.name?.toLowerCase().includes('bot');
+          const aBoost = isBotA ? 1.0 : 1.5;
+          const bBoost = isBotB ? 1.0 : 1.5;
 
-        return bScore - aScore;
-      });
+          const aScore = (aFollow + aPref + aLikeCat + aViewCat + aAffinity + aFact + aRecency) * aBoost;
+          const bScore = (bFollow + bPref + bLikeCat + bViewCat + bAffinity + bFact + bRecency) * bBoost;
+
+          return bScore - aScore;
+        });
       }
     }
 
