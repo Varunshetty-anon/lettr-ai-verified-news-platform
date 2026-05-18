@@ -14,15 +14,15 @@ export const maxDuration = 60;
 const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
   'TechNews Bot': {
     sources: ['https://www.reddit.com/r/technology/hot.json?limit=15', 'https://www.reddit.com/r/developersIndia/hot.json?limit=15'],
-    category: 'Tech India'
+    category: 'AI & Tech'
   },
   'GlobalPolitics Bot': {
     sources: ['https://www.reddit.com/r/geopolitics/hot.json?limit=15', 'https://www.reddit.com/r/IndianPolitics/hot.json?limit=15'],
-    category: 'Indian Politics'
+    category: 'Geopolitics'
   },
   'Finance Bot': {
     sources: ['https://www.reddit.com/r/economics/hot.json?limit=15', 'https://www.reddit.com/r/IndianStreetBets/hot.json?limit=15'],
-    category: 'Indian Economy'
+    category: 'Finance'
   },
   'AI Insider Bot': {
     sources: ['https://www.reddit.com/r/artificial/hot.json?limit=15', 'https://www.reddit.com/r/MachineLearning/hot.json?limit=15'],
@@ -54,11 +54,11 @@ const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
   },
   'Defense Bot': {
     sources: ['https://www.reddit.com/r/defense/hot.json?limit=15', 'https://www.reddit.com/r/Military/hot.json?limit=15'],
-    category: 'Defense'
+    category: 'Geopolitics'
   },
   'Startup Bot': {
     sources: ['https://www.reddit.com/r/startups/hot.json?limit=15', 'https://www.reddit.com/r/StartUpIndia/hot.json?limit=15'],
-    category: 'Startups India'
+    category: 'Indian Startups'
   },
 };
 
@@ -184,11 +184,14 @@ export async function GET(request: Request) {
     const config = BOT_CONFIG[randomBot.name] || BOT_CONFIG['WorldNews Bot'];
     const sourceUrl = config.sources[Math.floor(Math.random() * config.sources.length)];
 
-    let rawTitle = '';
-    let rawText = '';
-    let originalLink = '';
-    let originTag = '';
-    let media = { image: undefined, video: undefined } as any;
+    interface CandidateArticle {
+      title: string;
+      text: string;
+      link: string;
+      originTag: string;
+      media: any;
+    }
+    const candidates: CandidateArticle[] = [];
 
     try {
       const response = await fetch(sourceUrl, { headers: { 'User-Agent': 'LettrBot/1.0' } });
@@ -198,25 +201,20 @@ export async function GET(request: Request) {
       if (!posts || posts.length === 0) throw new Error("No Reddit data");
 
       const shuffled = posts.sort(() => Math.random() - 0.5);
-      let targetContent = null;
-
       for (const post of shuffled) {
         const urlHash = hashUrl(post.data.url);
         const existing = await Post.findOne({ sourceHash: urlHash });
         if (!existing) {
-          targetContent = post.data;
-          break;
+          candidates.push({
+            title: post.data.title,
+            text: post.data.selftext || `Link posted: ${post.data.url}`,
+            link: post.data.url,
+            originTag: `Source: Reddit (r/${post.data.subreddit})`,
+            media: extractMediaFromReddit(post.data)
+          });
+          if (candidates.length >= 6) break;
         }
       }
-
-      if (!targetContent) throw new Error("All Reddit posts already imported");
-
-      rawTitle = targetContent.title;
-      rawText = targetContent.selftext || `Link posted: ${targetContent.url}`;
-      originalLink = targetContent.url;
-      originTag = `Source: Reddit (r/${targetContent.subreddit})`;
-      media = extractMediaFromReddit(targetContent);
-
     } catch (redditError: any) {
       console.log(`[Cron] Reddit fetch failed or no posts available, falling back to RSS:`, redditError.message);
       const rssList = RSS_FALLBACKS[randomBot.name] || RSS_FALLBACKS['WorldNews Bot'];
@@ -228,103 +226,131 @@ export async function GET(request: Request) {
       const items = rssText.split('<item>').slice(1);
       if (items.length === 0) throw new Error("No items in RSS feed");
 
-      let targetItem = null;
-      for (const item of items) {
+      const shuffledItems = items.sort(() => Math.random() - 0.5);
+      for (const item of shuffledItems) {
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
         const link = linkMatch ? linkMatch[1].trim() : '';
         if (link) {
           const urlHash = hashUrl(link);
           const existing = await Post.findOne({ sourceHash: urlHash });
           if (!existing) {
-            targetItem = item;
-            break;
+            const titleMatch = item.match(/<title>([\s\S]*?)<\/title>/);
+            const descMatch = item.match(/<description>([\s\S]*?)<\/description>/);
+            const rawTitle = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : 'Breaking News';
+            const rawText = descMatch ? descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '').trim() : '';
+            const originalLink = link.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim();
+            const originTag = `Source: RSS Feed (${new URL(rssUrl).hostname})`;
+            
+            const media: any = {};
+            const imgMatch = item.match(/<media:content[^>]*url="([^"]+)"/) || item.match(/<enclosure[^>]*url="([^"]+)"/) || item.match(/<img[^>]*src="([^"]+)"/);
+            if (imgMatch) {
+              media.image = imgMatch[1];
+            }
+
+            candidates.push({
+              title: rawTitle,
+              text: rawText,
+              link: originalLink,
+              originTag,
+              media
+            });
+            if (candidates.length >= 6) break;
           }
         }
-      }
-
-      if (!targetItem) {
-        return NextResponse.json({ message: "No new unique content found. All RSS sources already posted." }, { status: 200 });
-      }
-
-      const titleMatch = targetItem.match(/<title>([\s\S]*?)<\/title>/);
-      const descMatch = targetItem.match(/<description>([\s\S]*?)<\/description>/);
-      const linkMatch = targetItem.match(/<link>([\s\S]*?)<\/link>/);
-
-      rawTitle = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : 'Breaking News';
-      rawText = descMatch ? descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '').trim() : '';
-      originalLink = linkMatch ? linkMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : '';
-      originTag = `Source: RSS Feed (${new URL(rssUrl).hostname})`;
-      
-      const imgMatch = targetItem.match(/<media:content[^>]*url="([^"]+)"/) || targetItem.match(/<enclosure[^>]*url="([^"]+)"/) || targetItem.match(/<img[^>]*src="([^"]+)"/);
-      if (imgMatch) {
-        media.image = imgMatch[1];
       }
     }
 
-    const urlHash = hashUrl(originalLink);
+    if (candidates.length === 0) {
+      return NextResponse.json({ message: "No new candidate content found." }, { status: 200 });
+    }
 
-    // 1. REWRITE VIA GROQ — FULL ARTICLE GENERATION
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) throw new Error("Missing GROQ API Key");
+    let postsCreated = 0;
+    const MAX_POSTS_PER_RUN = 3;
+    const seeded: any[] = [];
 
-    const rewriteContent = {
-      cleanHeadline: rawTitle,
-      cleanSummary: "Live news feed summary.",
-      fullBody: "",
-      sourceNote: "",
-      dynamicCategory: config.category
-    };
+    for (const candidate of candidates) {
+      if (postsCreated >= MAX_POSTS_PER_RUN) break;
 
-    try {
-      const callGroq = async (promptMsg: string) => {
-        return fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-              {
-                role: "system",
-                content: `You are a senior news editor at a premium, fact-based news platform. Your writing is clear, authoritative, and detailed. You never use clickbait or sensational language. You write in a factual, analytical tone similar to Reuters or The Economist.`
-              },
-              { role: "user", content: promptMsg }
-            ],
-            temperature: 0.4,
-            max_tokens: 1500
-          })
-        });
-      };
+      try {
+        const rawTitle = candidate.title;
+        const rawText = candidate.text;
+        const originalLink = candidate.link;
+        const originTag = candidate.originTag;
+        const media = candidate.media;
+        const urlHash = hashUrl(originalLink);
 
-      const parseGroqResponse = async (response: Response) => {
-        if (!response.ok) return;
-        const rewriteData = await response.json();
-        const outputText = rewriteData.choices[0]?.message?.content || "";
-        
-        const headMatch = outputText.match(/Headline:\s*(.*)/i);
-        const sumMatch = outputText.match(/Summary:\s*([\s\S]*?)(?=\nArticle:)/i);
-        const bodyMatch = outputText.match(/Article:\s*([\s\S]*?)(?=\nSource Note:)/i);
-        const sourceNoteMatch = outputText.match(/Source Note:\s*([\s\S]*?)(?=\nCategory:)/i) || outputText.match(/Source Note:\s*(.*)/i);
-        const categoryMatch = outputText.match(/Category:\s*(.*)/i);
-        
-        if (headMatch) rewriteContent.cleanHeadline = headMatch[1].trim();
-        if (sumMatch) rewriteContent.cleanSummary = sumMatch[1].replace(/https?:\/\/[^\s]+/g, '').trim();
-        if (bodyMatch) rewriteContent.fullBody = bodyMatch[1].replace(/https?:\/\/[^\s]+/g, '').trim();
-        if (sourceNoteMatch) rewriteContent.sourceNote = sourceNoteMatch[1].trim();
-        if (categoryMatch) rewriteContent.dynamicCategory = categoryMatch[1].trim();
-        
-        if (!rewriteContent.fullBody && outputText.length > 200) {
-          const afterSummary = outputText.split(/Summary:/i)[1] || '';
-          const parts = afterSummary.split('\n\n');
-          if (parts.length > 1) {
-            rewriteContent.fullBody = parts.slice(1).join('\n\n').trim();
-          }
+        let imageUrl = undefined;
+        let videoUrl = undefined;
+
+        if (media.image) {
+          const filename = `bot-img-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.jpg`;
+          const uploaded = await uploadMediaFromUrl(media.image, filename);
+          imageUrl = uploaded || media.image;
         }
-      };
+        if (media.video) {
+          videoUrl = media.video;
+        }
 
-      const mainPrompt = `Rewrite the following raw content into a professional news article. Do NOT copy raw text verbatim. Write original, well-structured content. If the content implies a video or image, verify the facts in context of the described media.
+        const apiKey = process.env.GROQ_API_KEY;
+        if (!apiKey) throw new Error("Missing GROQ API Key");
+
+        const rewriteContent = {
+          cleanHeadline: rawTitle,
+          cleanSummary: "Live news feed summary.",
+          fullBody: "",
+          sourceNote: "",
+          dynamicCategory: config.category
+        };
+
+        const callGroq = async (promptMsg: string) => {
+          return fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: "llama-3.3-70b-versatile",
+              messages: [
+                {
+                  role: "system",
+                  content: `You are a senior news editor at a premium, fact-based news platform. Your writing is clear, authoritative, and detailed. You never use clickbait or sensational language. You write in a factual, analytical tone similar to Reuters or The Economist.`
+                },
+                { role: "user", content: promptMsg }
+              ],
+              temperature: 0.4,
+              max_tokens: 1500
+            })
+          });
+        };
+
+        const parseGroqResponse = async (response: Response) => {
+          if (!response.ok) return;
+          const rewriteData = await response.json();
+          const outputText = rewriteData.choices[0]?.message?.content || "";
+          
+          const headMatch = outputText.match(/Headline:\s*(.*)/i);
+          const sumMatch = outputText.match(/Summary:\s*([\s\S]*?)(?=\nArticle:)/i);
+          const bodyMatch = outputText.match(/Article:\s*([\s\S]*?)(?=\nSource Note:)/i);
+          const sourceNoteMatch = outputText.match(/Source Note:\s*([\s\S]*?)(?=\nCategory:)/i) || outputText.match(/Source Note:\s*(.*)/i);
+          const categoryMatch = outputText.match(/Category:\s*(.*)/i);
+          
+          if (headMatch) rewriteContent.cleanHeadline = headMatch[1].trim();
+          if (sumMatch) rewriteContent.cleanSummary = sumMatch[1].replace(/https?:\/\/[^\s]+/g, '').trim();
+          if (bodyMatch) rewriteContent.fullBody = bodyMatch[1].replace(/https?:\/\/[^\s]+/g, '').trim();
+          if (sourceNoteMatch) rewriteContent.sourceNote = sourceNoteMatch[1].trim();
+          if (categoryMatch) rewriteContent.dynamicCategory = categoryMatch[1].trim();
+          
+          if (!rewriteContent.fullBody && outputText.length > 200) {
+            const afterSummary = outputText.split(/Summary:/i)[1] || '';
+            const parts = afterSummary.split('\n\n');
+            if (parts.length > 1) {
+              rewriteContent.fullBody = parts.slice(1).join('\n\n').trim();
+            }
+          }
+        };
+
+        const mainPrompt = `Rewrite the following raw content into a professional news article. Do NOT copy raw text verbatim. Write original, well-structured content. If the content implies a video or image, verify the facts in context of the described media.
 
 Raw Title: ${rawTitle}
 Raw Text: ${rawText.substring(0, 1200)}
@@ -365,75 +391,76 @@ Source Note: <A one-line credibility assessment of the source, e.g. "Sourced fro
 
 Category: <Generate a highly specific, trending 1-3 word category based on the article content (e.g. "Indian Economy", "Tech India", "Generative AI", "Space Tourism"). Do NOT just use the bot specialty.>`;
 
-      let rewriteResponse = await callGroq(mainPrompt);
-      await parseGroqResponse(rewriteResponse);
+        let rewriteResponse = await callGroq(mainPrompt);
+        await parseGroqResponse(rewriteResponse);
 
-      if (rewriteContent.fullBody.length < 400) {
-        const retryPrompt = `The previous summary was too short. Write a detailed news article of at least 400 characters covering: ${rewriteContent.cleanHeadline}. Include context, background, and implications. Do not include any URLs or links in the body text.`;
-        let retryResponse = await callGroq(retryPrompt);
-        await parseGroqResponse(retryResponse);
+        if (rewriteContent.fullBody.length < 400) {
+          const retryPrompt = `The previous summary was too short. Write a detailed news article of at least 400 characters covering: ${rewriteContent.cleanHeadline}. Include context, background, and implications. Do not include any URLs or links in the body text.`;
+          let retryResponse = await callGroq(retryPrompt);
+          await parseGroqResponse(retryResponse);
+        }
+
+        // Sanitize summary and body
+        rewriteContent.cleanSummary = sanitizeEditorialContent(rewriteContent.cleanSummary);
+        rewriteContent.fullBody = sanitizeEditorialBody(rewriteContent.fullBody);
+
+        const paragraphsCount = rewriteContent.fullBody.split('\n\n').filter(p => p.trim().length > 0).length;
+
+        // Skip post entirely if body generation is incomplete or has fewer than 3 paragraphs
+        if (!rewriteContent.fullBody || rewriteContent.fullBody.length < 300 || paragraphsCount < 3) {
+          console.log(`[Cron] Skip post: body generation incomplete (length: ${rewriteContent.fullBody?.length}, paragraphs: ${paragraphsCount})`);
+          continue;
+        }
+
+        // Fact verification
+        const verification = await verifyFact(rewriteContent.cleanHeadline, rewriteContent.cleanSummary, originalLink);
+        if (verification.factScore < 45) {
+          console.log(`[Cron] Skip post: failed AI Fact check (Score: ${verification.factScore})`);
+          continue;
+        }
+
+        const normalizedCategory = normalizeCategory(rewriteContent.dynamicCategory || config.category);
+
+        const newPost = await Post.create({
+          authorId: randomBot._id,
+          headline: rewriteContent.cleanHeadline,
+          description: rewriteContent.cleanSummary,
+          body: rewriteContent.fullBody || rewriteContent.cleanSummary,
+          sourceLink: originalLink,
+          sourceHash: urlHash,
+          originSource: rewriteContent.sourceNote || originTag,
+          category: normalizedCategory,
+          imageUrl,
+          videoUrl,
+          factScore: verification.factScore,
+          factSummary: verification.factSummary,
+          confidence: verification.confidence,
+          sourcesChecked: verification.sourcesChecked,
+          issues: verification.issues || [],
+          isPublished: true,
+          engagement: Math.floor(Math.random() * 80) + 5
+        });
+
+        await User.findByIdAndUpdate(randomBot._id, { $inc: { totalPosts: 1 } });
+
+        postsCreated++;
+        const totalInCategory = await Post.countDocuments({ category: normalizedCategory });
+        console.log(`[Bot] Posted to category: ${normalizedCategory} | Total posts in category: ${totalInCategory}`);
+        
+        seeded.push({
+          bot: randomBot.name,
+          category: normalizedCategory,
+          totalInCategory,
+          headline: newPost.headline
+        });
+
+      } catch (err: any) {
+        console.error(`[Cron] Failed processing candidate:`, err.message);
+        continue;
       }
-    } catch (e) {
-      console.error("Groq Rewrite Failed, using raw title.", e);
     }
 
-    // Sanitize summary and body
-    rewriteContent.cleanSummary = sanitizeEditorialContent(rewriteContent.cleanSummary);
-    rewriteContent.fullBody = sanitizeEditorialBody(rewriteContent.fullBody);
-
-    const paragraphsCount = rewriteContent.fullBody.split('\n\n').filter(p => p.trim().length > 0).length;
-
-    // Skip post entirely if body generation is incomplete or has fewer than 3 paragraphs
-    if (!rewriteContent.fullBody || rewriteContent.fullBody.length < 300 || paragraphsCount < 3) {
-      console.log(`[Cron] Skip post: body generation incomplete (length: ${rewriteContent.fullBody?.length}, paragraphs: ${paragraphsCount})`);
-      return NextResponse.json({ message: "Content rejected: incomplete body generation (minimum 3 paragraphs required)." }, { status: 200 });
-    }
-
-    // 2. FACT VERIFICATION
-    const verification = await verifyFact(rewriteContent.cleanHeadline, rewriteContent.cleanSummary, originalLink);
-
-    // 3. POST RULES ENFORCEMENT
-    if (verification.factScore < 45) {
-      return NextResponse.json({ message: "Content rejected by AI Fact rules.", factScore: verification.factScore }, { status: 200 });
-    }
-
-    // 4. Handle Media Upload
-    let imageUrl = undefined;
-    let videoUrl = undefined;
-    
-    if (media?.image) {
-      const uploaded = await uploadMediaFromUrl(media.image, `bot-img-${Date.now()}.jpg`);
-      imageUrl = uploaded || media.image;
-    }
-    if (media?.video) {
-      videoUrl = media.video;
-    }
-
-    // 5. DB INJECTION
-    const newPost = await Post.create({
-      authorId: randomBot._id,
-      headline: rewriteContent.cleanHeadline,
-      description: rewriteContent.cleanSummary,
-      body: rewriteContent.fullBody || rewriteContent.cleanSummary,
-      sourceLink: originalLink,
-      sourceHash: urlHash,
-      originSource: rewriteContent.sourceNote || originTag,
-      category: normalizeCategory(rewriteContent.dynamicCategory || config.category),
-      imageUrl,
-      videoUrl,
-      factScore: verification.factScore,
-      factSummary: verification.factSummary,
-      confidence: verification.confidence,
-      sourcesChecked: verification.sourcesChecked,
-      issues: verification.issues || [],
-      isPublished: true,
-      engagement: Math.floor(Math.random() * 80) + 5
-    });
-
-    // Update bot post count
-    await User.findByIdAndUpdate(randomBot._id, { $inc: { totalPosts: 1 } });
-
-    return NextResponse.json({ success: true, bot: randomBot.name, post: newPost }, { status: 201 });
+    return NextResponse.json({ success: true, seeded }, { status: 201 });
 
   } catch (error: unknown) {
     console.error("Bot Engine Error:", error);

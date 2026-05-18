@@ -165,7 +165,6 @@ export default function Home() {
   const readyPosts = localPosts.filter(post => {
     if (!post.headline || !post.description) return false;
     if (typeof post.factScore !== 'number') return false;
-    if (!post.imageUrl) return false; // Ensure feed posts are fully loaded with media
     return true;
   });
 
@@ -184,9 +183,17 @@ export default function Home() {
     return (
       <ImpressTracker postId={post._id} key={post._id}>
         <Link href={`/post/${post._id}`} className={`group block ${isStacked ? 'border-b border-outline-variant pb-[48px] lg:border-none lg:pb-0' : 'h-full flex flex-col'}`}>
-          {!isHero && !isStacked && post.imageUrl && (
-            <div className="aspect-video w-full mb-4 overflow-hidden">
-              <EditorialImage src={post.imageUrl} alt={post.headline} className="group-hover:scale-105 transition-transform duration-500" />
+          {!isHero && !isStacked && (
+            <div className="aspect-video w-full mb-4 overflow-hidden relative">
+              {post.imageUrl ? (
+                <EditorialImage src={post.imageUrl} alt={post.headline} className="group-hover:scale-105 transition-transform duration-500" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-surface-container min-h-[200px]">
+                  <span className="type-headline-sm text-on-surface-variant opacity-30">
+                    {post.category?.charAt(0) || 'L'}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
@@ -276,11 +283,17 @@ export default function Home() {
         {[stackedPost1, stackedPost2].filter(Boolean).map(post => (
           <article key={post._id} className="flex gap-4 border-b border-outline-variant py-6 cursor-pointer hover:bg-surface-container transition-colors px-4 -mx-4"
             onClick={() => router.push(`/post/${post._id}`)}>
-            {post.imageUrl && (
-              <div className="w-32 h-24 flex-shrink-0 overflow-hidden">
+            <div className="w-32 h-24 flex-shrink-0 overflow-hidden relative">
+              {post.imageUrl ? (
                 <EditorialImage src={post.imageUrl} alt={post.headline} aspect="w-full h-full" />
-              </div>
-            )}
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-surface-container">
+                  <span className="type-headline-sm text-on-surface-variant opacity-30">
+                    {post.category?.charAt(0) || 'L'}
+                  </span>
+                </div>
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               <span className="type-label-md text-primary mb-1 block uppercase">{post.category}</span>
               <h3 className="type-headline-sm normal-case mb-2 line-clamp-2">{post.headline}</h3>
@@ -313,11 +326,17 @@ export default function Home() {
                 {renderCard(lifestylePost, true)}
              </div>
              <div className="lg:col-span-6 order-1 lg:order-2">
-                {lifestylePost.imageUrl && (
-                   <div className="aspect-[4/3] w-full overflow-hidden border-2 border-on-surface">
+                <div className="aspect-[4/3] w-full overflow-hidden border-2 border-on-surface">
+                   {lifestylePost.imageUrl ? (
                      <EditorialImage src={lifestylePost.imageUrl} alt="" aspect="w-full h-full" />
-                   </div>
-                )}
+                   ) : (
+                     <div className="w-full h-full flex items-center justify-center bg-surface-container">
+                       <span className="type-headline-sm text-on-surface-variant opacity-30">
+                         {lifestylePost.category?.charAt(0) || 'L'}
+                       </span>
+                     </div>
+                   )}
+                </div>
              </div>
           </div>
         </div>

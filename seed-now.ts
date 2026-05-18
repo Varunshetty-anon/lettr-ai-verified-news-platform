@@ -22,8 +22,8 @@ const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
   'Space Bot': { sources: ['https://www.reddit.com/r/space/hot.json?limit=15', 'https://www.reddit.com/r/spacex/hot.json?limit=15'], category: 'Space' },
   'Health Bot': { sources: ['https://www.reddit.com/r/Health/hot.json?limit=15', 'https://www.reddit.com/r/medicine/hot.json?limit=15'], category: 'Health' },
   'Energy Bot': { sources: ['https://www.reddit.com/r/energy/hot.json?limit=15', 'https://www.reddit.com/r/RenewableEnergy/hot.json?limit=15'], category: 'Energy' },
-  'Defense Bot': { sources: ['https://www.reddit.com/r/defense/hot.json?limit=15', 'https://www.reddit.com/r/Military/hot.json?limit=15'], category: 'Defense' },
-  'Startup Bot': { sources: ['https://www.reddit.com/r/startups/hot.json?limit=15', 'https://www.reddit.com/r/Entrepreneur/hot.json?limit=15'], category: 'Startups' },
+  'Defense Bot': { sources: ['https://www.reddit.com/r/defense/hot.json?limit=15', 'https://www.reddit.com/r/Military/hot.json?limit=15'], category: 'Geopolitics' },
+  'Startup Bot': { sources: ['https://www.reddit.com/r/startups/hot.json?limit=15', 'https://www.reddit.com/r/Entrepreneur/hot.json?limit=15'], category: 'Indian Startups' },
 };
 
 function hashUrl(url: string): string {

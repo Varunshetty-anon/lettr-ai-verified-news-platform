@@ -27,8 +27,8 @@ const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
   'Space Bot': { sources: ['https://www.reddit.com/r/space/hot.json?limit=15', 'https://www.reddit.com/r/spacex/hot.json?limit=15'], category: 'Space' },
   'Health Bot': { sources: ['https://www.reddit.com/r/Health/hot.json?limit=15', 'https://www.reddit.com/r/medicine/hot.json?limit=15'], category: 'Health' },
   'Energy Bot': { sources: ['https://www.reddit.com/r/energy/hot.json?limit=15', 'https://www.reddit.com/r/RenewableEnergy/hot.json?limit=15'], category: 'Energy' },
-  'Defense Bot': { sources: ['https://www.reddit.com/r/defense/hot.json?limit=15', 'https://www.reddit.com/r/Military/hot.json?limit=15'], category: 'Defense' },
-  'Startup Bot': { sources: ['https://www.reddit.com/r/startups/hot.json?limit=15', 'https://www.reddit.com/r/Entrepreneur/hot.json?limit=15'], category: 'Startups' },
+  'Defense Bot': { sources: ['https://www.reddit.com/r/defense/hot.json?limit=15', 'https://www.reddit.com/r/Military/hot.json?limit=15'], category: 'Geopolitics' },
+  'Startup Bot': { sources: ['https://www.reddit.com/r/startups/hot.json?limit=15', 'https://www.reddit.com/r/Entrepreneur/hot.json?limit=15'], category: 'Indian Startups' },
   'Indian Tech Bot': { sources: ['https://www.reddit.com/r/developersIndia/hot.json?limit=15', 'https://www.reddit.com/r/technology/hot.json?limit=15'], category: 'Indian Tech' },
   'Indian Politics Bot': { sources: ['https://www.reddit.com/r/unitedstatesofindia/hot.json?limit=15', 'https://www.reddit.com/r/india/hot.json?limit=15'], category: 'Indian Politics' },
   'Indian Business Bot': { sources: ['https://www.reddit.com/r/IndianStreetBets/hot.json?limit=15', 'https://www.reddit.com/r/IndiaInvestments/hot.json?limit=15'], category: 'Indian Business' },
@@ -137,11 +137,14 @@ async function runBotTask() {
     const config = BOT_CONFIG[randomBot.name] || BOT_CONFIG['WorldNews Bot'];
     const sourceUrl = config.sources[Math.floor(Math.random() * config.sources.length)];
 
-    let rawTitle = '';
-    let rawText = '';
-    let originalLink = '';
-    let originTag = '';
-    let media = { image: undefined, video: undefined } as any;
+    interface CandidateArticle {
+      title: string;
+      text: string;
+      link: string;
+      originTag: string;
+      media: any;
+    }
+    const candidates: CandidateArticle[] = [];
 
     try {
       const response = await fetch(sourceUrl, { headers: { 'User-Agent': 'LettrBot/2.0' } });
@@ -151,25 +154,20 @@ async function runBotTask() {
       if (!posts || posts.length === 0) throw new Error("No Reddit data");
 
       const shuffled = posts.sort(() => Math.random() - 0.5);
-      let targetContent = null;
-
       for (const post of shuffled) {
         const urlHash = hashUrl(post.data.url);
         const existing = await Post.findOne({ sourceHash: urlHash });
         if (!existing) {
-          targetContent = post.data;
-          break;
+          candidates.push({
+            title: post.data.title,
+            text: post.data.selftext || `Link posted: ${post.data.url}`,
+            link: post.data.url,
+            originTag: `Source: Reddit (r/${post.data.subreddit})`,
+            media: extractMediaFromReddit(post.data)
+          });
+          if (candidates.length >= 6) break;
         }
       }
-
-      if (!targetContent) throw new Error("All Reddit posts already imported");
-
-      rawTitle = targetContent.title;
-      rawText = targetContent.selftext || `Link posted: ${targetContent.url}`;
-      originalLink = targetContent.url;
-      originTag = `Source: Reddit (r/${targetContent.subreddit})`;
-      media = extractMediaFromReddit(targetContent);
-
     } catch (redditError: any) {
       console.log(`[Worker] Reddit fetch failed or no posts available, falling back to RSS:`, redditError.message);
       const rssList = RSS_FALLBACKS[randomBot.name] || RSS_FALLBACKS['WorldNews Bot'];
@@ -181,121 +179,137 @@ async function runBotTask() {
       const items = rssText.split('<item>').slice(1);
       if (items.length === 0) throw new Error("No items in RSS feed");
 
-      let targetItem = null;
-      for (const item of items) {
+      const shuffledItems = items.sort(() => Math.random() - 0.5);
+      for (const item of shuffledItems) {
         const linkMatch = item.match(/<link>([\s\S]*?)<\/link>/);
         const link = linkMatch ? linkMatch[1].trim() : '';
         if (link) {
           const urlHash = hashUrl(link);
           const existing = await Post.findOne({ sourceHash: urlHash });
           if (!existing) {
-            targetItem = item;
-            break;
+            const titleMatch = item.match(/<title>([\s\S]*?)<\/title>/);
+            const descMatch = item.match(/<description>([\s\S]*?)<\/description>/);
+            const rawTitle = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : 'Breaking News';
+            const rawText = descMatch ? descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '').trim() : '';
+            const originalLink = link.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim();
+            const originTag = `Source: RSS Feed (${new URL(rssUrl).hostname})`;
+            
+            const media: any = {};
+            const imgMatch = item.match(/<media:content[^>]*url="([^"]+)"/) || item.match(/<enclosure[^>]*url="([^"]+)"/) || item.match(/<img[^>]*src="([^"]+)"/);
+            if (imgMatch) {
+              media.image = imgMatch[1];
+            }
+
+            candidates.push({
+              title: rawTitle,
+              text: rawText,
+              link: originalLink,
+              originTag,
+              media
+            });
+            if (candidates.length >= 6) break;
           }
         }
       }
-
-      if (!targetItem) {
-        console.log(`[Worker] All RSS items already imported. Skipping task.`);
-        return;
-      }
-
-      const titleMatch = targetItem.match(/<title>([\s\S]*?)<\/title>/);
-      const descMatch = targetItem.match(/<description>([\s\S]*?)<\/description>/);
-      const linkMatch = targetItem.match(/<link>([\s\S]*?)<\/link>/);
-
-      rawTitle = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : 'Breaking News';
-      rawText = descMatch ? descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '').trim() : '';
-      originalLink = linkMatch ? linkMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : '';
-      originTag = `Source: RSS Feed (${new URL(rssUrl).hostname})`;
-      
-      const imgMatch = targetItem.match(/<media:content[^>]*url="([^"]+)"/) || targetItem.match(/<enclosure[^>]*url="([^"]+)"/) || targetItem.match(/<img[^>]*src="([^"]+)"/);
-      if (imgMatch) {
-        media.image = imgMatch[1];
-      }
     }
 
-    const urlHash = hashUrl(originalLink);
-
-    let imageUrl = undefined;
-    let videoUrl = undefined;
-
-    if (media.image) {
-      console.log(`[Worker] Uploading image to Supabase: ${media.image}`);
-      const filename = `${crypto.randomBytes(4).toString('hex')}.jpg`;
-      const uploadedUrl = await uploadMediaFromUrl(media.image, filename);
-      if (uploadedUrl) {
-        imageUrl = uploadedUrl;
-        console.log(`[Worker] Successfully uploaded to: ${uploadedUrl}`);
-      } else {
-        console.warn(`[Worker] Supabase upload failed, falling back to original URL.`);
-        imageUrl = media.image;
-      }
-    } else if (media.video) {
-      console.log(`[Worker] Using video URL: ${media.video}`);
-      videoUrl = media.video;
+    if (candidates.length === 0) {
+      console.log(`[Worker] No new candidates found. Skipping task.`);
+      return;
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) throw new Error("Missing GROQ API Key");
+    let postsCreated = 0;
+    const MAX_POSTS_PER_RUN = 3;
 
-    const rewriteContent = {
-      cleanHeadline: rawTitle,
-      cleanSummary: "Live news feed summary.",
-      fullBody: "",
-      sourceNote: "",
-      dynamicCategory: config.category
-    };
+    for (const candidate of candidates) {
+      if (postsCreated >= MAX_POSTS_PER_RUN) break;
 
-    console.log(`[Worker] Generating article with Groq Llama-3.3 for: "${rawTitle}"`);
-    try {
-      const callGroq = async (promptMsg: string) => {
-        return fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-              {
-                role: "system",
-                content: `You are a senior news editor at a premium, fact-based news platform. Your writing is clear, authoritative, and detailed. You never use clickbait or sensational language. You write in a factual, analytical tone similar to Reuters or The Economist.`
-              },
-              { role: "user", content: promptMsg }
-            ],
-            temperature: 0.4,
-            max_tokens: 1500
-          })
-        });
-      };
+      try {
+        const rawTitle = candidate.title;
+        const rawText = candidate.text;
+        const originalLink = candidate.link;
+        const originTag = candidate.originTag;
+        const media = candidate.media;
+        const urlHash = hashUrl(originalLink);
 
-      const parseGroqResponse = async (response: Response) => {
-        if (!response.ok) return;
-        const rewriteData = await response.json();
-        const outputText = rewriteData.choices[0]?.message?.content || "";
-        
-        const headMatch = outputText.match(/Headline:\s*(.*)/i);
-        const sumMatch = outputText.match(/Summary:\s*([\s\S]*?)(?=\nArticle:)/i);
-        const bodyMatch = outputText.match(/Article:\s*([\s\S]*?)(?=\nSource Note:)/i);
-        const sourceNoteMatch = outputText.match(/Source Note:\s*([\s\S]*?)(?=\nCategory:)/i) || outputText.match(/Source Note:\s*(.*)/i);
-        const categoryMatch = outputText.match(/Category:\s*(.*)/i);
-        
-        if (headMatch) rewriteContent.cleanHeadline = headMatch[1].trim();
-        if (sumMatch) rewriteContent.cleanSummary = sumMatch[1].replace(/https?:\/\/[^\s]+/g, '').trim();
-        if (bodyMatch) rewriteContent.fullBody = bodyMatch[1].replace(/https?:\/\/[^\s]+/g, '').trim();
-        if (sourceNoteMatch) rewriteContent.sourceNote = sourceNoteMatch[1].trim();
-        if (categoryMatch) rewriteContent.dynamicCategory = categoryMatch[1].trim();
-        
-        if (!rewriteContent.fullBody && outputText.length > 200) {
-          const afterSummary = outputText.split(/Summary:/i)[1] || '';
-          const parts = afterSummary.split('\n\n');
-          if (parts.length > 1) {
-            rewriteContent.fullBody = parts.slice(1).join('\n\n').trim();
+        let imageUrl = undefined;
+        let videoUrl = undefined;
+
+        if (media.image) {
+          console.log(`[Worker] Uploading image to Supabase: ${media.image}`);
+          const filename = `${crypto.randomBytes(4).toString('hex')}.jpg`;
+          const uploadedUrl = await uploadMediaFromUrl(media.image, filename);
+          if (uploadedUrl) {
+            imageUrl = uploadedUrl;
+            console.log(`[Worker] Successfully uploaded to: ${uploadedUrl}`);
+          } else {
+            console.warn(`[Worker] Supabase upload failed, falling back to original URL.`);
+            imageUrl = media.image;
           }
+        } else if (media.video) {
+          console.log(`[Worker] Using video URL: ${media.video}`);
+          videoUrl = media.video;
         }
-      };
 
-      const mainPrompt = `Rewrite the following raw content into a professional news article. Do NOT copy raw text verbatim. Write original, well-structured content. If the content implies a video or image, verify the facts in context of the described media.
+        const apiKey = process.env.GROQ_API_KEY;
+        if (!apiKey) throw new Error("Missing GROQ API Key");
 
+        const rewriteContent = {
+          cleanHeadline: rawTitle,
+          cleanSummary: "Live news feed summary.",
+          fullBody: "",
+          sourceNote: "",
+          dynamicCategory: config.category
+        };
+
+        console.log(`[Worker] Generating article with Groq Llama-3.3 for: "${rawTitle}"`);
+        const callGroq = async (promptMsg: string) => {
+          return fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "llama-3.3-70b-versatile",
+              messages: [
+                {
+                  role: "system",
+                  content: `You are a senior news editor at a premium, fact-based news platform. Your writing is clear, authoritative, and detailed. You never use clickbait or sensational language. You write in a factual, analytical tone similar to Reuters or The Economist.`
+                },
+                { role: "user", content: promptMsg }
+              ],
+              temperature: 0.4,
+              max_tokens: 1500
+            })
+          });
+        };
+
+        const parseGroqResponse = async (response: Response) => {
+          if (!response.ok) return;
+          const rewriteData = await response.json();
+          const outputText = rewriteData.choices[0]?.message?.content || "";
+          
+          const headMatch = outputText.match(/Headline:\s*(.*)/i);
+          const sumMatch = outputText.match(/Summary:\s*([\s\S]*?)(?=\nArticle:)/i);
+          const bodyMatch = outputText.match(/Article:\s*([\s\S]*?)(?=\nSource Note:)/i);
+          const sourceNoteMatch = outputText.match(/Source Note:\s*([\s\S]*?)(?=\nCategory:)/i) || outputText.match(/Source Note:\s*(.*)/i);
+          const categoryMatch = outputText.match(/Category:\s*(.*)/i);
+          
+          if (headMatch) rewriteContent.cleanHeadline = headMatch[1].trim();
+          if (sumMatch) rewriteContent.cleanSummary = sumMatch[1].replace(/https?:\/\/[^\s]+/g, '').trim();
+          if (bodyMatch) rewriteContent.fullBody = bodyMatch[1].replace(/https?:\/\/[^\s]+/g, '').trim();
+          if (sourceNoteMatch) rewriteContent.sourceNote = sourceNoteMatch[1].trim();
+          if (categoryMatch) rewriteContent.dynamicCategory = categoryMatch[1].trim();
+          
+          if (!rewriteContent.fullBody && outputText.length > 200) {
+            const afterSummary = outputText.split(/Summary:/i)[1] || '';
+            const parts = afterSummary.split('\n\n');
+            if (parts.length > 1) {
+              rewriteContent.fullBody = parts.slice(1).join('\n\n').trim();
+            }
+          }
+        };
+
+        const mainPrompt = `Rewrite the following raw content into a professional news article. Do NOT copy raw text verbatim. Write original, well-structured content. If the content implies a video or image, verify the facts in context of the described media.
+  
 Raw Title: ${rawTitle}
 Raw Text: ${rawText.substring(0, 1200)}
 Source URL: ${originalLink}
@@ -335,53 +349,61 @@ Source Note: <A one-line credibility assessment of the source, e.g. "Sourced fro
 
 Category: <Generate a highly specific, trending 1-3 word category based on the article content (e.g. "Indian Economy", "Tech India", "Generative AI", "Space Tourism"). Do NOT just use the bot specialty.>`;
 
-      const rewriteResponse = await callGroq(mainPrompt);
-      await parseGroqResponse(rewriteResponse);
+        const rewriteResponse = await callGroq(mainPrompt);
+        await parseGroqResponse(rewriteResponse);
 
-      if (rewriteContent.fullBody.length < 400) {
-        const retryPrompt = `The previous summary was too short. Write a detailed news article of at least 400 characters covering: ${rewriteContent.cleanHeadline}. Include context, background, and implications. Do not include any URLs or links in the body text.`;
-        const retryResponse = await callGroq(retryPrompt);
-        await parseGroqResponse(retryResponse);
+        if (rewriteContent.fullBody.length < 400) {
+          const retryPrompt = `The previous summary was too short. Write a detailed news article of at least 400 characters covering: ${rewriteContent.cleanHeadline}. Include context, background, and implications. Do not include any URLs or links in the body text.`;
+          const retryResponse = await callGroq(retryPrompt);
+          await parseGroqResponse(retryResponse);
+        }
+
+        if (rewriteContent.cleanSummary.length < 50) {
+          rewriteContent.cleanSummary = `${rawTitle}. ${rawText.substring(0, 300)}`;
+        }
+
+        console.log(`[Worker] Verifying facts for: "${rewriteContent.cleanHeadline}"`);
+        const verification = await verifyFact(rewriteContent.cleanHeadline, rewriteContent.cleanSummary, originalLink);
+
+        if (verification.factScore < 45) {
+          console.log(`[Worker] Rejected by Fact Check (Score: ${verification.factScore}). Skipping.`);
+          continue;
+        }
+
+        const normalizedCategory = normalizeCategory(rewriteContent.dynamicCategory || config.category);
+
+        const newPost = await Post.create({
+          authorId: randomBot._id,
+          headline: rewriteContent.cleanHeadline,
+          description: rewriteContent.cleanSummary,
+          body: rewriteContent.fullBody || rewriteContent.cleanSummary,
+          sourceLink: originalLink,
+          sourceHash: urlHash,
+          originSource: rewriteContent.sourceNote || originTag,
+          category: normalizedCategory,
+          imageUrl,
+          videoUrl,
+          factScore: verification.factScore,
+          factSummary: verification.factSummary,
+          confidence: verification.confidence,
+          sourcesChecked: verification.sourcesChecked,
+          issues: verification.issues || [],
+          isPublished: true,
+          engagement: Math.floor(Math.random() * 80) + 5
+        });
+
+        await User.findByIdAndUpdate(randomBot._id, { $inc: { totalPosts: 1 } });
+        
+        postsCreated++;
+        const totalInCategory = await Post.countDocuments({ category: normalizedCategory });
+        console.log(`[Bot] Posted to category: ${normalizedCategory} | Total posts in category: ${totalInCategory}`);
+        console.log(`[Worker] SUCCESS: Created post "${newPost.headline}" via ${randomBot.name}`);
+
+      } catch (err: any) {
+        console.error(`[Worker] Failed to process candidate:`, err.message);
+        continue;
       }
-    } catch (e) {
-      console.error("[Worker] Groq Rewrite Failed", e);
     }
-
-    if (rewriteContent.cleanSummary.length < 50) {
-      rewriteContent.cleanSummary = `${rawTitle}. ${rawText.substring(0, 300)}`;
-    }
-
-    console.log(`[Worker] Verifying facts for: "${rewriteContent.cleanHeadline}"`);
-    const verification = await verifyFact(rewriteContent.cleanHeadline, rewriteContent.cleanSummary, originalLink);
-
-    if (verification.factScore < 45) {
-      console.log(`[Worker] Rejected by Fact Check (Score: ${verification.factScore}). Skipping.`);
-      return;
-    }
-
-    const newPost = await Post.create({
-      authorId: randomBot._id,
-      headline: rewriteContent.cleanHeadline,
-      description: rewriteContent.cleanSummary,
-      body: rewriteContent.fullBody || rewriteContent.cleanSummary,
-      sourceLink: originalLink,
-      sourceHash: urlHash,
-      originSource: rewriteContent.sourceNote || originTag,
-      category: normalizeCategory(rewriteContent.dynamicCategory || config.category),
-      imageUrl,
-      videoUrl,
-      factScore: verification.factScore,
-      factSummary: verification.factSummary,
-      confidence: verification.confidence,
-      sourcesChecked: verification.sourcesChecked,
-      issues: verification.issues || [],
-      isPublished: true,
-      engagement: Math.floor(Math.random() * 80) + 5
-    });
-
-    await User.findByIdAndUpdate(randomBot._id, { $inc: { totalPosts: 1 } });
-    
-    console.log(`[Worker] SUCCESS: Created post "${newPost.headline}" via ${randomBot.name}`);
 
   } catch (error) {
     console.error("[Worker] Error in task:", error);

@@ -16,9 +16,9 @@ import { User } from './models/User';
 import { uploadMediaFromUrl } from './lib/supabase';
 
 const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
-  'TechNews Bot': { sources: ['https://www.reddit.com/r/technology/hot.json?limit=15', 'https://www.reddit.com/r/developersIndia/hot.json?limit=15'], category: 'Tech India' },
-  'GlobalPolitics Bot': { sources: ['https://www.reddit.com/r/geopolitics/hot.json?limit=15', 'https://www.reddit.com/r/IndianPolitics/hot.json?limit=15'], category: 'Indian Politics' },
-  'Finance Bot': { sources: ['https://www.reddit.com/r/economics/hot.json?limit=15', 'https://www.reddit.com/r/IndianStreetBets/hot.json?limit=15'], category: 'Indian Economy' },
+  'TechNews Bot': { sources: ['https://www.reddit.com/r/technology/hot.json?limit=15', 'https://www.reddit.com/r/developersIndia/hot.json?limit=15'], category: 'AI & Tech' },
+  'GlobalPolitics Bot': { sources: ['https://www.reddit.com/r/geopolitics/hot.json?limit=15', 'https://www.reddit.com/r/IndianPolitics/hot.json?limit=15'], category: 'Geopolitics' },
+  'Finance Bot': { sources: ['https://www.reddit.com/r/economics/hot.json?limit=15', 'https://www.reddit.com/r/IndianStreetBets/hot.json?limit=15'], category: 'Finance' },
   'AI Insider Bot': { sources: ['https://www.reddit.com/r/artificial/hot.json?limit=15', 'https://www.reddit.com/r/MachineLearning/hot.json?limit=15'], category: 'AI & Tech' },
   'WorldNews Bot': { sources: ['https://www.reddit.com/r/worldnews/hot.json?limit=15', 'https://www.reddit.com/r/IndiaNews/hot.json?limit=15'], category: 'Geopolitics' },
   'Science Bot': { sources: ['https://www.reddit.com/r/science/hot.json?limit=15', 'https://www.reddit.com/r/EverythingScience/hot.json?limit=15'], category: 'Science' },
@@ -26,8 +26,8 @@ const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
   'Space Bot': { sources: ['https://www.reddit.com/r/space/hot.json?limit=15', 'https://www.reddit.com/r/spacex/hot.json?limit=15'], category: 'Space' },
   'Health Bot': { sources: ['https://www.reddit.com/r/Health/hot.json?limit=15', 'https://www.reddit.com/r/medicine/hot.json?limit=15'], category: 'Health' },
   'Energy Bot': { sources: ['https://www.reddit.com/r/energy/hot.json?limit=15', 'https://www.reddit.com/r/RenewableEnergy/hot.json?limit=15'], category: 'Energy' },
-  'Defense Bot': { sources: ['https://www.reddit.com/r/defense/hot.json?limit=15', 'https://www.reddit.com/r/Military/hot.json?limit=15'], category: 'Defense' },
-  'Startup Bot': { sources: ['https://www.reddit.com/r/startups/hot.json?limit=15', 'https://www.reddit.com/r/StartUpIndia/hot.json?limit=15'], category: 'Startups India' },
+  'Defense Bot': { sources: ['https://www.reddit.com/r/defense/hot.json?limit=15', 'https://www.reddit.com/r/Military/hot.json?limit=15'], category: 'Geopolitics' },
+  'Startup Bot': { sources: ['https://www.reddit.com/r/startups/hot.json?limit=15', 'https://www.reddit.com/r/StartUpIndia/hot.json?limit=15'], category: 'Indian Startups' },
 };
 
 function sanitizeEditorialContent(text: string): string {
