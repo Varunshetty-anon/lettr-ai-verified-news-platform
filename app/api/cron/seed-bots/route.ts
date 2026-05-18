@@ -92,26 +92,47 @@ function normalizeCategory(rawCategory: string): string {
   if (!rawCategory) return 'World';
   const lower = rawCategory.toLowerCase().trim();
 
+  // Direct match first
   const directMatch = CANONICAL_CATEGORIES.find(c => c.toLowerCase() === lower);
   if (directMatch) return directMatch;
 
+  // ─── Catch common LLM drift patterns ───
+  // "Tech India" / "India Tech" → "Indian Tech"
+  if ((lower.includes('tech') && lower.includes('india')) || lower === 'tech india' || lower === 'india tech') return 'Indian Tech';
+  // "Startups India" / "India Startups" → "Indian Startups"
+  if ((lower.includes('startup') && lower.includes('india')) || lower === 'startups india' || lower === 'india startups') return 'Indian Startups';
+  // "Game AI" / "Gaming" → "AI & Tech"
+  if (lower.includes('game') || lower.includes('gaming')) return 'AI & Tech';
+  // "Defense" / "Defence" / "Military" → "Geopolitics"
+  if (lower.includes('defense') || lower.includes('defence') || lower.includes('military')) return 'Geopolitics';
+  // "Economy" / "Business" without India → "Finance"
+  if (lower === 'economy' || lower === 'business' || lower === 'markets') return 'Finance';
+  // "Indian Economy" / "India Economy"
+  if (lower.includes('india') && (lower.includes('economy') || lower.includes('econom'))) return 'Finance';
+  // "Entertainment" without India → "Culture"
+  if (lower === 'entertainment' || lower === 'media' || lower === 'movies') return 'Culture';
+  // "Politics" without India → "World"
+  if (lower === 'politics' || lower === 'us politics' || lower === 'american politics') return 'World';
+
+  // ─── Standard fuzzy matching ───
   if (lower.includes('indian') && lower.includes('tech')) return 'Indian Tech';
   if (lower.includes('indian') && lower.includes('start')) return 'Indian Startups';
   if (lower.includes('indian') && lower.includes('polit')) return 'Indian Politics';
   if ((lower.includes('indian') && lower.includes('biz')) || (lower.includes('indian') && lower.includes('business'))) return 'Indian Business';
   if (lower.includes('indian') && lower.includes('sport')) return 'Indian Sports';
   if (lower.includes('indian') && lower.includes('entertain')) return 'Indian Entertainment';
-  if (lower.includes('india')) return 'Indian Tech';
-  if (lower.includes('ai') || lower.includes('tech') || lower.includes('artificial')) return 'AI & Tech';
+  if (lower.includes('india') && !lower.includes('tech') && !lower.includes('start') && !lower.includes('polit')) return 'Indian Tech';
+  if (lower.includes('ai') || lower.includes('tech') || lower.includes('artificial') || lower.includes('software') || lower.includes('robot')) return 'AI & Tech';
   if (lower.includes('space') || lower.includes('nasa') || lower.includes('rocket') || lower.includes('astro')) return 'Space';
   if (lower.includes('health') || lower.includes('medical') || lower.includes('medicine') || lower.includes('disease')) return 'Health';
   if (lower.includes('finance') || lower.includes('market') || lower.includes('stock') || lower.includes('economy')) return 'Finance';
   if (lower.includes('crypto') || lower.includes('bitcoin') || lower.includes('blockchain')) return 'Crypto';
   if (lower.includes('climate') || lower.includes('environment') || lower.includes('energy') || lower.includes('solar')) return 'Climate';
   if (lower.includes('science') || lower.includes('research') || lower.includes('study')) return 'Science';
-  if (lower.includes('geopolit') || lower.includes('war') || lower.includes('conflict') || lower.includes('military')) return 'Geopolitics';
+  if (lower.includes('geopolit') || lower.includes('war') || lower.includes('conflict')) return 'Geopolitics';
   if (lower.includes('culture') || lower.includes('art') || lower.includes('music') || lower.includes('film')) return 'Culture';
   if (lower.includes('world') || lower.includes('global') || lower.includes('international')) return 'World';
+  if (lower.includes('sport') || lower.includes('cricket') || lower.includes('football')) return 'Indian Sports';
 
   return 'World';
 }

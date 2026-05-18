@@ -9,6 +9,8 @@ export interface VerificationResult {
 // ─── Model Routing ─────────────────────────────────────────────
 // Premium model: ONLY for final fact verification (Layer 2+3)
 const PREMIUM_MODEL = "llama-3.3-70b-versatile";
+// Fallback model: when premium model hits rate limits
+const FALLBACK_MODEL = "gemma2-9b-it";
 // Cheap model: for content understanding (Layer 1)
 const CHEAP_MODEL = "llama-3.1-8b-instant";
 
@@ -230,28 +232,38 @@ Return JSON:
   "issues": ["<specific issue if any>"]
 }`;
 
-  const result = await callGroq(PREMIUM_MODEL, [
-    { role: "system", content: "You are an elite journalistic fact-checker for LETTR, an AI-verified news platform. Your analysis must feel human, contextual, and cite specific details from the article. Never use boilerplate language." },
-    { role: "user", content: prompt }
-  ], 0.15);
+  // Model cascade: try premium → fallback → local
+  const systemMsg = { role: "system", content: "You are an elite journalistic fact-checker for LETTR, an AI-verified news platform. Your analysis must feel human, contextual, and cite specific details from the article. Never use boilerplate language." };
+  const userMsg = { role: "user", content: prompt };
 
-  if (!result) {
-    // Fallback: build local result with source credibility awareness
-    return buildIntelligentFallback(headline, body, sourceCredibility, sourceCount, understanding);
+  const modelsToTry = [PREMIUM_MODEL, FALLBACK_MODEL];
+
+  for (const model of modelsToTry) {
+    console.log(`[Verification] Trying model: ${model}`);
+    const result = await callGroq(model, [systemMsg, userMsg], 0.15);
+
+    if (result) {
+      try {
+        const parsed = JSON.parse(result);
+        console.log(`[Verification] ${model} succeeded.`);
+        return {
+          factScore: Math.max(0, Math.min(100, parsed.factScore ?? 50)),
+          factSummary: parsed.summary || parsed.factSummary || "Verification analysis unavailable.",
+          confidence: parsed.confidence || "Medium",
+          sourcesChecked: parsed.sourcesChecked ?? sourceCount,
+          issues: parsed.issues || []
+        };
+      } catch {
+        console.warn(`[Verification] ${model} returned unparseable JSON, trying next model.`);
+        continue;
+      }
+    }
+    console.warn(`[Verification] ${model} failed or rate-limited. Trying next.`);
   }
 
-  try {
-    const parsed = JSON.parse(result);
-    return {
-      factScore: Math.max(0, Math.min(100, parsed.factScore ?? 50)),
-      factSummary: parsed.summary || parsed.factSummary || "Verification analysis unavailable.",
-      confidence: parsed.confidence || "Medium",
-      sourcesChecked: parsed.sourcesChecked ?? sourceCount,
-      issues: parsed.issues || []
-    };
-  } catch {
-    return buildIntelligentFallback(headline, body, sourceCredibility, sourceCount, understanding);
-  }
+  // All models failed — use intelligent local fallback
+  console.warn(`[Verification] All models failed. Using intelligent local fallback.`);
+  return buildIntelligentFallback(headline, body, sourceCredibility, sourceCount, understanding);
 }
 
 // ─── Intelligent Fallback (when API unavailable) ────────────────
