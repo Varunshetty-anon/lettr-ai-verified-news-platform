@@ -88,7 +88,7 @@ export function TopNavigation() {
       <header className="sticky top-0 z-40 w-full bg-surface border-b-2 border-on-surface h-[80px] flex items-center justify-between px-[16px] md:px-[64px]">
         {/* Mobile: Hamburger Left */}
         <div className="flex md:hidden w-[60px] relative z-[60]">
-          <button onClick={() => setMenuOpen(true)} className="text-on-surface hover:text-primary transition-colors touch-manipulation p-2 -ml-2">
+          <button onClick={() => setMenuOpen(true)} className="text-on-surface hover:text-primary transition-colors touch-manipulation p-2 -ml-2" aria-label="Open menu">
             <Menu size={24} strokeWidth={2} />
           </button>
         </div>
@@ -115,7 +115,7 @@ export function TopNavigation() {
             <ThemeToggle />
           </div>
           
-          <button onClick={() => setSearchOpen(true)} className="text-on-surface hover:text-primary transition-colors touch-manipulation p-2 -mr-2">
+          <button onClick={() => setSearchOpen(true)} className="text-on-surface hover:text-primary transition-colors touch-manipulation p-2 -mr-2" aria-label="Open search">
             <Search size={24} strokeWidth={2} />
           </button>
           
@@ -124,6 +124,7 @@ export function TopNavigation() {
               <button 
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="w-[40px] h-[40px] rounded-full border-2 border-on-surface overflow-hidden bg-surface-container-highest flex items-center justify-center font-bold text-on-surface"
+                aria-label="Toggle user menu"
               >
                 {session.user?.image ? (
                   <img src={session.user.image} alt={session.user.name || 'User'} className="w-full h-full object-cover" />
@@ -155,7 +156,7 @@ export function TopNavigation() {
         <div className="fixed inset-0 z-[9999] flex">
           <div className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)}></div>
           <div className="relative w-[280px] h-full bg-surface border-r-2 border-on-surface flex flex-col pt-6 pointer-events-auto">
-            <button onClick={() => setMenuOpen(false)} className="absolute top-6 right-6 text-on-surface touch-manipulation p-2">
+            <button onClick={() => setMenuOpen(false)} className="absolute top-6 right-6 text-on-surface touch-manipulation p-2" aria-label="Close menu">
               <X size={24} strokeWidth={2} />
             </button>
             <div className="px-6 mb-8">
@@ -204,7 +205,7 @@ export function TopNavigation() {
                 className="w-full bg-transparent text-[32px] md:text-[48px] font-display font-bold text-white placeholder:text-gray-600 focus:outline-none border-b-2 border-white/20 pb-4"
               />
             </div>
-            <button onClick={() => setSearchOpen(false)} className="text-white hover:text-primary transition-colors bg-white/10 p-4 rounded-full">
+            <button onClick={() => setSearchOpen(false)} className="text-white hover:text-primary transition-colors bg-white/10 p-4 rounded-full" aria-label="Close search">
               <X size={32} strokeWidth={2} />
             </button>
           </div>
