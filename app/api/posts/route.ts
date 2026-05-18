@@ -187,8 +187,16 @@ export async function GET(request: Request) {
           const aPref = userPrefs.includes(aCategory) ? 2000 : 0;
           const bPref = userPrefs.includes(bCategory) ? 2000 : 0;
 
-          const aAdj = userAdjacents.includes(aCategory) ? 300 : 0;
-          const bAdj = userAdjacents.includes(bCategory) ? 300 : 0;
+          const aAdj = userPrefs.includes(aCategory)
+            ? 0
+            : userAdjacents.includes(aCategory)
+              ? 300
+              : -1000;
+          const bAdj = userPrefs.includes(bCategory)
+            ? 0
+            : userAdjacents.includes(bCategory)
+              ? 300
+              : -1000;
 
           const aLikeCat = likedCategorySet.has(aCategory) ? 20 : 0;
           const bLikeCat = likedCategorySet.has(bCategory) ? 20 : 0;
