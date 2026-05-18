@@ -68,41 +68,56 @@ function normalizeCategory(rawCategory: string, headline: string): string {
 }
 
 function isIndianContent(headline: string): boolean {
-  const INDIA_KEYWORDS = [
+  // Use word boundaries to avoid false positives (e.g., 'Israeli' matching 'india')
+  const INDIA_EXACT_WORDS = [
     'india', 'indian', 'delhi', 'mumbai', 'bangalore', 'bengaluru', 'chennai',
     'kolkata', 'hyderabad', 'pune', 'jaipur', 'ahmedabad', 'lucknow',
-    'modi', 'bjp', 'congress', 'aap', 'nda', 'upa',
-    'supreme court of india', 'isro', 'upi', 'rupee', 'nifty', 'sensex',
+    'modi', 'bjp', 'aap', 'nda', 'upa',
+    'isro', 'upi', 'rupee', 'nifty', 'sensex',
     'karnataka', 'uttar pradesh', 'maharashtra', 'tamil nadu', 'kerala',
     'rajasthan', 'gujarat', 'west bengal', 'bihar', 'madhya pradesh',
-    'bhojshala', 'dubare', 'yogi', 'adityanath', 'cm of',
+    'bhojshala', 'dubare', 'yogi adityanath',
   ];
-  return INDIA_KEYWORDS.some(kw => headline.includes(kw));
+  // Phrase-level matches (must appear exactly)
+  const INDIA_PHRASES = [
+    'supreme court of india', 'cm of india', 'indian government',
+    'lok sabha', 'rajya sabha', 'india\'s pm', 'india\'s supreme court',
+  ];
+
+  for (const phrase of INDIA_PHRASES) {
+    if (headline.includes(phrase)) return true;
+  }
+
+  for (const word of INDIA_EXACT_WORDS) {
+    // Word boundary: must be preceded/followed by non-letter or start/end of string
+    const regex = new RegExp(`\\b${word}\\b`, 'i');
+    if (regex.test(headline)) return true;
+  }
+  return false;
 }
 
 function detectIndianCategory(headline: string): string {
-  if (headline.includes('election') || headline.includes('parliament') || 
-      headline.includes('supreme court') || headline.includes('modi') || 
-      headline.includes('bjp') || headline.includes('congress') ||
-      headline.includes('cm ') || headline.includes('chief minister') ||
-      headline.includes('governor') || headline.includes('law') ||
-      headline.includes('policy') || headline.includes('yogi')) {
+  if (/\b(election|parliament|supreme court|bjp|lok sabha|rajya sabha|chief minister|governor|yogi)\b/i.test(headline)) {
     return 'Indian Politics';
   }
-  if (headline.includes('startup') || headline.includes('founder') || headline.includes('ipo')) {
+  if (/\b(startup|founder|ipo|funding|unicorn)\b/i.test(headline) && /\b(india|indian)\b/i.test(headline)) {
     return 'Indian Startups';
   }
-  if (headline.includes('isro') || headline.includes('tech') || headline.includes('ai')) {
+  if (/\b(isro|tech|ai|software|app)\b/i.test(headline) && /\b(india|indian)\b/i.test(headline)) {
     return 'Indian Tech';
   }
-  if (headline.includes('cricket') || headline.includes('sports') || headline.includes('ipl')) {
+  if (/\b(cricket|ipl|sports|bcci)\b/i.test(headline)) {
     return 'Indian Sports';
   }
-  if (headline.includes('bollywood') || headline.includes('puja') || headline.includes('festival') ||
-      headline.includes('temple') || headline.includes('prayer')) {
+  if (/\b(bollywood|puja|festival|temple|prayer|diwali|holi)\b/i.test(headline)) {
     return 'Culture';
   }
-  return 'Indian Politics'; // Default for Indian content
+  // Only default to Indian Politics if headline strongly implies Indian governance
+  if (/\b(modi|bjp|nda|aap)\b/i.test(headline)) {
+    return 'Indian Politics';
+  }
+  // If we got here, the content is Indian but category is uncertain — keep it in Geopolitics
+  return 'Geopolitics';
 }
 
 export async function GET(request: Request) {
