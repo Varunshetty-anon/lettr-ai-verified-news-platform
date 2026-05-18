@@ -8,6 +8,7 @@ import { verifyFact, isVerificationCoolingDown } from '@/lib/ai-verification';
 import { hashUrl } from '@/lib/url-hash';
 import { processRawContent, isContentProcessorCoolingDown } from '@/lib/content-processor';
 import { uploadMediaFromUrl } from '@/lib/supabase';
+import { fetchOGImage } from '@/lib/og-image';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -361,6 +362,18 @@ export async function GET(request: Request) {
         }
         if (media.video) {
           videoUrl = media.video;
+        }
+
+        // ── OG Image fallback: if no media from source, try fetching from the link ──
+        if (!imageUrl && !videoUrl && originalLink) {
+          console.log(`[Cron] No inline media. Trying OG image from: ${originalLink.substring(0, 60)}...`);
+          const ogImage = await fetchOGImage(originalLink);
+          if (ogImage) {
+            const filename = `og-img-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.jpg`;
+            const uploaded = await uploadMediaFromUrl(ogImage, filename);
+            imageUrl = uploaded || ogImage;
+            console.log(`[Cron] OG image found and saved.`);
+          }
         }
 
         const apiKey = process.env.GROQ_API_KEY;

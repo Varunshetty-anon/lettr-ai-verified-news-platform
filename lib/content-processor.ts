@@ -136,11 +136,18 @@ INSTRUCTIONS (if content passes):
    - Paragraph 2: Why it matters (The impact, implications, or significance).
    - Paragraph 3: Context/Background (Historical context or broader industry trends).
    NEVER include "Article URL:", "Comments URL:", Reddit metrics, polls, or markdown links.
-3. CATEGORY: Assign from this strict list:
-   ['AI & Tech', 'World', 'Finance', 'Space', 'Health', 'Culture', 'Indian Politics', 'Indian Tech', 'Indian Startups', 'Indian Business', 'Indian Science', 'Indian Sports', 'Indian Entertainment', 'Geopolitics', 'Science', 'Crypto', 'Energy', 'Climate']
-   RULES:
-   - 'Indian Politics': ONLY if about India's government, parliament, elections, Indian domestic policy. NOT US/China/global politics.
-   - 'AI & Tech': Only AI, semiconductors, robotics, software, innovation.
+3. CATEGORY: You MUST assign EXACTLY one value from this list (copy-paste, do NOT invent your own):
+   'AI & Tech', 'World', 'Finance', 'Space', 'Health', 'Culture', 'Indian Politics', 'Indian Tech', 'Indian Startups', 'Indian Business', 'Indian Science', 'Indian Sports', 'Indian Entertainment', 'Geopolitics', 'Science', 'Crypto', 'Energy', 'Climate'
+   
+   STRICT CATEGORY RULES:
+   - NEVER output categories like 'Tech India', 'Game AI', 'Defense', 'Startups India', 'Economy', 'Business', 'Entertainment', 'Politics'. These are WRONG. Only use the exact names above.
+   - 'Indian Politics': Indian government, parliament, Supreme Court of India, Indian elections, Indian state politics (UP, Delhi, Karnataka, etc.), Indian laws, Indian PM/CM. NOT US/China/global politics.
+   - 'Indian Tech': Indian IT companies, Indian developers, Indian tech ecosystem, ISRO, Indian startups in tech.
+   - 'Indian Startups': Indian startup funding, Indian founders, Indian business ecosystem.
+   - 'Culture': Museums, art, films, music, festivals, religious events, Bollywood, entertainment.
+   - 'Geopolitics': ONLY international conflicts, wars, NATO, UN, US-China relations, cross-border tensions. NOT Indian domestic news.
+   - 'AI & Tech': AI, machine learning, robotics, semiconductors, software, gaming technology, VR/AR.
+   - If content mentions India, Indian cities, Indian states, Indian leaders → use an 'Indian *' category, NOT 'Geopolitics' or 'World'.
    - If low confidence, fallback to 'World'.
 4. NEWSWORTHINESS: Rate 0-100 how newsworthy this content is (above 40 = publishable).
 
@@ -148,7 +155,7 @@ Return JSON:
 {
   "headline": "<clean editorial headline>",
   "body": "<the 3-paragraph editorial body>",
-  "category": "<strictly selected category>",
+  "category": "<EXACTLY one value from the list above>",
   "newsworthiness": <0-100>
 }`;
 
