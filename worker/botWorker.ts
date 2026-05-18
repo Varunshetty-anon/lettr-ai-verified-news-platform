@@ -29,6 +29,12 @@ const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
   'Energy Bot': { sources: ['https://www.reddit.com/r/energy/hot.json?limit=15', 'https://www.reddit.com/r/RenewableEnergy/hot.json?limit=15'], category: 'Energy' },
   'Defense Bot': { sources: ['https://www.reddit.com/r/defense/hot.json?limit=15', 'https://www.reddit.com/r/Military/hot.json?limit=15'], category: 'Defense' },
   'Startup Bot': { sources: ['https://www.reddit.com/r/startups/hot.json?limit=15', 'https://www.reddit.com/r/Entrepreneur/hot.json?limit=15'], category: 'Startups' },
+  'Indian Tech Bot': { sources: ['https://www.reddit.com/r/developersIndia/hot.json?limit=15', 'https://www.reddit.com/r/technology/hot.json?limit=15'], category: 'Indian Tech' },
+  'Indian Politics Bot': { sources: ['https://www.reddit.com/r/unitedstatesofindia/hot.json?limit=15', 'https://www.reddit.com/r/india/hot.json?limit=15'], category: 'Indian Politics' },
+  'Indian Business Bot': { sources: ['https://www.reddit.com/r/IndianStreetBets/hot.json?limit=15', 'https://www.reddit.com/r/IndiaInvestments/hot.json?limit=15'], category: 'Indian Business' },
+  'Indian Entertainment Bot': { sources: ['https://www.reddit.com/r/BollyBlindsNGossip/hot.json?limit=15', 'https://www.reddit.com/r/bollywood/hot.json?limit=15'], category: 'Indian Entertainment' },
+  'Indian Science Bot': { sources: ['https://www.reddit.com/r/ISRO/hot.json?limit=15', 'https://www.reddit.com/r/science/hot.json?limit=15'], category: 'Indian Science' },
+  'Indian Sports Bot': { sources: ['https://www.reddit.com/r/Cricket/hot.json?limit=15', 'https://www.reddit.com/r/IndianFootball/hot.json?limit=15'], category: 'Indian Sports' },
 };
 
 const RSS_FALLBACKS: Record<string, string[]> = {
@@ -44,6 +50,12 @@ const RSS_FALLBACKS: Record<string, string[]> = {
   'Energy Bot': ['https://hnrss.org/frontpage?q=energy', 'https://www.reutersagency.com/feed/'],
   'Defense Bot': ['https://hnrss.org/frontpage?q=defense', 'https://www.reutersagency.com/feed/'],
   'Startup Bot': ['https://hnrss.org/frontpage?q=startup', 'https://feeds.feedburner.com/TechCrunch/'],
+  'Indian Tech Bot': ['https://hnrss.org/frontpage', 'https://feeds.feedburner.com/TechCrunch/'],
+  'Indian Politics Bot': ['https://www.reutersagency.com/feed/', 'https://www.aljazeera.com/xml/rss/all.xml'],
+  'Indian Business Bot': ['https://www.moneycontrol.com/rss/latestnews.xml', 'https://economictimes.indiatimes.com/markets/rssfeeds/2146842.cms'],
+  'Indian Entertainment Bot': ['https://timesofindia.indiatimes.com/rssfeeds/1081479906.cms'],
+  'Indian Science Bot': ['https://www.thehindu.com/sci-tech/science/feeder/default.rss'],
+  'Indian Sports Bot': ['https://timesofindia.indiatimes.com/rssfeeds/4719148.cms'],
 };
 
 function hashUrl(url: string): string {
@@ -282,12 +294,12 @@ Source Note: <A one-line credibility assessment of the source, e.g. "Sourced fro
 
 Category: <Generate a highly specific, trending 1-3 word category based on the article content (e.g. "Indian Economy", "Tech India", "Generative AI", "Space Tourism"). Do NOT just use the bot specialty.>`;
 
-      let rewriteResponse = await callGroq(mainPrompt);
+      const rewriteResponse = await callGroq(mainPrompt);
       await parseGroqResponse(rewriteResponse);
 
       if (rewriteContent.fullBody.length < 400) {
         const retryPrompt = `The previous summary was too short. Write a detailed news article of at least 400 characters covering: ${rewriteContent.cleanHeadline}. Include context, background, and implications. Do not include any URLs or links in the body text.`;
-        let retryResponse = await callGroq(retryPrompt);
+        const retryResponse = await callGroq(retryPrompt);
         await parseGroqResponse(retryResponse);
       }
     } catch (e) {

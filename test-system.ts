@@ -4,11 +4,6 @@ import mongoose from 'mongoose';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
-import dbConnect from './lib/mongodb';
-import { Post } from './models/Post';
-import { User } from './models/User';
-import { getVerifiedBots } from './lib/bot-profiles';
-
 async function runTests() {
   console.log("==========================================");
   console.log("🚀 LETTR SYSTEM HEALTH & ARCHITECTURE TEST");
@@ -18,20 +13,32 @@ async function runTests() {
   const maxScore = 5;
 
   try {
+    const dbConnect = (await import('./lib/mongodb')).default;
+    const { getVerifiedBots } = await import('./lib/bot-profiles');
+    const { User } = await import('./models/User');
+
     // 1. DATABASE & MODELS
-    process.stdout.write("1. Testing Database Connection... ");
-    await dbConnect();
-    console.log("✅ PASS");
-    score++;
+    try {
+      process.stdout.write("1. Testing Database Connection... ");
+      await dbConnect();
+      console.log("✅ PASS");
+      score++;
+    } catch (dbError: any) {
+      console.log(`❌ FAIL (Database error: ${dbError.message || dbError})`);
+    }
 
     // 2. BOT SOURCING & EXTRACTION
-    process.stdout.write("2. Testing Bot Profiles & Content Sources... ");
-    const bots = await getVerifiedBots();
-    if (bots.length > 0) {
-      console.log(`✅ PASS (${bots.length} active bots)`);
-      score++;
-    } else {
-      console.log("❌ FAIL (No bots found)");
+    try {
+      process.stdout.write("2. Testing Bot Profiles & Content Sources... ");
+      const bots = await getVerifiedBots();
+      if (bots.length > 0) {
+        console.log(`✅ PASS (${bots.length} active bots)`);
+        score++;
+      } else {
+        console.log("❌ FAIL (No bots found)");
+      }
+    } catch (botError: any) {
+      console.log(`❌ FAIL (Bot profile retrieval failed: ${botError.message || botError})`);
     }
 
     // 3. MEDIA EXTRACTION LOGIC

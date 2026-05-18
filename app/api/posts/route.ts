@@ -61,7 +61,7 @@ export async function GET(request: Request) {
 
     const posts = await Post.find(filter)
       .sort(sortObj)
-      .limit(100)
+      .limit(500)
       .lean();
 
     // Hydrate author info
@@ -184,8 +184,8 @@ export async function GET(request: Request) {
           const aFollow = a.followBoost || 0;
           const bFollow = b.followBoost || 0;
 
-          const aPref = userPrefs.includes(aCategory) ? 1000 : 0;
-          const bPref = userPrefs.includes(bCategory) ? 1000 : 0;
+          const aPref = userPrefs.includes(aCategory) ? 2000 : 0;
+          const bPref = userPrefs.includes(bCategory) ? 2000 : 0;
 
           const aAdj = userAdjacents.includes(aCategory) ? 300 : 0;
           const bAdj = userAdjacents.includes(bCategory) ? 300 : 0;

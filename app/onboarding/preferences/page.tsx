@@ -12,6 +12,13 @@ import {
 const CATEGORIES = [
   { name: 'AI & Tech', icon: Cpu },
   { name: 'Startups', icon: Rocket },
+  { name: 'Indian Startups', icon: Rocket },
+  { name: 'Indian Politics', icon: Globe },
+  { name: 'Indian Tech', icon: Cpu },
+  { name: 'Indian Business', icon: Briefcase },
+  { name: 'Indian Science', icon: FlaskConical },
+  { name: 'Indian Sports', icon: Wifi },
+  { name: 'Indian Entertainment', icon: Zap },
   { name: 'Finance', icon: DollarSign },
   { name: 'Crypto', icon: Bitcoin },
   { name: 'Geopolitics', icon: Globe },

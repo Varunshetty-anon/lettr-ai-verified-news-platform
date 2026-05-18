@@ -125,7 +125,7 @@ export default function Home() {
 
   useEffect(() => {
     if (rawPosts.length > 0) {
-      setLocalPosts(rawPosts);
+      setTimeout(() => setLocalPosts(rawPosts), 0);
     }
   }, [rawPosts]);
 
@@ -174,7 +174,7 @@ export default function Home() {
   const stackedPost2 = readyPosts[2];
   const briefPosts = readyPosts.slice(3, 6);
   const lifestylePost = readyPosts[6];
-  const remainingPosts = readyPosts.slice(7);
+  const remainingPosts = readyPosts.slice(6);
 
   const renderCard = (post: PostData, isHero = false, isStacked = false) => {
     const headlineClass = isHero 
@@ -195,7 +195,7 @@ export default function Home() {
               {post.category}
             </span>
           )}
-          <h3 className={`${headlineClass} headline-clamp`}>
+          <h3 className={`${headlineClass} line-clamp-2`}>
             {post.headline}
           </h3>
           <p className="type-body-md text-on-surface-variant line-clamp-2 mb-6 flex-grow">
@@ -261,7 +261,7 @@ export default function Home() {
           {/* Right: Content */}
           <Link href={`/post/${heroPost._id}`} className="p-8 flex flex-col justify-center bg-surface group">
             <span className="type-label-md text-primary mb-4 uppercase">{heroPost.category}</span>
-            <h1 className="type-headline-lg mb-6 normal-case group-hover:text-primary transition-colors headline-clamp-3">{heroPost.headline}</h1>
+            <h1 className="type-headline-lg mb-6 normal-case group-hover:text-primary transition-colors line-clamp-2-3">{heroPost.headline}</h1>
             <p className="type-body-md text-on-surface-variant mb-6 line-clamp-4">{cleanSummary(heroPost.description)}</p>
             <div className="flex items-center gap-4">
               <span className="type-label-md text-on-surface-variant">{heroPost.author?.name}</span>
@@ -283,7 +283,7 @@ export default function Home() {
             )}
             <div className="flex-1 min-w-0">
               <span className="type-label-md text-primary mb-1 block uppercase">{post.category}</span>
-              <h3 className="type-headline-sm normal-case mb-2 headline-clamp">{post.headline}</h3>
+              <h3 className="type-headline-sm normal-case mb-2 line-clamp-2">{post.headline}</h3>
               <p className="type-caption text-on-surface-variant line-clamp-2 mb-2">{cleanSummary(post.description)}</p>
               <div className="flex items-center gap-3 mt-2">
                 <span className="type-caption text-on-surface-variant">{post.author?.name}</span>

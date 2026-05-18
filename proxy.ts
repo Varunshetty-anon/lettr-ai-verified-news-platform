@@ -9,6 +9,8 @@ export const proxy = auth((req) => {
   // Allow auth page, API auth routes, static assets
   if (
     pathname.startsWith("/auth") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/cron") ||

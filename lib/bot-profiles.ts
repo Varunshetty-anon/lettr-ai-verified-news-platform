@@ -14,6 +14,12 @@ export const BOT_PROFILES = [
   { name: 'Energy Bot', email: 'energybot@lettr.ai', role: 'AUTHOR', trustScore: 84, isVerifiedAuthor: true },
   { name: 'Defense Bot', email: 'defensebot@lettr.ai', role: 'AUTHOR', trustScore: 86, isVerifiedAuthor: true },
   { name: 'Startup Bot', email: 'startupbot@lettr.ai', role: 'AUTHOR', trustScore: 83, isVerifiedAuthor: true },
+  { name: 'Indian Tech Bot', email: 'indiatechbot@lettr.ai', role: 'AUTHOR', trustScore: 89, isVerifiedAuthor: true },
+  { name: 'Indian Politics Bot', email: 'indiapoliticsbot@lettr.ai', role: 'AUTHOR', trustScore: 85, isVerifiedAuthor: true },
+  { name: 'Indian Business Bot', email: 'indiabizbot@lettr.ai', role: 'AUTHOR', trustScore: 88, isVerifiedAuthor: true },
+  { name: 'Indian Entertainment Bot', email: 'indiaentbot@lettr.ai', role: 'AUTHOR', trustScore: 82, isVerifiedAuthor: true },
+  { name: 'Indian Science Bot', email: 'indiascibot@lettr.ai', role: 'AUTHOR', trustScore: 90, isVerifiedAuthor: true },
+  { name: 'Indian Sports Bot', email: 'indiasportsbot@lettr.ai', role: 'AUTHOR', trustScore: 86, isVerifiedAuthor: true },
 ];
 
 export async function getVerifiedBots(): Promise<IUser[]> {
