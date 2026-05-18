@@ -74,6 +74,104 @@ function EditorialImage({ src, alt = '', className = '', aspect = 'aspect-video'
   );
 }
 
+function VideoPlayer({ src, poster }: { src: string; poster?: string }) {
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(videoRef.current.muted);
+    }
+  };
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play().catch(() => {});
+        setIsPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  if (hasError) {
+    return (
+      <div className="w-full mb-8 bg-surface-container aspect-video flex items-center justify-center border border-outline-variant/30">
+        <span className="type-label-md text-on-surface-variant/50">VIDEO UNAVAILABLE</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full mb-8 overflow-hidden bg-surface-container aspect-video max-h-[50vh] relative border border-outline-variant/30 group">
+      <video
+        ref={videoRef}
+        src={src}
+        poster={poster}
+        muted
+        autoPlay
+        playsInline
+        loop
+        className="w-full h-full object-cover"
+        onError={() => setHasError(true)}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onTimeUpdate={() => {
+          if (videoRef.current) {
+            setProgress((videoRef.current.currentTime / videoRef.current.duration) * 100 || 0);
+          }
+        }}
+        onClick={togglePlay}
+      />
+      {/* Custom overlay controls */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 flex items-end justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={togglePlay}
+            className="text-white hover:text-primary transition-colors"
+            aria-label={isPlaying ? 'Pause' : 'Play'}
+          >
+            {isPlaying ? '⏸' : '▶'}
+          </button>
+          <button
+            onClick={toggleMute}
+            className="text-white hover:text-primary transition-colors"
+            aria-label={isMuted ? 'Unmute' : 'Mute'}
+          >
+            {isMuted ? '🔇' : '🔊'}
+          </button>
+        </div>
+        {/* Progress bar */}
+        <div className="flex-1 mx-4 h-1 bg-white/30 cursor-pointer" onClick={(e) => {
+          if (videoRef.current) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pct = (e.clientX - rect.left) / rect.width;
+            videoRef.current.currentTime = pct * videoRef.current.duration;
+          }
+        }}>
+          <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+        </div>
+      </div>
+      {/* Mute indicator (visible when muted, click to unmute) */}
+      {isMuted && (
+        <button
+          onClick={toggleMute}
+          className="absolute top-4 right-4 bg-black/60 text-white px-3 py-1.5 type-label-md backdrop-blur-sm hover:bg-black/80 transition-colors"
+          aria-label="Click to unmute"
+        >
+          🔇 TAP TO UNMUTE
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const resolvedParams = use(params);
@@ -375,19 +473,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
 
         {/* ── 6. Media Section (Responsive, restricted size, editorial 16:9 / 21:9 container) ── */}
         {post.videoUrl ? (
-          <div className="w-full mb-8 overflow-hidden bg-surface-container aspect-video max-h-[50vh] relative border border-outline-variant/30">
-            <video
-              src={post.videoUrl}
-              poster={post.imageUrl}
-              controls
-              playsInline
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.parentElement!.innerHTML = 
-                  '<div class="w-full h-full flex items-center justify-center text-on-surface-variant" style="min-height:200px">VIDEO UNAVAILABLE</div>';
-              }}
-            />
-          </div>
+          <VideoPlayer src={post.videoUrl} poster={post.imageUrl} />
         ) : post.imageUrl ? (
           <div className="w-full mb-8 overflow-hidden bg-surface-container aspect-[21/9] max-h-[45vh] relative border border-outline-variant/30">
             <EditorialImage 
