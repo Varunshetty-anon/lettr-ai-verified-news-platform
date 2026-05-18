@@ -2,23 +2,18 @@ import dotenv from 'dotenv';
 import path from 'path';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
-import crypto from 'crypto';
-import dbConnect from '../lib/mongodb';
-import { Post } from '../models/Post';
-import { User } from '../models/User';
-import { verifyFact } from '../lib/ai-verification';
-import { hashUrl } from '../lib/url-hash';
-import { processRawContent } from '../lib/content-processor';
 
 // Load env vars explicitly since this runs outside Next.js
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 // Must import these after dotenv
 import dbConnect from '../lib/mongodb';
-import { getVerifiedBots } from '../lib/bot-profiles';
-import { verifyFact } from '../lib/ai-verification';
 import { Post } from '../models/Post';
 import { User } from '../models/User';
+import { verifyFact } from '../lib/ai-verification';
+import { hashUrl } from '../lib/url-hash';
+import { processRawContent } from '../lib/content-processor';
+import { getVerifiedBots } from '../lib/bot-profiles';
 import { uploadMediaFromUrl } from '../lib/supabase';
 
 const INTERVAL_MIN = 5;
@@ -106,9 +101,7 @@ function normalizeCategory(rawCategory: string): string {
   return 'World';
 }
 
-function hashUrl(url: string): string {
-  return crypto.createHash('md5').update(url).digest('hex');
-}
+
 
 function extractMediaFromReddit(data: any): { image?: string; video?: string } {
   if (data.is_video && data.media?.reddit_video?.fallback_url) {
