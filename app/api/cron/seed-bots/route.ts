@@ -211,10 +211,12 @@ export async function GET(request: Request) {
 
   try {
     // ── Rate limit check: if AI is cooling down, reduce activity ──
-    if (isContentProcessorCoolingDown() || isVerificationCoolingDown()) {
-      console.log('[Cron] AI services in cooldown. Reducing to 1 post max this run.');
+    const inCooldown = isContentProcessorCoolingDown() || isVerificationCoolingDown();
+    if (inCooldown) {
+      console.log('[Cron] AI services in cooldown.');
     }
-    const maxPostsThisRun = (isContentProcessorCoolingDown() || isVerificationCoolingDown()) ? 1 : 2;
+    const MAX_PREMIUM = inCooldown ? 0 : 1;
+    const MAX_LIGHTWEIGHT = inCooldown ? 1 : 2;
 
     const activeBots = await getVerifiedBots();
 
@@ -337,11 +339,12 @@ export async function GET(request: Request) {
       return bMedia - aMedia;
     });
 
-    let postsCreated = 0;
+    let premiumPostsCreated = 0;
+    let lightweightPostsCreated = 0;
     const seeded: any[] = [];
 
     for (const candidate of candidates) {
-      if (postsCreated >= maxPostsThisRun) break;
+      if (premiumPostsCreated >= MAX_PREMIUM && lightweightPostsCreated >= MAX_LIGHTWEIGHT) break;
 
       try {
         const rawTitle = candidate.title;
@@ -391,9 +394,20 @@ export async function GET(request: Request) {
         const paragraphs = processed.body.split('\n\n').filter(p => p.trim().length > 0);
         const description = paragraphs[0] || processed.body.substring(0, 200);
 
-        // ── Fact Verification (premium model) ──
-        console.log(`[Cron] Verifying: "${processed.headline.substring(0, 60)}..."`);
-        const verification = await verifyFact(processed.headline, processed.body, originalLink);
+        const isPremium = processed.newsworthiness >= 80;
+
+        if (isPremium && premiumPostsCreated >= MAX_PREMIUM) {
+          console.log(`[Cron] Skip: Max premium posts reached.`);
+          continue;
+        }
+        if (!isPremium && lightweightPostsCreated >= MAX_LIGHTWEIGHT) {
+          console.log(`[Cron] Skip: Max lightweight posts reached.`);
+          continue;
+        }
+
+        // ── Fact Verification (Premium or Lightweight) ──
+        console.log(`[Cron] Verifying: "${processed.headline.substring(0, 60)}..." (Premium: ${isPremium})`);
+        const verification = await verifyFact(processed.headline, processed.body, originalLink, { imageUrl, videoUrl }, isPremium);
 
         if (verification.factScore < 40) {
           console.log(`[Cron] Skip: failed fact check (Score: ${verification.factScore})`);
@@ -424,7 +438,8 @@ export async function GET(request: Request) {
 
         await User.findByIdAndUpdate(randomBot._id, { $inc: { totalPosts: 1 } });
 
-        postsCreated++;
+        if (isPremium) premiumPostsCreated++;
+        else lightweightPostsCreated++;
         const totalInCategory = await Post.countDocuments({ category: normalizedCategory });
         console.log(`[Bot] Posted: "${newPost.headline}" | Category: ${normalizedCategory} | Total: ${totalInCategory}`);
 
@@ -437,8 +452,8 @@ export async function GET(request: Request) {
         });
 
         // ── Inter-post delay to avoid flooding Groq ──
-        if (postsCreated < maxPostsThisRun) {
-          await new Promise(r => setTimeout(r, 2000));
+        if (premiumPostsCreated < MAX_PREMIUM || lightweightPostsCreated < MAX_LIGHTWEIGHT) {
+          await new Promise(r => setTimeout(r, 4000));
         }
 
       } catch (err: any) {

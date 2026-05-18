@@ -7,11 +7,11 @@ export interface VerificationResult {
 }
 
 // ─── Model Routing ─────────────────────────────────────────────
-// Premium model: ONLY for final fact verification (Layer 2+3)
-const PREMIUM_MODEL = "llama-3.3-70b-versatile";
-// Fallback model: when premium model hits rate limits
-const FALLBACK_MODEL = "gemma2-9b-it";
-// Cheap model: for content understanding (Layer 1)
+// Premium model: ONLY for final fact verification (Layer 3)
+const PREMIUM_MODEL = "openai/gpt-oss-120b";
+// Content Understanding (Layer 2) & Fallback
+const UNDERSTANDING_MODEL = "qwen/qwen3-32b";
+// Cheap model: for content processing (Layer 1, handled in content-processor.ts)
 const CHEAP_MODEL = "llama-3.1-8b-instant";
 
 // ─── Rate Limit Cooldown State ─────────────────────────────────
@@ -152,7 +152,7 @@ Return:
   "isOpinionPiece": <true if editorial/opinion, false if news reporting>
 }`;
 
-  const result = await callGroq(CHEAP_MODEL, [
+  const result = await callGroq(UNDERSTANDING_MODEL, [
     { role: "system", content: "You are a news analysis engine. Extract factual structure from articles. Return valid JSON only." },
     { role: "user", content: prompt }
   ], 0.05);
@@ -175,7 +175,8 @@ async function layerTwoThreeVerify(
   understanding: ContentUnderstanding | null,
   sourceCredibility: 'trusted' | 'questionable' | 'unknown',
   sourceCount: number,
-  referenceLink?: string
+  referenceLink?: string,
+  isPremiumRoute: boolean = false
 ): Promise<VerificationResult> {
   const contextBlock = understanding
     ? `
@@ -236,7 +237,9 @@ Return JSON:
   const systemMsg = { role: "system", content: "You are an elite journalistic fact-checker for LETTR, an AI-verified news platform. Your analysis must feel human, contextual, and cite specific details from the article. Never use boilerplate language." };
   const userMsg = { role: "user", content: prompt };
 
-  const modelsToTry = [PREMIUM_MODEL, FALLBACK_MODEL];
+  const modelsToTry = isPremiumRoute 
+    ? [PREMIUM_MODEL, UNDERSTANDING_MODEL] 
+    : [UNDERSTANDING_MODEL];
 
   for (const model of modelsToTry) {
     console.log(`[Verification] Trying model: ${model}`);
@@ -341,7 +344,8 @@ export async function verifyFact(
   headline: string,
   body: string,
   referenceLink?: string,
-  mediaContext?: { imageUrl?: string; videoUrl?: string }
+  mediaContext?: { imageUrl?: string; videoUrl?: string },
+  isPremiumRoute: boolean = false
 ): Promise<VerificationResult> {
   const sourceLinks = extractSourceLinks(referenceLink);
   const sourceCount = sourceLinks.length;
@@ -368,7 +372,7 @@ export async function verifyFact(
   console.log(`[Verification] Layer 2+3: Verifying reality and generating explanation...`);
   const result = await layerTwoThreeVerify(
     headline, body, understanding,
-    sourceCredibility, sourceCount, referenceLink
+    sourceCredibility, sourceCount, referenceLink, isPremiumRoute
   );
 
   console.log(`[Verification] Complete: Score=${result.factScore}, Confidence=${result.confidence}`);

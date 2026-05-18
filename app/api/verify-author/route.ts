@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     }
 
     // Use centralized verification library
-    const verification = await verifyFact(headline, body, sources, { imageUrl, videoUrl });
+    const verification = await verifyFact(headline, body, sources, { imageUrl, videoUrl }, true);
 
     let isVerified = false;
 

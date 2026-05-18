@@ -81,14 +81,37 @@ function VideoPlayer({ src, poster }: { src: string; poster?: string }) {
   const [hasError, setHasError] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const toggleMute = () => {
+  // Load persisted mute state
+  useEffect(() => {
+    try {
+      const persisted = localStorage.getItem('lettr_video_muted');
+      if (persisted === 'false') {
+        setIsMuted(false);
+        if (videoRef.current) videoRef.current.muted = false;
+      }
+    } catch {}
+  }, []);
+
+  const toggleMute = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(videoRef.current.muted);
+      const newMuted = !videoRef.current.muted;
+      videoRef.current.muted = newMuted;
+      setIsMuted(newMuted);
+      try {
+        localStorage.setItem('lettr_video_muted', String(newMuted));
+      } catch {}
     }
   };
 
-  const togglePlay = () => {
+  const togglePlay = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (videoRef.current) {
       if (videoRef.current.paused) {
         videoRef.current.play().catch(() => {});
@@ -114,11 +137,11 @@ function VideoPlayer({ src, poster }: { src: string; poster?: string }) {
         ref={videoRef}
         src={src}
         poster={poster}
-        muted
+        muted={isMuted}
         autoPlay
         playsInline
         loop
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover cursor-pointer"
         onError={() => setHasError(true)}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
@@ -130,25 +153,25 @@ function VideoPlayer({ src, poster }: { src: string; poster?: string }) {
         onClick={togglePlay}
       />
       {/* Custom overlay controls */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 flex items-end justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="flex items-center gap-3">
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 flex items-end justify-between opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+        <div className="flex items-center gap-4 pointer-events-auto">
           <button
             onClick={togglePlay}
-            className="text-white hover:text-primary transition-colors"
+            className="text-white hover:text-primary transition-colors flex items-center justify-center w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm"
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? '⏸' : '▶'}
           </button>
           <button
             onClick={toggleMute}
-            className="text-white hover:text-primary transition-colors"
+            className="text-white hover:text-primary transition-colors flex items-center justify-center w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm"
             aria-label={isMuted ? 'Unmute' : 'Mute'}
           >
             {isMuted ? '🔇' : '🔊'}
           </button>
         </div>
         {/* Progress bar */}
-        <div className="flex-1 mx-4 h-1 bg-white/30 cursor-pointer" onClick={(e) => {
+        <div className="flex-1 mx-4 h-2 bg-white/30 cursor-pointer pointer-events-auto rounded-full overflow-hidden" onClick={(e) => {
           if (videoRef.current) {
             const rect = e.currentTarget.getBoundingClientRect();
             const pct = (e.clientX - rect.left) / rect.width;
@@ -162,7 +185,7 @@ function VideoPlayer({ src, poster }: { src: string; poster?: string }) {
       {isMuted && (
         <button
           onClick={toggleMute}
-          className="absolute top-4 right-4 bg-black/60 text-white px-3 py-1.5 type-label-md backdrop-blur-sm hover:bg-black/80 transition-colors"
+          className="absolute top-4 right-4 bg-black/60 text-white px-4 py-2 type-label-md backdrop-blur-sm hover:bg-black/80 transition-colors border border-white/10 rounded"
           aria-label="Click to unmute"
         >
           🔇 TAP TO UNMUTE

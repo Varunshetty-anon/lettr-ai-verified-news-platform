@@ -28,6 +28,8 @@ const JUNK_PATTERNS = [
   /^(TIL|TIFU|AITA|WIBTA|CMV|ELI5|DAE)\b/i,
   /\b(anyone else|does anyone|am i the only)\b/i,
   /\b(boyfriend|girlfriend|husband|wife|roommate|landlord)\b.*\b(won't|doesn't|refuses)\b/i,
+  /\b(selfie|my setup|my new)\b/i,
+  /\b(opinion|what do you think|thoughts on)\b/i
 ];
 
 const NEWSWORTHY_SIGNALS = [
@@ -122,9 +124,9 @@ Raw Content: ${rawBody.substring(0, 2500)}
 Target Category Hint: ${targetCategory}
 
 STRICT REJECTION CRITERIA (return {"reject": true} if ANY apply):
-- Content is a meme, joke, or shitpost
-- Content is a personal story or anecdote (not news)
-- Content is a poll, question, or discussion prompt
+- Content is a meme, random selfie, or no-source image dump
+- Content is a personal story, AITA, TIFU, or ELI5
+- Content is an opinion-only post or random Reddit discussion
 - Content is a screenshot description with no factual substance
 - Content contains no verifiable facts or named entities
 - Content is too vague to construct 3 meaningful paragraphs

@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     }
 
     // AI Fact Verification
-    const verification = await verifyFact(headline, body, sourceLink, { imageUrl, videoUrl });
+    const verification = await verifyFact(headline, body, sourceLink, { imageUrl, videoUrl }, true);
 
     if (verification.factScore < 45) {
       return NextResponse.json({ 
