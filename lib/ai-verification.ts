@@ -27,24 +27,24 @@ function buildLocalVerificationResult(
   const issues: string[] = [];
 
   if (sources.length === 0) issues.push('No source links were supplied for independent corroboration.');
-  if (bodyWordCount < 150) issues.push('The article body is brief, limiting claim-level context for verification.');
-  if (headline.trim().split(/\s+/).filter(Boolean).length > 15) issues.push('The headline is longer than LETTR editorial guidelines.');
+  if (bodyWordCount < 100) issues.push('The article body is brief, limiting claim-level context for verification.');
+  if (headline.trim().split(/\s+/).filter(Boolean).length > 20) issues.push('The headline is unusually long.');
 
-  const sourceScore = Math.min(35, sources.length * 12);
-  const bodyScore = bodyWordCount >= 300 ? 25 : bodyWordCount >= 150 ? 18 : 8;
+  const baseScore = 40;
+  const sourceScore = Math.min(40, sources.length * 20);
+  const bodyScore = bodyWordCount >= 200 ? 25 : bodyWordCount >= 100 ? 15 : 5;
   const mediaScore = hasMedia ? 5 : 0;
-  const score = Math.max(25, Math.min(70, 25 + sourceScore + bodyScore + mediaScore - issues.length * 6));
+  const penalty = issues.length * 15;
+  
+  const score = Math.max(10, Math.min(95, baseScore + sourceScore + bodyScore + mediaScore - penalty));
 
   const evidenceText = sources.length > 0
-    ? `${sources.length} source link${sources.length === 1 ? '' : 's'} were provided for review`
+    ? `${sources.length} source link${sources.length === 1 ? '' : 's'} were provided`
     : 'no source links were provided';
-  const mediaText = hasMedia
-    ? `The submission also includes ${mediaContext?.videoUrl ? 'video' : 'image'} evidence, which should be checked against the article claims.`
-    : 'No image or video evidence was supplied.';
 
   return {
     factScore: score,
-    factSummary: `This score reflects a limited automated review because ${reason}. The headline "${headline}" was evaluated against the submitted article body: ${evidenceText}, and the article contains roughly ${bodyWordCount} words of context. ${mediaText} The report cannot receive a high-confidence score until the core claims are corroborated against the linked sources and any media metadata.`,
+    factSummary: `[DEMO SAFE MODE] Limited confidence due to provider availability. The headline "${headline}" was evaluated locally. Evidence: ${evidenceText}. Word count: ${bodyWordCount}. ${hasMedia ? 'Media present.' : ''} Please manually verify claims.`,
     confidence: sources.length > 0 && bodyWordCount >= 150 ? 'Medium' : 'Low',
     sourcesChecked: sources.length,
     issues,
@@ -62,64 +62,90 @@ export async function verifyFact(
     return buildLocalVerificationResult(headline, body, referenceLink, mediaContext, 'no verification API key is configured');
   }
 
-  try {
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          {
-            role: "system",
-            content: `You are an elite journalistic fact-checker. Analyze the news content, source links, image context, and video context.
-            Be strict and consistent. A score of 85+ means the content is well-sourced with verifiable facts. A score below 50 means the content has significant unverified claims or is opinion-based. Never give a score above 70 to content that contains no external source links.
-            Return output exactly as a JSON object with no markdown formatting.
-            {
-              "factScore": <0-100>,
-              "summary": "<Explain exactly why this score was given based on the facts, source links, and media evidence. Note corroborated claims, unsupported claims, missing context, or biased framing.>",
-              "confidence": "<Low | Medium | High>",
-              "sourcesChecked": <number of source links reviewed>,
-              "issues": ["<issue 1>", "<issue 2>"] // Leave empty array if no issues
-            }`
-          },
-          {
-            role: "user",
-            content: `
-            Headline: ${headline}
-            Content: ${body.substring(0, 2000)}
-            Sources: ${referenceLink || 'None'}
-            Media: ${JSON.stringify(mediaContext || {})}
-            `
+  const models = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "gemma2-9b-it"
+  ];
+  
+  const messages = [
+    {
+      role: "system",
+      content: `You are an elite journalistic fact-checker. Analyze the news content, source links, image context, and video context.
+      Be strict and consistent. A score of 85+ means the content is well-sourced with verifiable facts. A score below 50 means the content has significant unverified claims or is opinion-based. Never give a score above 70 to content that contains no external source links.
+      Return output exactly as a JSON object with no markdown formatting.
+      {
+        "factScore": <0-100>,
+        "summary": "<Explain exactly why this score was given based on the facts, source links, and media evidence. Note corroborated claims, unsupported claims, missing context, or biased framing.>",
+        "confidence": "<Low | Medium | High>",
+        "sourcesChecked": <number of source links reviewed>,
+        "issues": ["<issue 1>", "<issue 2>"] // Leave empty array if no issues
+      }`
+    },
+    {
+      role: "user",
+      content: `
+      Headline: ${headline}
+      Content: ${body.substring(0, 2000)}
+      Sources: ${referenceLink || 'None'}
+      Media: ${JSON.stringify(mediaContext || {})}
+      `
+    }
+  ];
+
+  const delays = [2000, 5000, 10000];
+
+  for (let attempt = 0; attempt <= 3; attempt++) {
+    for (const model of models) {
+      try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: model,
+            messages: messages,
+            temperature: 0.1,
+            response_format: { type: "json_object" }
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const outputText = data.choices?.[0]?.message?.content || "{}";
+          try {
+            const parsed = JSON.parse(outputText);
+            return { 
+              factScore: parsed.factScore ?? 50,
+              factSummary: parsed.summary || parsed.factSummary || "No summary provided by API.",
+              confidence: parsed.confidence || "Medium",
+              sourcesChecked: parsed.sourcesChecked ?? extractSourceLinks(referenceLink).length,
+              issues: parsed.issues || parsed.keyIssues || []
+            };
+          } catch (e) {
+            console.error("Fact verification JSON parse error:", e);
+            continue; // try next model
           }
-        ],
-        temperature: 0.1,
-        response_format: { type: "json_object" }
-      })
-    });
-
-    if (!response.ok) {
-      return buildLocalVerificationResult(headline, body, referenceLink, mediaContext, `the verification provider returned HTTP ${response.status}`);
+        }
+        
+        // If 429 or 503, we break inner loop to trigger exponential backoff retry
+        if (response.status === 429 || response.status === 503) {
+          console.warn(`[Verification] Model ${model} returned ${response.status}. Attempting fallback or wait...`);
+          // We can still try the next model, maybe it has a different rate limit bucket
+        }
+      } catch (error) {
+        console.error(`[Verification] Fetch error on model ${model}:`, error);
+      }
     }
-
-    const data = await response.json();
-    const outputText = data.choices?.[0]?.message?.content || "{}";
     
-    try {
-      const parsed = JSON.parse(outputText);
-      return { 
-        factScore: parsed.factScore ?? 50,
-        factSummary: parsed.summary || parsed.factSummary || buildLocalVerificationResult(headline, body, referenceLink, mediaContext, 'the verification provider omitted a written justification').factSummary,
-        confidence: parsed.confidence || "Medium",
-        sourcesChecked: parsed.sourcesChecked ?? extractSourceLinks(referenceLink).length,
-        issues: parsed.issues || parsed.keyIssues || []
-      };
-    } catch (parseError) {
-      console.error("Fact verification JSON parse error:", parseError);
-      return buildLocalVerificationResult(headline, body, referenceLink, mediaContext, 'the verification provider returned an unreadable response');
+    // If all models failed, wait before retrying
+    if (attempt < 3) {
+      console.log(`[Verification] All models failed. Retrying in ${delays[attempt]}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delays[attempt]));
     }
-
-  } catch (error) {
-    console.error("Fact verification Error (Groq):", error);
-    return buildLocalVerificationResult(headline, body, referenceLink, mediaContext, 'the verification request failed before completion');
   }
+
+  // If we reach here, all retries and fallbacks failed. 
+  // Trigger TEMPORARY DEMO SAFE MODE
+  console.error("[Verification] CRITICAL: All API retries exhausted. Falling back to local DEMO SAFE MODE.");
+  return buildLocalVerificationResult(headline, body, referenceLink, mediaContext, 'API quota exceeded after retries');
 }

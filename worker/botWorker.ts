@@ -133,7 +133,32 @@ async function runBotTask() {
   console.log(`[Worker] Running bot engine task at ${new Date().toISOString()}...`);
   try {
     const activeBots = await getVerifiedBots();
-    const randomBot = activeBots[Math.floor(Math.random() * activeBots.length)];
+    
+    // Auto-prioritize categories with low counts (< 20)
+    const categoryCounts = await Post.aggregate([
+      { $match: { isPublished: true } },
+      { $group: { _id: "$category", count: { $sum: 1 } } }
+    ]);
+    const categoryCountMap = new Map(categoryCounts.map(c => [c._id, c.count]));
+    const MINIMUM_COUNT = 20;
+    
+    let randomBot = activeBots[Math.floor(Math.random() * activeBots.length)];
+    const starvedBots = activeBots.filter(bot => {
+      const cat = BOT_CONFIG[bot.name]?.category || 'World';
+      const count = categoryCountMap.get(cat) || 0;
+      return count < MINIMUM_COUNT;
+    });
+    
+    if (starvedBots.length > 0) {
+      starvedBots.sort((a, b) => {
+        const catA = BOT_CONFIG[a.name]?.category || 'World';
+        const catB = BOT_CONFIG[b.name]?.category || 'World';
+        return (categoryCountMap.get(catA) || 0) - (categoryCountMap.get(catB) || 0);
+      });
+      randomBot = starvedBots[0];
+      console.log(`[Worker] Prioritizing starved category for bot: ${randomBot.name}`);
+    }
+
     const config = BOT_CONFIG[randomBot.name] || BOT_CONFIG['WorldNews Bot'];
     const sourceUrl = config.sources[Math.floor(Math.random() * config.sources.length)];
 

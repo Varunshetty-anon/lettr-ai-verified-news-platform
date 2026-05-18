@@ -217,7 +217,35 @@ export default function AuthorProfilePage({ params }: { params: Promise<{ id: st
   };
 
   if (loading) {
-    return <LoadingQuotes />;
+    return (
+      <div className="w-full max-w-[1440px] mx-auto px-4 md:px-10 xl:px-16 py-6 md:py-14 animate-pulse">
+        <div className="w-24 h-6 bg-surface-container-high mb-6" />
+        <section className="grid grid-cols-1 lg:grid-cols-12 border-y-2 border-on-surface mb-12 md:mb-16">
+          <div className="lg:col-span-4 lg:border-r-2 lg:border-on-surface p-0 lg:pr-8 py-8">
+            <div className="aspect-[4/5] bg-surface-container-high" />
+          </div>
+          <div className="lg:col-span-8 py-8 lg:pl-10 flex flex-col justify-between min-h-[520px]">
+            <div>
+              <div className="flex gap-3 mb-5">
+                <div className="w-32 h-6 bg-surface-container-high" />
+                <div className="w-24 h-6 bg-surface-container-high" />
+              </div>
+              <div className="w-full max-w-[600px] h-20 bg-surface-container-high mb-8" />
+              <div className="w-full max-w-[400px] h-4 bg-surface-container-high mb-2" />
+              <div className="w-full max-w-[300px] h-4 bg-surface-container-high mb-6" />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 border-t border-outline-variant mt-10">
+               {[1,2,3,4].map(i => (
+                 <div key={i} className="py-5 px-4"><div className="w-20 h-6 bg-surface-container-high mb-2" /><div className="w-12 h-8 bg-surface-container-high" /></div>
+               ))}
+            </div>
+          </div>
+        </section>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+           {[1,2,3].map(i => <div key={i} className="aspect-[4/5] bg-surface-container-high" />)}
+        </div>
+      </div>
+    );
   }
 
   if (!author) {
