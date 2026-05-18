@@ -2,6 +2,13 @@ import dotenv from 'dotenv';
 import path from 'path';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
+import crypto from 'crypto';
+import dbConnect from '../lib/mongodb';
+import { Post } from '../models/Post';
+import { User } from '../models/User';
+import { verifyFact } from '../lib/ai-verification';
+import { hashUrl } from '../lib/url-hash';
+import { processRawContent } from '../lib/content-processor';
 
 // Load env vars explicitly since this runs outside Next.js
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
@@ -279,132 +286,35 @@ async function runBotTask() {
         const apiKey = process.env.GROQ_API_KEY;
         if (!apiKey) throw new Error("Missing GROQ API Key");
 
-        const rewriteContent = {
-          cleanHeadline: rawTitle,
-          cleanSummary: "Live news feed summary.",
-          fullBody: "",
-          sourceNote: "",
-          dynamicCategory: config.category
-        };
+        console.log(`[Worker] Generating article with processRawContent for: "${rawTitle}"`);
+        const processed = await processRawContent(rawTitle, rawText, config.category);
 
-        console.log(`[Worker] Generating article with Groq Llama-3.3 for: "${rawTitle}"`);
-        const callGroq = async (promptMsg: string) => {
-          return fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model: "llama-3.3-70b-versatile",
-              messages: [
-                {
-                  role: "system",
-                  content: `You are a senior news editor at a premium, fact-based news platform. Your writing is clear, authoritative, and detailed. You never use clickbait or sensational language. You write in a factual, analytical tone similar to Reuters or The Economist.`
-                },
-                { role: "user", content: promptMsg }
-              ],
-              temperature: 0.4,
-              max_tokens: 1500
-            })
-          });
-        };
-
-        const parseGroqResponse = async (response: Response) => {
-          if (!response.ok) return;
-          const rewriteData = await response.json();
-          const outputText = rewriteData.choices[0]?.message?.content || "";
-          
-          const headMatch = outputText.match(/Headline:\s*(.*)/i);
-          const sumMatch = outputText.match(/Summary:\s*([\s\S]*?)(?=\nArticle:)/i);
-          const bodyMatch = outputText.match(/Article:\s*([\s\S]*?)(?=\nSource Note:)/i);
-          const sourceNoteMatch = outputText.match(/Source Note:\s*([\s\S]*?)(?=\nCategory:)/i) || outputText.match(/Source Note:\s*(.*)/i);
-          const categoryMatch = outputText.match(/Category:\s*(.*)/i);
-          
-          if (headMatch) rewriteContent.cleanHeadline = headMatch[1].trim();
-          if (sumMatch) rewriteContent.cleanSummary = sumMatch[1].replace(/https?:\/\/[^\s]+/g, '').trim();
-          if (bodyMatch) rewriteContent.fullBody = bodyMatch[1].replace(/https?:\/\/[^\s]+/g, '').trim();
-          if (sourceNoteMatch) rewriteContent.sourceNote = sourceNoteMatch[1].trim();
-          if (categoryMatch) rewriteContent.dynamicCategory = categoryMatch[1].trim();
-          
-          if (!rewriteContent.fullBody && outputText.length > 200) {
-            const afterSummary = outputText.split(/Summary:/i)[1] || '';
-            const parts = afterSummary.split('\n\n');
-            if (parts.length > 1) {
-              rewriteContent.fullBody = parts.slice(1).join('\n\n').trim();
-            }
-          }
-        };
-
-        const mainPrompt = `Rewrite the following raw content into a professional news article. Do NOT copy raw text verbatim. Write original, well-structured content. If the content implies a video or image, verify the facts in context of the described media.
-  
-Raw Title: ${rawTitle}
-Raw Text: ${rawText.substring(0, 1200)}
-Source URL: ${originalLink}
-Bot Specialty: ${config.category}
-Media Presence: ${media.video ? 'Contains Video' : media.image ? 'Contains Image' : 'Text Only'}
-
-STRICT RULES:
-- Write a complete news article with a minimum of 3 paragraphs and at least 500 characters.
-- The article must contain:
-  - Paragraph 1: What happened and key facts
-  - Paragraph 2: Background and context
-  - Paragraph 3: Implications and what happens next
-- Do NOT repeat the headline as the body.
-- Do NOT include any URLs, links, or "Link posted:" text in the body.
-- Do NOT include markdown link syntax [text](url).
-- Write complete sentences with context and background.
-
-HEADLINE RULES (strictly enforce):
-- Maximum 8 words
-- Must be a hook that makes the reader want to click
-- Use numbers when possible (e.g. "$7 Billion", "3 Countries", "40% Drop")
-- Use power words: Exposed, Banned, Collapsed, Surge, Crisis, Record, Leaked
-- Never end with a period
-- Never repeat the same words twice in the headline
-- Format: [Impact word/number] + [Subject] + [Consequence/Action]
-- Examples: "Pentagon Quietly Cancels European Troop Deployment", "Quantum Chip Breaks 50-Year Encryption Record", "India's Solar Capacity Doubles in 18 Months"
-
-Return EXACTLY in this format (use the exact labels):
-
-Headline: <The generated headline following the HEADLINE RULES>
-
-Summary: <A comprehensive 5-8 line summary of the key facts. Cover who, what, when, where, why, and the significance. Each line should add new information.>
-
-Article: <A detailed 3-5 paragraph article body. Include background context, expert analysis, implications, and what comes next. Write at least 250 words. Structure with clear paragraphs. DO NOT include any URLs, links, or sources inside the Article body.>
-
-Source Note: <A one-line credibility assessment of the source, e.g. "Sourced from r/technology, corroborated by multiple news outlets.">
-
-Category: <Generate a highly specific, trending 1-3 word category based on the article content (e.g. "Indian Economy", "Tech India", "Generative AI", "Space Tourism"). Do NOT just use the bot specialty.>`;
-
-        const rewriteResponse = await callGroq(mainPrompt);
-        await parseGroqResponse(rewriteResponse);
-
-        if (rewriteContent.fullBody.length < 400) {
-          const retryPrompt = `The previous summary was too short. Write a detailed news article of at least 400 characters covering: ${rewriteContent.cleanHeadline}. Include context, background, and implications. Do not include any URLs or links in the body text.`;
-          const retryResponse = await callGroq(retryPrompt);
-          await parseGroqResponse(retryResponse);
+        if (!processed) {
+          console.log(`[Worker] Skip post: rejected by content processor`);
+          continue;
         }
 
-        if (rewriteContent.cleanSummary.length < 50) {
-          rewriteContent.cleanSummary = `${rawTitle}. ${rawText.substring(0, 300)}`;
-        }
+        const paragraphs = processed.body.split('\n\n').filter(p => p.trim().length > 0);
+        const description = paragraphs[0] || processed.body.substring(0, 200);
 
-        console.log(`[Worker] Verifying facts for: "${rewriteContent.cleanHeadline}"`);
-        const verification = await verifyFact(rewriteContent.cleanHeadline, rewriteContent.cleanSummary, originalLink);
+        console.log(`[Worker] Verifying facts for: "${processed.headline}"`);
+        const verification = await verifyFact(processed.headline, processed.body, originalLink);
 
         if (verification.factScore < 45) {
           console.log(`[Worker] Rejected by Fact Check (Score: ${verification.factScore}). Skipping.`);
           continue;
         }
 
-        const normalizedCategory = normalizeCategory(rewriteContent.dynamicCategory || config.category);
+        const normalizedCategory = normalizeCategory(processed.category || config.category);
 
         const newPost = await Post.create({
           authorId: randomBot._id,
-          headline: rewriteContent.cleanHeadline,
-          description: rewriteContent.cleanSummary,
-          body: rewriteContent.fullBody || rewriteContent.cleanSummary,
+          headline: processed.headline,
+          description: description,
+          body: processed.body,
           sourceLink: originalLink,
           sourceHash: urlHash,
-          originSource: rewriteContent.sourceNote || originTag,
+          originSource: originTag,
           category: normalizedCategory,
           imageUrl,
           videoUrl,

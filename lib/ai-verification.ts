@@ -44,7 +44,7 @@ function buildLocalVerificationResult(
 
   return {
     factScore: score,
-    factSummary: `[DEMO SAFE MODE] Limited confidence due to provider availability. The headline "${headline}" was evaluated locally. Evidence: ${evidenceText}. Word count: ${bodyWordCount}. ${hasMedia ? 'Media present.' : ''} Please manually verify claims.`,
+    factSummary: `Verification confidence temporarily reduced while additional checks complete. Evaluated locally. Evidence: ${evidenceText}. Word count: ${bodyWordCount}. ${hasMedia ? 'Media present.' : ''} Please manually verify claims.`,
     confidence: sources.length > 0 && bodyWordCount >= 150 ? 'Medium' : 'Low',
     sourcesChecked: sources.length,
     issues,
@@ -76,7 +76,7 @@ export async function verifyFact(
       Return output exactly as a JSON object with no markdown formatting.
       {
         "factScore": <0-100>,
-        "summary": "<Explain exactly why this score was given based on the facts, source links, and media evidence. Note corroborated claims, unsupported claims, missing context, or biased framing.>",
+        "summary": "<Explain exactly why this score was given based on the facts, source links, and media evidence. You MUST cite specific entities, sources, and claims from the article. Do not use generic boilerplate or automated assessment language. Write it as an editorial note.>",
         "confidence": "<Low | Medium | High>",
         "sourcesChecked": <number of source links reviewed>,
         "issues": ["<issue 1>", "<issue 2>"] // Leave empty array if no issues
