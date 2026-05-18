@@ -36,6 +36,8 @@ export interface Post {
   likes?: string[];
   sourceLink?: string;
   category?: string;
+  contentType?: 'NEWS' | 'TRENDING' | 'CULTURE' | 'WHOLESOME' | 'HUMOR';
+  confidence?: string;
 }
 
 interface ArticleCardProps {
@@ -70,9 +72,19 @@ export function ArticleCard({ post, variant = 'feature', liked = false, onLikeTo
         )}
         <div className="flex-1 min-w-0">
           <p className="font-body text-base font-bold text-on-surface group-hover:text-primary transition-colors leading-snug line-clamp-1">{post.headline}</p>
-          <div className="flex items-center gap-3 mt-1.5">
+          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
             <span className="font-label text-[10px] text-on-surface-variant/40 uppercase tracking-widest">{post.author?.name || 'Unknown'}</span>
             <FactScoreBadge score={post.factScore || 0} />
+            {post.contentType && post.contentType !== 'NEWS' && (
+              <span className="font-label text-[10px] bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-none font-bold uppercase tracking-widest">
+                {post.contentType}
+              </span>
+            )}
+            {(post.confidence === 'Low' || post.confidence === 'Medium') && post.contentType === 'NEWS' && (
+              <span className="font-label text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-1.5 py-0.5 font-bold uppercase tracking-widest">
+                Developing Story
+              </span>
+            )}
           </div>
         </div>
         <ArrowUpRight size={16} className="text-on-surface-variant/20 group-hover:text-primary transition-colors" />
@@ -115,6 +127,18 @@ export function ArticleCard({ post, variant = 'feature', liked = false, onLikeTo
             )}
             <span className="text-[14px] text-on-surface-variant">·</span>
             <span className="text-[14px] text-on-surface-variant">{timeAgo(post.createdAt)}</span>
+
+            {post.contentType && post.contentType !== 'NEWS' && (
+              <span className="font-label text-[10px] bg-secondary/10 text-secondary px-1.5 py-0.5 rounded-none font-bold uppercase tracking-widest ml-2">
+                {post.contentType}
+              </span>
+            )}
+            
+            {(post.confidence === 'Low' || post.confidence === 'Medium') && (!post.contentType || post.contentType === 'NEWS') && (
+              <span className="font-label text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-1.5 py-0.5 font-bold uppercase tracking-widest ml-2">
+                Developing Story
+              </span>
+            )}
 
             {post.author?.email?.includes('@lettr.ai') && (
                 <span className="ml-auto text-[10px] px-1.5 py-0.5 border border-outline-variant text-on-surface-variant font-bold font-label uppercase tracking-widest rounded-none">BOT</span>

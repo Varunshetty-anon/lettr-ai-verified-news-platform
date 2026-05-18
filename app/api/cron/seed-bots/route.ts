@@ -59,6 +59,33 @@ const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
     sources: ['https://www.reddit.com/r/defense/hot.json?limit=12', 'https://www.reddit.com/r/Military/hot.json?limit=12'],
     category: 'Geopolitics'
   },
+  'Instagram Curator Bot': {
+    sources: [
+      'https://rsshub.app/instagram/user/pubity',
+      'https://rsshub.app/instagram/user/indiain24hours',
+      'https://rsshub.app/instagram/user/rvcjinsta',
+      'https://rsshub.app/instagram/user/indiatoday',
+      'https://rsshub.app/instagram/user/thebetterindia',
+      'https://rsshub.app/instagram/user/ndtv',
+      'https://rsshub.app/instagram/user/brut.india',
+      'https://rsshub.app/instagram/user/nasa',
+      'https://rsshub.app/instagram/user/isro.in',
+      'https://rsshub.app/instagram/user/techcrunch',
+      'https://rsshub.app/instagram/user/yourstory_com'
+    ],
+    category: 'Culture'
+  },
+  'X Curator Bot': {
+    sources: [
+      'https://rsshub.app/twitter/user/ANI',
+      'https://rsshub.app/twitter/user/ISRO',
+      'https://rsshub.app/twitter/user/NASA',
+      'https://rsshub.app/twitter/user/TechCrunch',
+      'https://rsshub.app/twitter/user/Reuters',
+      'https://rsshub.app/twitter/user/BBCBreaking'
+    ],
+    category: 'World'
+  },
   'Startup Bot': {
     sources: ['https://www.reddit.com/r/startups/hot.json?limit=12', 'https://www.reddit.com/r/StartUpIndia/hot.json?limit=12'],
     category: 'Indian Startups'
@@ -257,39 +284,13 @@ export async function GET(request: Request) {
     }
     const candidates: CandidateArticle[] = [];
 
-    // ── Fetch candidates from Reddit ──
-    try {
-      const response = await fetch(sourceUrl, { headers: { 'User-Agent': 'LettrBot/1.0' } });
-      if (!response.ok) throw new Error(`Reddit API failed with status ${response.status}`);
-      const redditData = await response.json();
-      const posts = redditData.data?.children;
-      if (!posts || posts.length === 0) throw new Error("No Reddit data");
+    // ── Candidate Fetching Logic ──
+    const isRssSource = sourceUrl.includes('rss') || sourceUrl.includes('.xml');
 
-      const shuffled = posts.sort(() => Math.random() - 0.5);
-      for (const post of shuffled) {
-        // Pre-filter: skip non-newsworthy Reddit posts
-        if (!isRedditPostNewsworthy(post)) continue;
-
-        const urlHash = hashUrl(post.data.url);
-        const existing = await Post.findOne({ sourceHash: urlHash });
-        if (!existing) {
-          candidates.push({
-            title: post.data.title,
-            text: post.data.selftext || `Link posted: ${post.data.url}`,
-            link: post.data.url,
-            originTag: `Source: Reddit (r/${post.data.subreddit})`,
-            media: extractMediaFromReddit(post.data)
-          });
-          if (candidates.length >= 5) break;
-        }
-      }
-    } catch (redditError: any) {
-      console.log(`[Cron] Reddit fetch failed, falling back to RSS:`, redditError.message);
-      const rssList = RSS_FALLBACKS[randomBot.name] || RSS_FALLBACKS['WorldNews Bot'];
-      const rssUrl = rssList[Math.floor(Math.random() * rssList.length)];
-      console.log(`[Cron] Fetching RSS fallback from: ${rssUrl}`);
-      const rssRes = await fetch(rssUrl, { headers: { 'User-Agent': 'LettrBot/1.0' } });
-      if (!rssRes.ok) throw new Error(`RSS fallback failed with status ${rssRes.status}`);
+    const fetchAndParseRss = async (url: string) => {
+      console.log(`[Cron] Fetching RSS from: ${url}`);
+      const rssRes = await fetch(url, { headers: { 'User-Agent': 'LettrBot/1.0' } });
+      if (!rssRes.ok) throw new Error(`RSS fetch failed with status ${rssRes.status}`);
       const rssText = await rssRes.text();
       const items = rssText.split('<item>').slice(1);
       if (items.length === 0) throw new Error("No items in RSS feed");
@@ -307,7 +308,7 @@ export async function GET(request: Request) {
             const rawTitle = titleMatch ? titleMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : 'Breaking News';
             const rawText = descMatch ? descMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]*>/g, '').trim() : '';
             const originalLink = link.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim();
-            const originTag = `Source: RSS Feed (${new URL(rssUrl).hostname})`;
+            const originTag = `Source: RSS Feed (${new URL(url).hostname})`;
 
             const media: { image?: string; video?: string } = {};
             const imgMatch = item.match(/<media:content[^>]*url="([^"]+)"/) || item.match(/<enclosure[^>]*url="([^"]+)"/) || item.match(/<img[^>]*src="([^"]+)"/);
@@ -315,16 +316,49 @@ export async function GET(request: Request) {
               media.image = imgMatch[1];
             }
 
+            candidates.push({ title: rawTitle, text: rawText, link: originalLink, originTag, media });
+            if (candidates.length >= 5) break;
+          }
+        }
+      }
+    };
+
+    try {
+      if (isRssSource) {
+        await fetchAndParseRss(sourceUrl);
+      } else {
+        // Reddit Fetch
+        const response = await fetch(sourceUrl, { headers: { 'User-Agent': 'LettrBot/1.0' } });
+        if (!response.ok) throw new Error(`Reddit API failed with status ${response.status}`);
+        const redditData = await response.json();
+        const posts = redditData.data?.children;
+        if (!posts || posts.length === 0) throw new Error("No Reddit data");
+
+        const shuffled = posts.sort(() => Math.random() - 0.5);
+        for (const post of shuffled) {
+          if (!isRedditPostNewsworthy(post)) continue;
+          const urlHash = hashUrl(post.data.url);
+          const existing = await Post.findOne({ sourceHash: urlHash });
+          if (!existing) {
             candidates.push({
-              title: rawTitle,
-              text: rawText,
-              link: originalLink,
-              originTag,
-              media
+              title: post.data.title,
+              text: post.data.selftext || `Link posted: ${post.data.url}`,
+              link: post.data.url,
+              originTag: `Source: Reddit (r/${post.data.subreddit})`,
+              media: extractMediaFromReddit(post.data)
             });
             if (candidates.length >= 5) break;
           }
         }
+      }
+    } catch (fetchError: any) {
+      console.log(`[Cron] Primary fetch failed, falling back to RSS:`, fetchError.message);
+      const rssList = RSS_FALLBACKS[randomBot.name] || RSS_FALLBACKS['WorldNews Bot'];
+      const rssUrl = rssList[Math.floor(Math.random() * rssList.length)];
+      try {
+        await fetchAndParseRss(rssUrl);
+      } catch (fallbackErr: any) {
+        console.log(`[Cron] RSS fallback also failed:`, fallbackErr.message);
       }
     }
 
@@ -425,6 +459,7 @@ export async function GET(request: Request) {
           sourceHash: urlHash,
           originSource: originTag,
           category: normalizedCategory,
+          contentType: processed.contentType || 'NEWS',
           imageUrl,
           videoUrl,
           factScore: verification.factScore,

@@ -21,6 +21,7 @@ export interface IPost extends Document {
   issues?: string[];
   isPublished: boolean;
   engagement: number;
+  contentType?: 'NEWS' | 'TRENDING' | 'CULTURE' | 'WHOLESOME' | 'HUMOR';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,7 +46,8 @@ const PostSchema: Schema<IPost> = new Schema({
   reasoning: { type: String },
   issues: [{ type: String }],
   isPublished: { type: Boolean, default: false },
-  engagement: { type: Number, default: 0 }
+  engagement: { type: Number, default: 0 },
+  contentType: { type: String, enum: ['NEWS', 'TRENDING', 'CULTURE', 'WHOLESOME', 'HUMOR'], default: 'NEWS', index: true }
 }, { timestamps: true });
 
 export const Post: Model<IPost> = mongoose.models.Post || mongoose.model<IPost>('Post', PostSchema);

@@ -2,6 +2,7 @@ export interface ProcessedArticle {
   headline: string;
   body: string;
   category: string;
+  contentType: 'NEWS' | 'TRENDING' | 'CULTURE' | 'WHOLESOME' | 'HUMOR';
   newsworthiness: number; // 0-100, reject below threshold
 }
 
@@ -20,10 +21,9 @@ function isInCooldown(): boolean {
 
 // ─── Pre-Filter: Reject non-news junk BEFORE wasting tokens ────
 const JUNK_PATTERNS = [
-  /\b(meme|shitpost|eli5|rant|unpopular opinion|hot take|change my view)\b/i,
-  /\b(my experience|my story|i just|i've been|i feel|i think we should)\b/i,
+  /\b(shitpost|eli5|rant|unpopular opinion|hot take|change my view)\b/i,
+  /\b(i just|i've been|i think we should)\b/i,
   /\b(upvote|downvote|karma|reddit gold|award|repost)\b/i,
-  /\b(screenshot|look at this|check this out|found this gem)\b/i,
   /\[poll\]|\[question\]|\[discussion\]|\[rant\]|\[vent\]|\[help\]/i,
   /^(TIL|TIFU|AITA|WIBTA|CMV|ELI5|DAE)\b/i,
   /\b(anyone else|does anyone|am i the only)\b/i,
@@ -124,21 +124,25 @@ Raw Content: ${rawBody.substring(0, 2500)}
 Target Category Hint: ${targetCategory}
 
 STRICT REJECTION CRITERIA (return {"reject": true} if ANY apply):
-- Content is a meme, random selfie, or no-source image dump
-- Content is a personal story, AITA, TIFU, or ELI5
-- Content is an opinion-only post or random Reddit discussion
-- Content is a screenshot description with no factual substance
-- Content contains no verifiable facts or named entities
-- Content is too vague to construct 3 meaningful paragraphs
+- Content is a random selfie, low-effort junk, or no-source image dump
+- Content is a random personal story (unless highly wholesome/inspiring), AITA, TIFU, or ELI5
+- Content is an opinion-only rant or random Reddit discussion
+- Content contains no verifiable facts, named entities, OR cultural/human value
+- Content is too vague to construct meaningful content
 
 INSTRUCTIONS (if content passes):
-1. HEADLINE: Write a short, punchy, professional headline (max 12-15 words). No tags, no HTML entities, no conversational tone.
-2. BODY: Write exactly 3 distinct paragraphs (minimum 300 words total):
-   - Paragraph 1: What happened (The core news/announcement).
-   - Paragraph 2: Why it matters (The impact, implications, or significance).
-   - Paragraph 3: Context/Background (Historical context or broader industry trends).
-   NEVER include "Article URL:", "Comments URL:", Reddit metrics, polls, or markdown links.
-3. CATEGORY: You MUST assign EXACTLY one value from this list (copy-paste, do NOT invent your own):
+1. HEADLINE: Write a short, punchy headline (max 12-15 words). No tags, no HTML entities.
+2. CONTENT TYPE: Assign EXACTLY one: NEWS, TRENDING, CULTURE, WHOLESOME, HUMOR.
+   - NEWS: Serious, factual reporting.
+   - TRENDING: Viral moments, internet culture.
+   - CULTURE: Pop culture, arts, entertainment.
+   - WHOLESOME: Positive human moments, heartwarming stories, sports celebrations.
+   - HUMOR: Harmless memes, startup humor.
+3. BODY: 
+   - If NEWS/TRENDING/CULTURE: Write exactly 3 distinct paragraphs (What happened, Why it matters, Context).
+   - If WHOLESOME/HUMOR: Write 1-2 engaging, casual paragraphs explaining the context or joke.
+   NEVER include "Article URL:", Reddit metrics, polls, or markdown links.
+4. CATEGORY: You MUST assign EXACTLY one value from this list (copy-paste, do NOT invent your own):
    'AI & Tech', 'World', 'Finance', 'Space', 'Health', 'Culture', 'Indian Politics', 'Indian Tech', 'Indian Startups', 'Indian Business', 'Indian Science', 'Indian Sports', 'Indian Entertainment', 'Geopolitics', 'Science', 'Crypto', 'Energy', 'Climate'
    
    STRICT CATEGORY RULES:
@@ -151,12 +155,13 @@ INSTRUCTIONS (if content passes):
    - 'AI & Tech': AI, machine learning, robotics, semiconductors, software, gaming technology, VR/AR.
    - If content mentions India, Indian cities, Indian states, Indian leaders → use an 'Indian *' category, NOT 'Geopolitics' or 'World'.
    - If low confidence, fallback to 'World'.
-4. NEWSWORTHINESS: Rate 0-100 how newsworthy this content is (above 40 = publishable).
+5. NEWSWORTHINESS: Rate 0-100 how newsworthy or culturally significant this is (above 40 = publishable).
 
 Return JSON:
 {
-  "headline": "<clean editorial headline>",
-  "body": "<the 3-paragraph editorial body>",
+  "headline": "<clean headline>",
+  "body": "<the formatted body text>",
+  "contentType": "<NEWS|TRENDING|CULTURE|WHOLESOME|HUMOR>",
   "category": "<EXACTLY one value from the list above>",
   "newsworthiness": <0-100>
 }`;
@@ -217,8 +222,9 @@ Return JSON:
     return {
       headline: result.headline,
       body: result.body,
+      contentType: result.contentType || 'NEWS',
       category: result.category,
-      newsworthiness
+      newsworthiness: result.newsworthiness || 50
     };
 
   } catch (e) {
