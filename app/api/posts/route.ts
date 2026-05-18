@@ -175,6 +175,26 @@ export async function GET(request: Request) {
           return Array.from(adjs);
         };
 
+        function categoryMatchesPrefs(category: string, prefs: string[]): boolean {
+          if (!category || !prefs?.length) return false;
+          const catLower = category.toLowerCase();
+          return prefs.some(pref => {
+            const prefLower = pref.toLowerCase();
+            return catLower === prefLower || 
+                   catLower.includes(prefLower) || 
+                   prefLower.includes(catLower) ||
+                   // Handle partial word matches
+                   catLower.split(' ').some(word => prefLower.includes(word) && word.length > 3);
+          });
+        }
+
+        function categoryIsAdjacent(category: string, prefs: string[], adjacentMap: Record<string, string[]>): boolean {
+          return prefs.some(pref => {
+            const adjacents = adjacentMap[pref] || [];
+            return adjacents.some(adj => adj.toLowerCase() === category.toLowerCase());
+          });
+        }
+
         const userAdjacents = getAdjacents(userPrefs);
 
         hydrated.sort((a, b) => {
@@ -184,19 +204,17 @@ export async function GET(request: Request) {
           const aFollow = a.followBoost || 0;
           const bFollow = b.followBoost || 0;
 
-          const aPref = userPrefs.includes(aCategory) ? 2000 : 0;
-          const bPref = userPrefs.includes(bCategory) ? 2000 : 0;
+          const aPrefMatch = categoryMatchesPrefs(aCategory, userPrefs);
+          const bPrefMatch = categoryMatchesPrefs(bCategory, userPrefs);
 
-          const aAdj = userPrefs.includes(aCategory)
-            ? 0
-            : userAdjacents.includes(aCategory)
-              ? 300
-              : -1000;
-          const bAdj = userPrefs.includes(bCategory)
-            ? 0
-            : userAdjacents.includes(bCategory)
-              ? 300
-              : -1000;
+          const aAdjMatch = !aPrefMatch && categoryIsAdjacent(aCategory, userPrefs, adjacentMap);
+          const bAdjMatch = !bPrefMatch && categoryIsAdjacent(bCategory, userPrefs, adjacentMap);
+
+          const aPref = aPrefMatch ? 2000 : 0;
+          const bPref = bPrefMatch ? 2000 : 0;
+
+          const aAdj = aPrefMatch ? 0 : aAdjMatch ? 300 : -1000;
+          const bAdj = bPrefMatch ? 0 : bAdjMatch ? 300 : -1000;
 
           const aLikeCat = likedCategorySet.has(aCategory) ? 20 : 0;
           const bLikeCat = likedCategorySet.has(bCategory) ? 20 : 0;
