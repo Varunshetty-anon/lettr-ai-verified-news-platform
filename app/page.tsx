@@ -65,17 +65,12 @@ const isBot = (author: any) => {
   return author.role?.toLowerCase() === 'bot' || author.email?.includes('@lettr.ai') || author.name?.toLowerCase().includes('bot');
 };
 
-function EditorialImage({ src, alt = '', className = '', aspect = 'aspect-video' }: { src?: string; alt?: string; className?: string; aspect?: string }) {
+function EditorialImage({ src, alt = '', className = '', aspect = 'aspect-video', category }: { src?: string; alt?: string; className?: string; aspect?: string; category?: string }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
-  if (!src || error) {
-    return (
-      <div className={`w-full h-full ${aspect} bg-surface-container flex items-center justify-center border border-outline-variant/30`}>
-        <span className="type-label-md text-on-surface-variant/40">NO MEDIA AVAILABLE</span>
-      </div>
-    );
-  }
+  const fallbackSrc = `https://placehold.co/800x400/1e1e1e/FFF?text=${encodeURIComponent(category || 'MEDIA')}`;
+  const finalSrc = error || !src ? fallbackSrc : src;
 
   return (
     <div className={`relative w-full h-full ${aspect} overflow-hidden bg-surface-container`}>
@@ -83,11 +78,13 @@ function EditorialImage({ src, alt = '', className = '', aspect = 'aspect-video'
         <div className="absolute inset-0 shimmer-bg" />
       )}
       <img
-        src={src}
+        src={finalSrc}
         alt={alt}
         className={`w-full h-full object-cover transition-all duration-700 ease-in-out ${className} ${loaded ? 'opacity-100 blur-none scale-100' : 'opacity-0 blur-md scale-105'}`}
         onLoad={() => setLoaded(true)}
-        onError={() => setError(true)}
+        onError={(e) => {
+          if (!error) setError(true);
+        }}
       />
     </div>
   );
@@ -284,15 +281,7 @@ export default function Home() {
           <article key={post._id} className="flex gap-4 border-b border-outline-variant py-6 cursor-pointer hover:bg-surface-container transition-colors px-4 -mx-4"
             onClick={() => router.push(`/post/${post._id}`)}>
             <div className="w-32 h-24 flex-shrink-0 overflow-hidden relative">
-              {post.imageUrl ? (
-                <EditorialImage src={post.imageUrl} alt={post.headline} aspect="w-full h-full" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-surface-container">
-                  <span className="type-headline-sm text-on-surface-variant opacity-30">
-                    {post.category?.charAt(0) || 'L'}
-                  </span>
-                </div>
-              )}
+              <EditorialImage src={post.imageUrl} alt={post.headline} aspect="w-full h-full" category={post.category} />
             </div>
             <div className="flex-1 min-w-0">
               <span className="type-label-md text-primary mb-1 block uppercase">{post.category}</span>

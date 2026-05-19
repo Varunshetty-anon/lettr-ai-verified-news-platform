@@ -61,28 +61,23 @@ const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
   },
   'Instagram Curator Bot': {
     sources: [
-      'https://hub.slarker.me/instagram/user/pubity',
-      'https://hub.slarker.me/instagram/user/indiain24hours',
-      'https://hub.slarker.me/instagram/user/rvcjinsta',
-      'https://hub.slarker.me/instagram/user/indiatoday',
-      'https://hub.slarker.me/instagram/user/thebetterindia',
-      'https://hub.slarker.me/instagram/user/ndtv',
-      'https://hub.slarker.me/instagram/user/brut.india',
-      'https://hub.slarker.me/instagram/user/nasa',
-      'https://hub.slarker.me/instagram/user/isro.in',
-      'https://hub.slarker.me/instagram/user/techcrunch',
-      'https://hub.slarker.me/instagram/user/yourstory_com'
+      'https://www.reddit.com/r/popculturechat/top.json?t=day',
+      'https://www.reddit.com/r/BollywoodGossip/top.json?t=day',
+      'https://www.reddit.com/r/IndianMemeTemplates/top.json?t=day',
+      'https://www.reddit.com/r/india/top.json?t=day',
+      'https://www.reddit.com/r/UpliftingNews/top.json?t=day',
+      'https://www.reddit.com/domain/ndtv.com/new.json',
+      'https://www.reddit.com/r/nasa/top.json?t=day',
+      'https://www.reddit.com/r/ISRO/top.json?t=day'
     ],
     category: 'Culture'
   },
   'X Curator Bot': {
     sources: [
-      'https://hub.slarker.me/twitter/user/ANI',
-      'https://hub.slarker.me/twitter/user/ISRO',
-      'https://hub.slarker.me/twitter/user/NASA',
-      'https://hub.slarker.me/twitter/user/TechCrunch',
-      'https://hub.slarker.me/twitter/user/Reuters',
-      'https://hub.slarker.me/twitter/user/BBCBreaking'
+      'https://www.reddit.com/domain/reuters.com/new.json',
+      'https://www.reddit.com/domain/bbc.co.uk/new.json',
+      'https://www.reddit.com/domain/techcrunch.com/new.json',
+      'https://www.reddit.com/domain/aniin.com/new.json'
     ],
     category: 'World'
   },

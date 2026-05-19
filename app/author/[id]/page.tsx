@@ -79,13 +79,7 @@ function EditorialImage({ src, alt = '', className = '', aspect = 'aspect-video'
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
-  if (!src || error) {
-    return (
-      <div className={`w-full h-full ${aspect} bg-surface-container flex items-center justify-center border border-outline-variant/30`}>
-        <span className="type-label-md text-on-surface-variant/40">NO MEDIA AVAILABLE</span>
-      </div>
-    );
-  }
+  const finalSrc = error || !src ? `https://picsum.photos/seed/${encodeURIComponent(alt || 'editorial')}/800/500` : src;
 
   return (
     <div className={`relative w-full h-full ${aspect} overflow-hidden bg-surface-container`}>
@@ -93,11 +87,13 @@ function EditorialImage({ src, alt = '', className = '', aspect = 'aspect-video'
         <div className="absolute inset-0 shimmer-bg" />
       )}
       <img
-        src={src}
+        src={finalSrc}
         alt={alt}
-        className={`w-full h-full object-cover transition-all duration-700 ease-in-out ${className} ${loaded ? 'opacity-100 blur-none scale-100' : 'opacity-0 blur-md scale-105'}`}
+        className={`w-full h-full object-cover transition-all duration-700 ease-in-out ${className} ${loaded ? 'opacity-100 blur-none scale-100' : 'opacity-0 blur-md scale-105'} ${(error || !src) ? 'grayscale opacity-60' : ''}`}
         onLoad={() => setLoaded(true)}
-        onError={() => setError(true)}
+        onError={(e) => {
+          if (!error) setError(true);
+        }}
       />
     </div>
   );

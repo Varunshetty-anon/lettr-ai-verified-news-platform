@@ -161,7 +161,7 @@ export function ArticleCard({ post, variant = 'feature', liked = false, onLikeTo
                   {!imgLoaded && !imgError && (
                     <div className="absolute inset-0 shimmer-bg" />
                   )}
-                  {!imgError && post.imageUrl && (
+                  {!imgError && post.imageUrl ? (
                     <img
                       src={post.imageUrl}
                       alt={post.headline}
@@ -169,11 +169,13 @@ export function ArticleCard({ post, variant = 'feature', liked = false, onLikeTo
                       onLoad={() => setImgLoaded(true)}
                       onError={() => setImgError(true)}
                     />
-                  )}
-                  {(imgError || !post.imageUrl) && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-surface-container">
-                      <span className="type-label-md text-on-surface-variant">{post.category || 'MEDIA'}</span>
-                    </div>
+                  ) : (
+                    <img
+                      src={`https://picsum.photos/seed/${encodeURIComponent(post._id || 'editorial')}/800/500`}
+                      alt={post.headline}
+                      className={`w-full h-full object-cover grayscale opacity-60 transition-all duration-700 ease-in-out ${imgLoaded ? 'opacity-100 blur-none scale-100' : 'opacity-0 blur-md scale-105'}`}
+                      onLoad={() => setImgLoaded(true)}
+                    />
                   )}
                 </div>
               )}

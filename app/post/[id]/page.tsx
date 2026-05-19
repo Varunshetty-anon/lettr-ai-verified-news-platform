@@ -50,13 +50,7 @@ function EditorialImage({ src, alt = '', className = '', aspect = 'aspect-video'
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
-  if (!src || error) {
-    return (
-      <div className={`w-full h-full ${aspect} bg-surface-container flex items-center justify-center border border-outline-variant/30`}>
-        <span className="type-label-md text-on-surface-variant/40">NO MEDIA AVAILABLE</span>
-      </div>
-    );
-  }
+  const finalSrc = error || !src ? `https://picsum.photos/seed/${encodeURIComponent(alt || 'editorial')}/800/500` : src;
 
   return (
     <div className={`relative w-full h-full ${aspect} overflow-hidden bg-surface-container`}>
@@ -64,14 +58,18 @@ function EditorialImage({ src, alt = '', className = '', aspect = 'aspect-video'
         <div className="absolute inset-0 shimmer-bg" />
       )}
       <img
-        src={src}
+        src={finalSrc}
         alt={alt}
-        className={`w-full h-full object-cover transition-all duration-700 ease-in-out ${className} ${loaded ? 'opacity-100 blur-none scale-100' : 'opacity-0 blur-md scale-105'}`}
+        className={`w-full h-full object-cover transition-all duration-700 ease-in-out ${className} ${loaded ? 'opacity-100 blur-none scale-100' : 'opacity-0 blur-md scale-105'} ${(error || !src) ? 'grayscale opacity-60' : ''}`}
         onLoad={() => setLoaded(true)}
-        onError={() => setError(true)}
+        onError={(e) => {
+          if (!error) setError(true);
+        }}
       />
     </div>
   );
+
+
 }
 
 function VideoPlayer({ src, poster }: { src: string; poster?: string }) {
@@ -412,12 +410,26 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
         
         {/* ── 1. Category + Read Time ── */}
         <div className="flex items-center justify-between mb-4">
-          {post.category ? (
-            <span className="type-label-md border border-on-surface px-3 py-1 text-on-surface uppercase">
-              {post.category}
-            </span>
-          ) : <div/>}
-          <span className="type-caption text-on-surface-variant uppercase">{post.readTime || '5'} MIN READ</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            {post.category && (
+              <span className="type-label-md border border-on-surface px-3 py-1 text-on-surface uppercase">
+                {post.category}
+              </span>
+            )}
+            
+            {post.contentType && post.contentType !== 'NEWS' && (
+              <span className="type-label-md bg-secondary/10 text-secondary px-3 py-1 font-bold uppercase tracking-widest">
+                {post.contentType}
+              </span>
+            )}
+
+            {(post.confidence === 'Low' || post.confidence === 'Medium') && (!post.contentType || post.contentType === 'NEWS') && (
+              <span className="type-label-md bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-1 font-bold uppercase tracking-widest">
+                Developing Story
+              </span>
+            )}
+          </div>
+          <span className="type-caption text-on-surface-variant uppercase ml-auto">{post.readTime || '5'} MIN READ</span>
         </div>
 
         {/* ── 2. Headline ── */}
