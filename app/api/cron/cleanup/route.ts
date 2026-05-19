@@ -5,9 +5,11 @@ import { Post } from '@/models/Post';
 
 export async function GET(request: Request) {
   try {
-    // Basic auth check using a hardcoded secret in query param for security
+    // Security check: Validate the secret against the environment variable
     const { searchParams } = new URL(request.url);
-    if (searchParams.get('secret') !== 'lettr_cleanup_999') {
+    const expectedSecret = process.env.CRON_SECRET;
+
+    if (!expectedSecret || searchParams.get('secret') !== expectedSecret) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

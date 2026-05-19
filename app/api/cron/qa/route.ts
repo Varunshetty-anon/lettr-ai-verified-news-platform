@@ -6,7 +6,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  if (searchParams.get('secret') !== 'lettr_qa_phase4') {
+  const expectedSecret = process.env.CRON_SECRET;
+
+  if (!expectedSecret || searchParams.get('secret') !== expectedSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
