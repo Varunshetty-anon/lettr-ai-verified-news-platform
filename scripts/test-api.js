@@ -25,10 +25,11 @@ function fetchJSON(url, label) {
 
 async function main() {
   console.log("=== PHASE 4.5 POST-FIX VALIDATION ===\n");
+  const cronSecret = process.env.CRON_SECRET || 'lettr_cleanup_999'; // fallback for legacy usage if not set
 
   // 1. Fix categories on existing posts
   console.log("1. FIXING CATEGORIES ON EXISTING POSTS...");
-  await fetchJSON('https://lettr-news.onrender.com/api/cron/fix-categories?secret=lettr_cleanup_999', 'Fix-Categories');
+  await fetchJSON(`https://lettr-news.onrender.com/api/cron/fix-categories?secret=${cronSecret}`, 'Fix-Categories');
 
   // 2. Seed 3 rounds of fresh content with new processor + OG images
   for (let i = 1; i <= 3; i++) {
@@ -43,7 +44,7 @@ async function main() {
   // 3. Run QA
   console.log("\n\n5. RUNNING FINAL QA...");
   await new Promise(r => setTimeout(r, 3000));
-  const qa = await fetchJSON('https://lettr-news.onrender.com/api/cron/qa?secret=lettr_qa_phase4', 'QA');
+  const qa = await fetchJSON(`https://lettr-news.onrender.com/api/cron/qa?secret=${cronSecret}`, 'QA');
 
   if (qa) {
     console.log("\n\n=== FINAL QA SUMMARY ===");

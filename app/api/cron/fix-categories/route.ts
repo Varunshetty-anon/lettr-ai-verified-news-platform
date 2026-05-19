@@ -122,7 +122,9 @@ function detectIndianCategory(headline: string): string {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  if (searchParams.get('secret') !== 'lettr_cleanup_999') {
+  const expectedSecret = process.env.CRON_SECRET;
+
+  if (!expectedSecret || searchParams.get('secret') !== expectedSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
