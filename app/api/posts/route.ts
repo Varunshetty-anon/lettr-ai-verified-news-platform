@@ -94,6 +94,8 @@ export async function GET(request: Request) {
         originSource: post.originSource,
         sourceLink: post.sourceLink,
         category: post.category,
+        contentType: post.contentType,
+        confidence: post.confidence,
         mediaUrl: post.mediaUrl,
         mediaType: post.mediaType || 'text',
         imageUrl: post.imageUrl,
@@ -112,7 +114,6 @@ export async function GET(request: Request) {
         authorId: post.authorId?.toString(),
         followBoost: 0,
         factSummary: post.factSummary,
-        confidence: post.confidence,
         sourcesChecked: post.sourcesChecked,
       };
     });

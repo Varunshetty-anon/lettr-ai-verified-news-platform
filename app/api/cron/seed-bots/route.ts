@@ -61,28 +61,28 @@ const BOT_CONFIG: Record<string, { sources: string[]; category: string }> = {
   },
   'Instagram Curator Bot': {
     sources: [
-      'https://rsshub.app/instagram/user/pubity',
-      'https://rsshub.app/instagram/user/indiain24hours',
-      'https://rsshub.app/instagram/user/rvcjinsta',
-      'https://rsshub.app/instagram/user/indiatoday',
-      'https://rsshub.app/instagram/user/thebetterindia',
-      'https://rsshub.app/instagram/user/ndtv',
-      'https://rsshub.app/instagram/user/brut.india',
-      'https://rsshub.app/instagram/user/nasa',
-      'https://rsshub.app/instagram/user/isro.in',
-      'https://rsshub.app/instagram/user/techcrunch',
-      'https://rsshub.app/instagram/user/yourstory_com'
+      'https://hub.slarker.me/instagram/user/pubity',
+      'https://hub.slarker.me/instagram/user/indiain24hours',
+      'https://hub.slarker.me/instagram/user/rvcjinsta',
+      'https://hub.slarker.me/instagram/user/indiatoday',
+      'https://hub.slarker.me/instagram/user/thebetterindia',
+      'https://hub.slarker.me/instagram/user/ndtv',
+      'https://hub.slarker.me/instagram/user/brut.india',
+      'https://hub.slarker.me/instagram/user/nasa',
+      'https://hub.slarker.me/instagram/user/isro.in',
+      'https://hub.slarker.me/instagram/user/techcrunch',
+      'https://hub.slarker.me/instagram/user/yourstory_com'
     ],
     category: 'Culture'
   },
   'X Curator Bot': {
     sources: [
-      'https://rsshub.app/twitter/user/ANI',
-      'https://rsshub.app/twitter/user/ISRO',
-      'https://rsshub.app/twitter/user/NASA',
-      'https://rsshub.app/twitter/user/TechCrunch',
-      'https://rsshub.app/twitter/user/Reuters',
-      'https://rsshub.app/twitter/user/BBCBreaking'
+      'https://hub.slarker.me/twitter/user/ANI',
+      'https://hub.slarker.me/twitter/user/ISRO',
+      'https://hub.slarker.me/twitter/user/NASA',
+      'https://hub.slarker.me/twitter/user/TechCrunch',
+      'https://hub.slarker.me/twitter/user/Reuters',
+      'https://hub.slarker.me/twitter/user/BBCBreaking'
     ],
     category: 'World'
   },
@@ -423,6 +423,12 @@ export async function GET(request: Request) {
         if (!processed) {
           console.log(`[Cron] Skip: rejected by content processor`);
           continue;
+        }
+
+        // ── Aesthetic Placeholder Fallback ──
+        if (!imageUrl && !videoUrl) {
+           const fallbackLabel = encodeURIComponent(processed.category || 'NEWS');
+           imageUrl = `https://placehold.co/800x400/1e1e1e/FFF?text=${fallbackLabel}`;
         }
 
         const paragraphs = processed.body.split('\n\n').filter(p => p.trim().length > 0);
