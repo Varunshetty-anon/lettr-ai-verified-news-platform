@@ -167,6 +167,38 @@ Return:
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  LIVE RETRIEVAL LAYER (Pre-Scoring)
+// ═══════════════════════════════════════════════════════════════
+async function performLiveRetrieval(understanding: ContentUnderstanding | null): Promise<string> {
+  if (!understanding || !understanding.entities || understanding.entities.length === 0) {
+    return "No entities extracted for retrieval.";
+  }
+  
+  // Search Wikipedia for the top 2 entities as a reliable mock for live retrieval
+  const queries = understanding.entities.slice(0, 2);
+  const searchPromises = queries.map(async (query) => {
+    try {
+      const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&srlimit=1`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data.query?.search?.length > 0) {
+        return `[Live Entity Context: ${query}] ${data.query.search[0].snippet.replace(/<[^>]*>?/gm, '')}`;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  });
+
+  const results = await Promise.all(searchPromises);
+  const validResults = results.filter(Boolean);
+  
+  return validResults.length > 0 
+    ? validResults.join('\n') 
+    : "Live retrieval yielded no specific context. Rely on general verified knowledge.";
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  LAYER 2+3: Reality Verification + Human Explanation (Premium)
 // ═══════════════════════════════════════════════════════════════
 async function layerTwoThreeVerify(
@@ -176,7 +208,8 @@ async function layerTwoThreeVerify(
   sourceCredibility: 'trusted' | 'questionable' | 'unknown',
   sourceCount: number,
   referenceLink?: string,
-  isPremiumRoute: boolean = false
+  isPremiumRoute: boolean = false,
+  liveRetrievalData: string = ''
 ): Promise<VerificationResult> {
   const contextBlock = understanding
     ? `
@@ -191,9 +224,21 @@ LAYER 1 ANALYSIS (already completed):
 `
     : '';
 
-  const prompt = `You are LETTR's senior editorial fact-checker. Perform a rigorous 2-layer verification.
+  const currentDate = new Date().toISOString();
+  const currentYear = new Date().getFullYear();
+
+  const prompt = `You are LETTR's senior editorial fact-checker. 
+
+*** CRITICAL DATE AWARENESS ***
+CURRENT REAL-WORLD DATE: ${currentDate} (Year: ${currentYear})
+NEVER assume the current year is from your training memory (e.g. 2023 or 2024). 
+If an article references events in ${currentYear} or ${currentYear + 1}, evaluate it from the context that TODAY is ${currentDate}.
+NEVER confidently reject something as false just because it discusses events your training data considers "the future".
 
 ${contextBlock}
+
+LIVE RETRIEVAL CONTEXT (Cross-Verification Data):
+${liveRetrievalData}
 
 ARTICLE TO VERIFY:
 Headline: ${headline}
@@ -203,31 +248,28 @@ Source credibility: ${sourceCredibility}
 Number of source links: ${sourceCount}
 
 ═══ LAYER 2: REALITY VERIFICATION ═══
-Cross-check claims against your knowledge:
-1. Are the named entities real and correctly described?
-2. Do the numerical claims (dates, amounts, statistics) appear accurate?
-3. Is the article internally consistent (no contradictions)?
+Cross-check claims against live retrieval and trusted knowledge:
+1. TIMELINE CHECK: Does this align with the current date (${currentYear})? Do NOT reject as false if timeline is future/current.
+2. Are the named entities real and correctly described?
+3. Is the article internally consistent?
 4. Does the source credibility support the claims? (${sourceCredibility} source)
-5. Are there any red flags: sensationalism, missing attribution, logical gaps?
 
 ═══ LAYER 3: SCORING + HUMAN EXPLANATION ═══
 Score using this STRICT rubric:
-- 90-100: Multiple trusted confirmations. Named sources. Verifiable facts. Well-sourced from credible outlets.
-- 75-89: Mostly credible. Key claims align with known reporting. Some details may be developing or unconfirmed.
-- 50-74: Weak sourcing. Claims are partially verifiable. May rely on single unconfirmed source. Or content is opinion-heavy.
-- 0-49: False, misleading, contains debunked claims, or entirely unsupported.
+- 90-100: Multiple trusted confirmations. Named sources. Verifiable facts. Well-sourced from credible outlets (Reuters, AP, Hindu, ISRO, NASA, etc).
+- 75-89: Mostly credible. Key claims align with known reporting. Single TRUSTED source is perfectly acceptable.
+- 50-74: DEVELOPING STORY or weak sourcing. Claims are developing or unconfirmed. DO NOT call it false if uncertain.
+- 0-49: Outright false, debunked, or completely nonsensical.
 
 CRITICAL SCORING RULES:
-- If source is from a TRUSTED domain (Reuters, BBC, NASA, etc): minimum base score of 72 unless content contradicts known facts.
-- If article has well-structured factual claims with named entities: boost by 5-10 points.
-- If article is opinion/editorial with no sourced facts: cap at 65.
-- If NO external source link provided but content is factually sound: cap at 75.
-- NEVER score below 60 if the article is well-written, factually consistent, and from a credible topic area.
+- Do NOT punish articles for having only ONE source link if the source is TRUSTED (Reuters, BBC, Gov, etc). Single trusted sources should still get 85-95.
+- If an article is breaking news or developing (e.g., uncertain outcomes but real entities), score it 60-74 and mark confidence as 'Low' or 'Medium' so it triggers the DEVELOPING STORY badge. Do NOT reject it as false (0-49) just because it's new.
+- AI must NEVER confidently reject something due to outdated model memory. If uncertain, lower confidence (50-74), DO NOT fail it.
 
-Return JSON:
+Return JSON EXACTLY matching this format:
 {
   "factScore": <0-100>,
-  "summary": "<2-3 sentence editorial analysis. MUST reference specific entities and claims from the article. Explain WHY this score. Example: 'This report on [Entity]'s [Action] aligns with [Source] reporting. The [specific claim] is verifiable, though [specific detail] remains developing.' NEVER say 'automated assessment' or 'appears mostly factual'. Be specific and contextual.>",
+  "summary": "VERIFIED:\n- [Fact 1]\n- [Fact 2]\n\nNEEDS CONFIRMATION:\n- [Claim 1]\n\nCONTEXT:\n- [Timeline/Historical relevance]\n\nVERDICT:\n[Short human-readable explanation]",
   "confidence": "<Low | Medium | High>",
   "sourcesChecked": ${sourceCount},
   "issues": ["<specific issue if any>"]
@@ -368,11 +410,15 @@ export async function verifyFact(
     console.log(`[Verification] Layer 1 complete: ${understanding.primaryClaim?.substring(0, 80)}...`);
   }
 
+  // ── Live Retrieval Layer ──
+  console.log(`[Verification] Performing live retrieval for claims...`);
+  const liveRetrievalData = await performLiveRetrieval(understanding);
+
   // ── Layer 2+3: Reality Verification + Explanation (premium model) ──
   console.log(`[Verification] Layer 2+3: Verifying reality and generating explanation...`);
   const result = await layerTwoThreeVerify(
     headline, body, understanding,
-    sourceCredibility, sourceCount, referenceLink, isPremiumRoute
+    sourceCredibility, sourceCount, referenceLink, isPremiumRoute, liveRetrievalData
   );
 
   console.log(`[Verification] Complete: Score=${result.factScore}, Confidence=${result.confidence}`);

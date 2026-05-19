@@ -491,7 +491,7 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
               <span className="type-label-md text-on-surface font-bold uppercase tracking-wider">AI VERIFICATION DEK</span>
               <span className="type-caption text-on-surface-variant uppercase">FACT CHECKED</span>
             </div>
-            <p className="type-body-md text-on-surface-variant leading-relaxed">
+            <p className="type-body-md text-on-surface-variant leading-relaxed whitespace-pre-wrap">
               {post.factSummary}
             </p>
             {post.issues && post.issues.length > 0 && (
