@@ -64,24 +64,26 @@ export async function GET(request: Request) {
       .limit(500)
       .lean();
 
-    // Hydrate author info
+    // Hydrate author info and get related user-specific post metadata in parallel
     const authorIds = [...new Set(posts.map(p => p.authorId?.toString()))];
-    const authors = await User.find({ _id: { $in: authorIds } }).lean();
+
+    // Performance optimization: Batch independent database lookups using Promise.all()
+    // This removes sequential database round-trip latency.
+    const [authors, likedPosts, viewedPosts] = await Promise.all([
+      User.find({ _id: { $in: authorIds } }).lean(),
+      userLikes.length > 0 ? Post.find({ _id: { $in: userLikes } }).select('category').lean() : Promise.resolve([]),
+      (userViewed.length > 0 && userViewed.length <= 100) ? Post.find({ _id: { $in: userViewed.slice(-50) } }).select('category').lean() : Promise.resolve([])
+    ]);
+
     const authorMap = new Map(authors.map(a => [(a._id as any).toString(), a]));
 
-    // Get liked categories from user's liked posts
+    // Build liked categories set
     const likedCategorySet = new Set<string>();
-    if (userLikes.length > 0) {
-      const likedPosts = await Post.find({ _id: { $in: userLikes } }).select('category').lean();
-      likedPosts.forEach(p => { if (p.category) likedCategorySet.add(p.category); });
-    }
+    likedPosts.forEach(p => { if (p.category) likedCategorySet.add(p.category); });
 
-    // Get viewed categories
+    // Build viewed categories set
     const viewedCategorySet = new Set<string>();
-    if (userViewed.length > 0 && userViewed.length <= 100) {
-      const viewedPosts = await Post.find({ _id: { $in: userViewed.slice(-50) } }).select('category').lean();
-      viewedPosts.forEach(p => { if (p.category) viewedCategorySet.add(p.category); });
-    }
+    viewedPosts.forEach(p => { if (p.category) viewedCategorySet.add(p.category); });
 
     const hydrated = posts.map(post => {
       const author = authorMap.get(post.authorId?.toString());
