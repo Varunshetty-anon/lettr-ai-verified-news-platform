@@ -7,16 +7,13 @@ export interface VerificationResult {
 }
 
 // ─── Model Routing ─────────────────────────────────────────────
-// Premium model: ONLY for final fact verification (Layer 3)
 const PREMIUM_MODEL = "openai/gpt-oss-120b";
-// Content Understanding (Layer 2) & Fallback
 const UNDERSTANDING_MODEL = "qwen/qwen3-32b";
-// Cheap model: for content processing (Layer 1, handled in content-processor.ts)
 const CHEAP_MODEL = "llama-3.1-8b-instant";
 
 // ─── Rate Limit Cooldown State ─────────────────────────────────
 let lastRateLimitHit = 0;
-const RATE_LIMIT_COOLDOWN_MS = 60_000; // 1 minute cooldown after 429
+const RATE_LIMIT_COOLDOWN_MS = 60_000;
 
 function isInCooldown(): boolean {
   return Date.now() - lastRateLimitHit < RATE_LIMIT_COOLDOWN_MS;
@@ -31,16 +28,21 @@ function extractSourceLinks(referenceLink?: string) {
 }
 
 // ─── Source Credibility Database ────────────────────────────────
-const TRUSTED_DOMAINS = new Set([
-  'reuters.com', 'apnews.com', 'bbc.com', 'bbc.co.uk', 'nytimes.com',
-  'washingtonpost.com', 'theguardian.com', 'economist.com',
-  'nature.com', 'science.org', 'nasa.gov', 'nih.gov', 'who.int',
-  'ndtv.com', 'thehindu.com', 'indianexpress.com', 'livemint.com',
-  'moneycontrol.com', 'economictimes.com', 'hindustantimes.com',
+const TIER1_DOMAINS = new Set([
+  'reuters.com', 'apnews.com', 'bbc.com', 'bbc.co.uk',
+  'nasa.gov', 'nih.gov', 'who.int', 'isro.gov.in', 'esa.int',
+  'gov.in', 'nic.in', 'pib.gov.in',
+  'bloomberg.com', 'nytimes.com', 'washingtonpost.com',
+  'theguardian.com', 'economist.com', 'nature.com', 'science.org',
+]);
+
+const TIER2_DOMAINS = new Set([
+  'thehindu.com', 'indianexpress.com', 'ndtv.com', 'livemint.com',
+  'economictimes.com', 'hindustantimes.com', 'moneycontrol.com',
   'techcrunch.com', 'theverge.com', 'arstechnica.com', 'wired.com',
-  'bloomberg.com', 'cnbc.com', 'ft.com', 'wsj.com',
+  'cnbc.com', 'ft.com', 'wsj.com',
   'aljazeera.com', 'dw.com', 'france24.com',
-  'spacex.com', 'isro.gov.in', 'esa.int',
+  'spacex.com',
 ]);
 
 const QUESTIONABLE_DOMAINS = new Set([
@@ -49,11 +51,14 @@ const QUESTIONABLE_DOMAINS = new Set([
   'wordpress.com', 'blogspot.com',
 ]);
 
-function getSourceCredibility(url: string): 'trusted' | 'questionable' | 'unknown' {
+function getSourceCredibility(url: string): 'tier1' | 'tier2' | 'questionable' | 'unknown' {
   try {
     const hostname = new URL(url).hostname.replace(/^www\./, '');
-    for (const domain of TRUSTED_DOMAINS) {
-      if (hostname === domain || hostname.endsWith('.' + domain)) return 'trusted';
+    for (const domain of TIER1_DOMAINS) {
+      if (hostname === domain || hostname.endsWith('.' + domain)) return 'tier1';
+    }
+    for (const domain of TIER2_DOMAINS) {
+      if (hostname === domain || hostname.endsWith('.' + domain)) return 'tier2';
     }
     for (const domain of QUESTIONABLE_DOMAINS) {
       if (hostname === domain || hostname.endsWith('.' + domain)) return 'questionable';
@@ -167,22 +172,185 @@ Return:
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  LIVE RETRIEVAL LAYER (Pre-Scoring)
+//  LIVE RETRIEVAL ENGINE
+//  Multi-source, tiered retrieval for real-time cross-verification
 // ═══════════════════════════════════════════════════════════════
-async function performLiveRetrieval(understanding: ContentUnderstanding | null): Promise<string> {
-  if (!understanding || !understanding.entities || understanding.entities.length === 0) {
-    return "No entities extracted for retrieval.";
+interface RetrievalResult {
+  source: string;
+  tier: 'tier1' | 'tier2' | 'tier3';
+  title: string;
+  snippet: string;
+  publishDate?: string;
+}
+
+async function performLiveRetrieval(
+  understanding: ContentUnderstanding | null,
+  headline: string
+): Promise<{ results: RetrievalResult[]; summary: string }> {
+  if (!understanding) {
+    return { results: [], summary: "No structured understanding available for retrieval." };
+  }
+
+  const searchQuery = buildSearchQuery(understanding, headline);
+  console.log(`[Retrieval] Search query: "${searchQuery}"`);
+
+  // Run all retrieval sources in parallel
+  const [googleNewsResults, wikiResults] = await Promise.all([
+    retrieveFromGoogleNews(searchQuery, understanding),
+    retrieveFromWikipedia(understanding.entities.slice(0, 2)),
+  ]);
+
+  const allResults = [...googleNewsResults, ...wikiResults];
+  
+  console.log(`[Retrieval] Found ${allResults.length} cross-references (${googleNewsResults.length} news, ${wikiResults.length} wiki)`);
+
+  // Build structured summary for the LLM
+  const summary = buildRetrievalSummary(allResults, understanding);
+
+  return { results: allResults, summary };
+}
+
+function buildSearchQuery(understanding: ContentUnderstanding, headline: string): string {
+  // Build a focused search query from the most important elements
+  const parts: string[] = [];
+  
+  // Use top 2 entities
+  if (understanding.entities?.length > 0) {
+    parts.push(...understanding.entities.slice(0, 2));
   }
   
-  // Search Wikipedia for the top 2 entities as a reliable mock for live retrieval
-  const queries = understanding.entities.slice(0, 2);
-  const searchPromises = queries.map(async (query) => {
+  // Add geography if specific
+  if (understanding.geography && understanding.geography !== 'Global') {
+    parts.push(understanding.geography);
+  }
+  
+  // Add topic keyword
+  if (understanding.topic) {
+    parts.push(understanding.topic);
+  }
+
+  // Fallback to headline keywords if entities are empty
+  if (parts.length === 0) {
+    return headline.split(/\s+/).slice(0, 5).join(' ');
+  }
+
+  return parts.join(' ');
+}
+
+// ─── Google News RSS (Tier 1 + Tier 2 real-time news) ──────────
+async function retrieveFromGoogleNews(
+  query: string,
+  understanding: ContentUnderstanding
+): Promise<RetrievalResult[]> {
+  const results: RetrievalResult[] = [];
+  
+  try {
+    const encodedQuery = encodeURIComponent(query);
+    // Use India-focused news for Indian geography, global otherwise
+    const isIndian = ['India', 'Karnataka', 'Maharashtra', 'Delhi', 'Tamil Nadu', 'Kerala', 'Gujarat', 'Mumbai', 'Bangalore', 'Chennai', 'Hyderabad']
+      .some(g => understanding.geography?.includes(g) || query.includes(g));
+    
+    const hl = isIndian ? 'en-IN' : 'en-US';
+    const gl = isIndian ? 'IN' : 'US';
+    const ceid = isIndian ? 'IN:en' : 'US:en';
+    
+    const url = `https://news.google.com/rss/search?q=${encodedQuery}&hl=${hl}&gl=${gl}&ceid=${ceid}`;
+    
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Lettr/1.0 NewsVerifier' },
+      signal: AbortSignal.timeout(8000),
+    });
+    
+    if (!response.ok) {
+      console.warn(`[Retrieval] Google News returned ${response.status}`);
+      return results;
+    }
+
+    const xml = await response.text();
+    
+    // Parse RSS XML for items
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+    let count = 0;
+    
+    while ((match = itemRegex.exec(xml)) !== null && count < 5) {
+      const itemXml = match[1];
+      
+      const titleMatch = itemXml.match(/<title><!\[CDATA\[(.*?)\]\]>|<title>(.*?)<\/title>/);
+      const pubDateMatch = itemXml.match(/<pubDate>(.*?)<\/pubDate>/);
+      const sourceMatch = itemXml.match(/<source[^>]*>(.*?)<\/source>/);
+      const descMatch = itemXml.match(/<description><!\[CDATA\[(.*?)\]\]>|<description>(.*?)<\/description>/);
+      
+      const title = (titleMatch?.[1] || titleMatch?.[2] || '').trim();
+      const pubDate = pubDateMatch?.[1] || '';
+      const source = (sourceMatch?.[1] || '').trim();
+      
+      // Extract source name from description HTML if not in source tag
+      let sourceName = source;
+      if (!sourceName && descMatch) {
+        const descHtml = descMatch[1] || descMatch[2] || '';
+        const fontMatch = descHtml.match(/<font[^>]*>(.*?)<\/font>/);
+        if (fontMatch) sourceName = fontMatch[1].trim();
+      }
+      
+      // Also extract the actual article title from description if title includes source
+      let cleanTitle = title;
+      if (title.includes(' - ') && sourceName) {
+        cleanTitle = title.replace(` - ${sourceName}`, '').trim();
+      }
+      
+      if (cleanTitle) {
+        // Determine tier based on source name
+        const tier = determineTier(sourceName);
+        
+        results.push({
+          source: sourceName || 'Google News',
+          tier,
+          title: cleanTitle,
+          snippet: `Published: ${pubDate}. Source: ${sourceName}.`,
+          publishDate: pubDate,
+        });
+        count++;
+      }
+    }
+  } catch (error) {
+    console.warn(`[Retrieval] Google News fetch failed:`, error);
+  }
+  
+  return results;
+}
+
+function determineTier(sourceName: string): 'tier1' | 'tier2' | 'tier3' {
+  const name = sourceName.toLowerCase();
+  
+  const tier1Sources = ['reuters', 'ap news', 'associated press', 'bbc', 'bloomberg', 'nasa', 'isro', 'who', 'un news', 'nytimes', 'new york times', 'washington post', 'guardian', 'nature', 'science'];
+  const tier2Sources = ['the hindu', 'indian express', 'ndtv', 'economic times', 'hindustan times', 'livemint', 'techcrunch', 'the verge', 'wired', 'ars technica', 'cnbc', 'financial times', 'wsj', 'wall street journal', 'al jazeera', 'dw', 'france24', 'times of india', 'ani', 'etv bharat', 'moneycontrol', 'mint'];
+  
+  if (tier1Sources.some(s => name.includes(s))) return 'tier1';
+  if (tier2Sources.some(s => name.includes(s))) return 'tier2';
+  return 'tier3';
+}
+
+// ─── Wikipedia (Tier 3: background entity context) ──────────────
+async function retrieveFromWikipedia(entities: string[]): Promise<RetrievalResult[]> {
+  const results: RetrievalResult[] = [];
+  
+  const promises = entities.map(async (entity) => {
     try {
-      const res = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&srlimit=1`);
+      const res = await fetch(
+        `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(entity)}&utf8=&format=json&srlimit=1`,
+        { signal: AbortSignal.timeout(5000) }
+      );
       if (!res.ok) return null;
       const data = await res.json();
       if (data.query?.search?.length > 0) {
-        return `[Live Entity Context: ${query}] ${data.query.search[0].snippet.replace(/<[^>]*>?/gm, '')}`;
+        const snippet = data.query.search[0].snippet.replace(/<[^>]*>?/gm, '');
+        return {
+          source: 'Wikipedia',
+          tier: 'tier3' as const,
+          title: data.query.search[0].title,
+          snippet: snippet,
+        };
       }
     } catch {
       return null;
@@ -190,30 +358,76 @@ async function performLiveRetrieval(understanding: ContentUnderstanding | null):
     return null;
   });
 
-  const results = await Promise.all(searchPromises);
-  const validResults = results.filter(Boolean);
+  const resolved = await Promise.all(promises);
+  for (const r of resolved) {
+    if (r) results.push(r);
+  }
   
-  return validResults.length > 0 
-    ? validResults.join('\n') 
-    : "Live retrieval yielded no specific context. Rely on general verified knowledge.";
+  return results;
+}
+
+// ─── Build structured retrieval summary for LLM ────────────────
+function buildRetrievalSummary(results: RetrievalResult[], understanding: ContentUnderstanding): string {
+  if (results.length === 0) {
+    return "LIVE RETRIEVAL: No matching coverage found. This may be a very recent or developing story. Score conservatively but do NOT mark as false.";
+  }
+
+  const tier1 = results.filter(r => r.tier === 'tier1');
+  const tier2 = results.filter(r => r.tier === 'tier2');
+  const tier3 = results.filter(r => r.tier === 'tier3');
+  
+  let summary = 'LIVE RETRIEVAL RESULTS:\n';
+  
+  if (tier1.length > 0) {
+    summary += '\n[TIER 1 — Confirmed by top-tier sources]\n';
+    tier1.forEach(r => {
+      summary += `• ${r.source}: "${r.title}" ${r.publishDate ? `(${r.publishDate})` : ''}\n`;
+    });
+  }
+  
+  if (tier2.length > 0) {
+    summary += '\n[TIER 2 — Reported by credible outlets]\n';
+    tier2.forEach(r => {
+      summary += `• ${r.source}: "${r.title}" ${r.publishDate ? `(${r.publishDate})` : ''}\n`;
+    });
+  }
+  
+  if (tier3.length > 0) {
+    summary += '\n[TIER 3 — Background context]\n';
+    tier3.forEach(r => {
+      summary += `• ${r.source}: ${r.snippet.substring(0, 120)}\n`;
+    });
+  }
+
+  // Add retrieval confidence signal
+  const confirmedCount = tier1.length + tier2.length;
+  if (confirmedCount >= 3) {
+    summary += '\n→ RETRIEVAL SIGNAL: Strong corroboration. Multiple independent outlets report similar story.';
+  } else if (confirmedCount >= 1) {
+    summary += '\n→ RETRIEVAL SIGNAL: Partial corroboration. At least one credible outlet covers this topic.';
+  } else {
+    summary += '\n→ RETRIEVAL SIGNAL: No direct corroboration from news outlets. Only background context available. Treat as DEVELOPING.';
+  }
+
+  return summary;
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  LAYER 2+3: Reality Verification + Human Explanation (Premium)
+//  LAYER 2+3: Reality Verification + Editorial Explanation
 // ═══════════════════════════════════════════════════════════════
 async function layerTwoThreeVerify(
   headline: string,
   body: string,
   understanding: ContentUnderstanding | null,
-  sourceCredibility: 'trusted' | 'questionable' | 'unknown',
+  sourceCredibility: 'tier1' | 'tier2' | 'questionable' | 'unknown',
   sourceCount: number,
+  retrievalSummary: string,
   referenceLink?: string,
   isPremiumRoute: boolean = false,
-  liveRetrievalData: string = ''
 ): Promise<VerificationResult> {
   const contextBlock = understanding
     ? `
-LAYER 1 ANALYSIS (already completed):
+LAYER 1 ANALYSIS:
 - Primary claim: ${understanding.primaryClaim}
 - Entities: ${understanding.entities.join(', ')}
 - Topic: ${understanding.topic}
@@ -224,59 +438,56 @@ LAYER 1 ANALYSIS (already completed):
 `
     : '';
 
-  const currentDate = new Date().toISOString();
-  const currentYear = new Date().getFullYear();
+  const now = new Date();
+  const currentDate = now.toISOString().split('T')[0];
+  const currentYear = now.getFullYear();
 
-  const prompt = `You are LETTR's senior editorial fact-checker. 
+  const credLabel = sourceCredibility === 'tier1' ? 'TIER 1 TRUSTED'
+    : sourceCredibility === 'tier2' ? 'TIER 2 CREDIBLE'
+    : sourceCredibility === 'questionable' ? 'USER-GENERATED PLATFORM'
+    : 'UNKNOWN';
 
-*** CRITICAL DATE AWARENESS ***
-CURRENT REAL-WORLD DATE: ${currentDate} (Year: ${currentYear})
-NEVER assume the current year is from your training memory (e.g. 2023 or 2024). 
-If an article references events in ${currentYear} or ${currentYear + 1}, evaluate it from the context that TODAY is ${currentDate}.
-NEVER confidently reject something as false just because it discusses events your training data considers "the future".
+  const prompt = `You are LETTR's senior editorial fact-checker. You write like a human editor at Reuters or The Hindu.
+
+TODAY'S DATE: ${currentDate} (Year: ${currentYear})
+RULE: NEVER reject an article as false because your training data doesn't cover ${currentYear}. The live retrieval data below IS your evidence.
 
 ${contextBlock}
 
-LIVE RETRIEVAL CONTEXT (Cross-Verification Data):
-${liveRetrievalData}
+${retrievalSummary}
 
 ARTICLE TO VERIFY:
 Headline: ${headline}
-Content: ${body.substring(0, 2500)}
+Content: ${body.substring(0, 2000)}
 Source URL: ${referenceLink || 'None provided'}
-Source credibility: ${sourceCredibility}
-Number of source links: ${sourceCount}
+Source trust level: ${credLabel}
 
-═══ LAYER 2: REALITY VERIFICATION ═══
-Cross-check claims against live retrieval and trusted knowledge:
-1. TIMELINE CHECK: Does this align with the current date (${currentYear})? Do NOT reject as false if timeline is future/current.
-2. Are the named entities real and correctly described?
-3. Is the article internally consistent?
-4. Does the source credibility support the claims? (${sourceCredibility} source)
+SCORING RULES:
+- 90-100: Confirmed by multiple Tier 1/2 sources in live retrieval. Named entities verified. No contradictions.
+- 85-89: Single TRUSTED source (Tier 1 or Tier 2) is sufficient. Do NOT penalize for single sourcing if source is credible.
+- 75-84: Credible but limited corroboration. Topic is real but specific claims only partially verified.
+- 60-74: DEVELOPING STORY. Real entities and plausible claims but insufficient live confirmation. Use confidence "Low" or "Medium".
+- 50-59: Weak. Minimal sourcing. Claims are vague or unattributable.
+- 0-49: ONLY for outright fabrication, debunked claims, or complete nonsense.
 
-═══ LAYER 3: SCORING + HUMAN EXPLANATION ═══
-Score using this STRICT rubric:
-- 90-100: Multiple trusted confirmations. Named sources. Verifiable facts. Well-sourced from credible outlets (Reuters, AP, Hindu, ISRO, NASA, etc).
-- 75-89: Mostly credible. Key claims align with known reporting. Single TRUSTED source is perfectly acceptable.
-- 50-74: DEVELOPING STORY or weak sourcing. Claims are developing or unconfirmed. DO NOT call it false if uncertain.
-- 0-49: Outright false, debunked, or completely nonsensical.
+CRITICAL:
+- If source is ${credLabel} and no contradictions found in retrieval: minimum score 85.
+- If retrieval found NO coverage but entities are real: score 60-74 as DEVELOPING, NOT false.
+- NEVER claim "reported by multiple outlets" unless retrieval actually found them.
+- NEVER use phrases like "automated assessment" or "appears mostly factual".
 
-CRITICAL SCORING RULES:
-- Do NOT punish articles for having only ONE source link if the source is TRUSTED (Reuters, BBC, Gov, etc). Single trusted sources should still get 85-95.
-- If an article is breaking news or developing (e.g., uncertain outcomes but real entities), score it 60-74 and mark confidence as 'Low' or 'Medium' so it triggers the DEVELOPING STORY badge. Do NOT reject it as false (0-49) just because it's new.
-- AI must NEVER confidently reject something due to outdated model memory. If uncertain, lower confidence (50-74), DO NOT fail it.
+Write your response as a CONCISE editorial fact-check (MAX 100 words total in summary).
 
-Return JSON EXACTLY matching this format:
+Return JSON:
 {
   "factScore": <0-100>,
-  "summary": "VERIFIED:\n- [Fact 1]\n- [Fact 2]\n\nNEEDS CONFIRMATION:\n- [Claim 1]\n\nCONTEXT:\n- [Timeline/Historical relevance]\n\nVERDICT:\n[Short human-readable explanation]",
+  "summary": "✓ Verified\\n- [confirmed fact, max 8 words]\\n- [confirmed fact]\\n\\n⚠ Needs Confirmation\\n- [unverified claim]\\n\\n🧠 Context\\n- [1 sentence of timeline/relevance]\\n\\nVerdict: [1 concise editorial sentence]",
   "confidence": "<Low | Medium | High>",
-  "sourcesChecked": ${sourceCount},
+  "sourcesChecked": <number of retrieval results that matched>,
   "issues": ["<specific issue if any>"]
 }`;
 
-  // Model cascade: try premium → fallback → local
-  const systemMsg = { role: "system", content: "You are an elite journalistic fact-checker for LETTR, an AI-verified news platform. Your analysis must feel human, contextual, and cite specific details from the article. Never use boilerplate language." };
+  const systemMsg = { role: "system", content: "You are a concise, precise editorial fact-checker. Your output must feel like a premium news intelligence system — never robotic, never verbose. Max 100 words in summary." };
   const userMsg = { role: "user", content: prompt };
 
   const modelsToTry = isPremiumRoute 
@@ -315,65 +526,49 @@ Return JSON EXACTLY matching this format:
 function buildIntelligentFallback(
   headline: string,
   body: string,
-  sourceCredibility: 'trusted' | 'questionable' | 'unknown',
+  sourceCredibility: 'tier1' | 'tier2' | 'questionable' | 'unknown',
   sourceCount: number,
   understanding: ContentUnderstanding | null
 ): VerificationResult {
   const bodyWordCount = body.trim().split(/\s+/).filter(Boolean).length;
   const issues: string[] = [];
 
-  // Base scoring that respects source credibility
   let score = 55;
 
-  if (sourceCredibility === 'trusted') {
-    score = 76;
+  if (sourceCredibility === 'tier1') {
+    score = 85;
+  } else if (sourceCredibility === 'tier2') {
+    score = 78;
   } else if (sourceCredibility === 'questionable') {
     score = 52;
     issues.push('Source platform has limited editorial oversight.');
   }
 
-  // Body quality bonus
-  if (bodyWordCount >= 250) score += 8;
-  else if (bodyWordCount >= 150) score += 4;
-  else {
-    issues.push('Article body is brief, limiting verification depth.');
-  }
+  if (bodyWordCount >= 250) score += 5;
+  else if (bodyWordCount >= 150) score += 3;
+  else issues.push('Article body is brief.');
 
-  // Source count bonus
-  if (sourceCount >= 2) score += 6;
-  else if (sourceCount >= 1) score += 3;
-  else issues.push('No external source links for independent corroboration.');
+  if (sourceCount >= 2) score += 4;
+  else if (sourceCount >= 1) score += 2;
+  else issues.push('No external source links provided.');
 
-  // Opinion penalty
   if (understanding?.isOpinionPiece) {
     score = Math.min(score, 65);
-    issues.push('Content appears to be editorial/opinion rather than factual reporting.');
+    issues.push('Content is editorial/opinion.');
   }
 
   score = Math.max(10, Math.min(95, score));
 
-  // Build contextual summary
-  const entityMention = understanding?.entities?.length
-    ? ` involving ${understanding.entities.slice(0, 3).join(', ')}`
-    : '';
-  const topicMention = understanding?.topic ? ` on ${understanding.topic}` : '';
-  const geoMention = understanding?.geography ? ` (${understanding.geography})` : '';
+  const entities = understanding?.entities?.slice(0, 3).join(', ') || 'unnamed entities';
+  const topic = understanding?.topic || 'general news';
+  const geo = understanding?.geography || '';
 
-  const credibilityNote = sourceCredibility === 'trusted'
-    ? 'from a credible outlet'
-    : sourceCredibility === 'questionable'
-    ? 'from a user-generated platform'
-    : 'from an unverified source';
-
-  const factSummary = `This report${topicMention}${entityMention}${geoMention} is ${credibilityNote}. ` +
-    `Verification confidence is reduced while additional cross-referencing completes. ` +
-    `${sourceCount > 0 ? `${sourceCount} source link${sourceCount > 1 ? 's' : ''} provided for reference.` : 'No source links were supplied for independent review.'} ` +
-    `Manual verification of key claims is recommended.`;
+  const factSummary = `✓ Verified\n- Entities identified: ${entities}\n\n⚠ Needs Confirmation\n- AI verification unavailable; manual review recommended\n\n🧠 Context\n- ${topic} report${geo ? ` (${geo})` : ''}, ${sourceCredibility} source\n\nVerdict: Fact-check engine was unavailable. Score based on source credibility and content quality signals.`;
 
   return {
     factScore: score,
     factSummary,
-    confidence: score >= 75 ? 'Medium' : 'Low',
+    confidence: score >= 80 ? 'Medium' : 'Low',
     sourcesChecked: sourceCount,
     issues,
   };
@@ -393,7 +588,7 @@ export async function verifyFact(
   const sourceCount = sourceLinks.length;
 
   // Determine source credibility from the reference link
-  let sourceCredibility: 'trusted' | 'questionable' | 'unknown' = 'unknown';
+  let sourceCredibility: 'tier1' | 'tier2' | 'questionable' | 'unknown' = 'unknown';
   if (referenceLink) {
     sourceCredibility = getSourceCredibility(referenceLink);
   }
@@ -410,15 +605,16 @@ export async function verifyFact(
     console.log(`[Verification] Layer 1 complete: ${understanding.primaryClaim?.substring(0, 80)}...`);
   }
 
-  // ── Live Retrieval Layer ──
-  console.log(`[Verification] Performing live retrieval for claims...`);
-  const liveRetrievalData = await performLiveRetrieval(understanding);
+  // ── Live Retrieval Engine ──
+  console.log(`[Verification] Live Retrieval: Searching trusted news sources...`);
+  const retrieval = await performLiveRetrieval(understanding, headline);
+  console.log(`[Verification] Retrieval complete: ${retrieval.results.length} results found`);
 
-  // ── Layer 2+3: Reality Verification + Explanation (premium model) ──
-  console.log(`[Verification] Layer 2+3: Verifying reality and generating explanation...`);
+  // ── Layer 2+3: Reality Verification + Explanation ──
+  console.log(`[Verification] Layer 2+3: Verifying with live context...`);
   const result = await layerTwoThreeVerify(
     headline, body, understanding,
-    sourceCredibility, sourceCount, referenceLink, isPremiumRoute, liveRetrievalData
+    sourceCredibility, sourceCount, retrieval.summary, referenceLink, isPremiumRoute
   );
 
   console.log(`[Verification] Complete: Score=${result.factScore}, Confidence=${result.confidence}`);
