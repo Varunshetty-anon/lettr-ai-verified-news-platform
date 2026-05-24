@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     const newPost = await Post.create({
       authorId: author._id,
       headline,
-      description: cleanBody.substring(0, 200), // Summary for feed
+      description: cleanBody.substring(0, 200),
       body: cleanBody,
       sourceLink,
       originSource: 'User Submitted',
@@ -74,6 +74,7 @@ export async function POST(request: Request) {
       confidence: verification.confidence,
       sourcesChecked: verification.sourcesChecked,
       issues: verification.issues || [],
+      verificationStatus: verification.verificationStatus || 'UNVERIFIED',
       isPublished: true,
       engagement: 0
     });

@@ -8,7 +8,7 @@ async function runQA() {
   const MONGODB_URI = process.env.MONGODB_URI;
   if (!MONGODB_URI) throw new Error('MONGODB_URI missing');
 
-  await mongoose.connect(MONGODB_URI);
+  await mongoose.connect(MONGODB_URI, { dbName: 'lettr' });
   console.log('Connected to MongoDB.\n');
 
   const Post = mongoose.models.Post || mongoose.model('Post', new mongoose.Schema({

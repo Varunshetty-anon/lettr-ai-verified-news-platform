@@ -6,6 +6,13 @@ if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
 }
 
+/**
+ * Production database name.
+ * All models, auth, sessions, posts, and workers use this single source of truth.
+ * Previously defaulted to 'test' because the URI had no /dbname path segment.
+ */
+export const DB_NAME = 'lettr';
+
 let cached = (global as any).mongoose;
 
 if (!cached) {
@@ -20,6 +27,7 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      dbName: DB_NAME,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {

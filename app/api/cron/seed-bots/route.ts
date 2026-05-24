@@ -468,6 +468,7 @@ export async function GET(request: Request) {
           confidence: verification.confidence,
           sourcesChecked: verification.sourcesChecked,
           issues: verification.issues || [],
+          verificationStatus: verification.verificationStatus || 'UNVERIFIED',
           isPublished: true,
           engagement: Math.floor(Math.random() * 80) + 5
         });

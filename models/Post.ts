@@ -19,6 +19,7 @@ export interface IPost extends Document {
   sourcesChecked?: number;
   reasoning?: string;
   issues?: string[];
+  verificationStatus?: 'CONFIRMED' | 'LIKELY' | 'UNVERIFIED' | 'DEVELOPING';
   isPublished: boolean;
   engagement: number;
   contentType?: 'NEWS' | 'TRENDING' | 'CULTURE' | 'WHOLESOME' | 'HUMOR';
@@ -45,6 +46,7 @@ const PostSchema: Schema<IPost> = new Schema({
   sourcesChecked: { type: Number, default: 0 },
   reasoning: { type: String },
   issues: [{ type: String }],
+  verificationStatus: { type: String, enum: ['CONFIRMED', 'LIKELY', 'UNVERIFIED', 'DEVELOPING'], default: 'UNVERIFIED' },
   isPublished: { type: Boolean, default: false },
   engagement: { type: Number, default: 0 },
   contentType: { type: String, enum: ['NEWS', 'TRENDING', 'CULTURE', 'WHOLESOME', 'HUMOR'], default: 'NEWS', index: true }

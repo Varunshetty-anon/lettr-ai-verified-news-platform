@@ -484,16 +484,37 @@ export default function PostPage({ params }: { params: Promise<{ id: string }> }
           </div>
         </div>
 
-        {/* ── 5. AI Verification Summary Card (instantly visible, text-first above media) ── */}
+        {/* ── 5. AI Verification Summary Card (editorial fact-check format) ── */}
         {post.factSummary && post.factSummary !== 'Analysis complete.' && (
           <div className="border border-outline-variant bg-surface-container p-5 mb-8">
             <div className="flex items-center justify-between mb-3">
-              <span className="type-label-md text-on-surface font-bold uppercase tracking-wider">AI VERIFICATION DEK</span>
-              <span className="type-caption text-on-surface-variant uppercase">FACT CHECKED</span>
+              <span className="type-label-md text-on-surface font-bold uppercase tracking-wider">FACT CHECK</span>
+              <div className="flex items-center gap-2">
+                {post.verificationStatus && (
+                  <span className={`type-label-md px-2 py-0.5 font-bold uppercase tracking-wider ${
+                    post.verificationStatus === 'CONFIRMED' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
+                    post.verificationStatus === 'LIKELY' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' :
+                    post.verificationStatus === 'DEVELOPING' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
+                    'bg-red-500/10 text-red-500 border border-red-500/20'
+                  }`}>
+                    {post.verificationStatus}
+                  </span>
+                )}
+                <span className="type-caption text-on-surface-variant uppercase">{post.confidence || 'Medium'} confidence</span>
+              </div>
             </div>
-            <p className="type-body-md text-on-surface-variant leading-relaxed whitespace-pre-wrap">
-              {post.factSummary}
-            </p>
+            <div className="type-body-md text-on-surface-variant leading-relaxed">
+              {post.factSummary.split('\n').map((line: string, i: number) => {
+                const trimmed = line.trim();
+                if (!trimmed) return <div key={i} className="h-2" />;
+                if (trimmed.startsWith('✓')) return <p key={i} className="text-emerald-500 font-bold mt-2 mb-1">{trimmed}</p>;
+                if (trimmed.startsWith('⚠')) return <p key={i} className="text-amber-500 font-bold mt-2 mb-1">{trimmed}</p>;
+                if (trimmed.startsWith('🧠')) return <p key={i} className="text-blue-400 font-bold mt-2 mb-1">{trimmed}</p>;
+                if (trimmed.startsWith('Verdict:') || trimmed.startsWith('Final Verdict:')) return <p key={i} className="text-on-surface font-bold mt-3 pt-3 border-t border-outline-variant/30">{trimmed}</p>;
+                if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) return <p key={i} className="pl-4 text-on-surface-variant/80">{trimmed}</p>;
+                return <p key={i}>{trimmed}</p>;
+              })}
+            </div>
             {post.issues && post.issues.length > 0 && (
               <ul className="mt-3 space-y-1">
                 {post.issues.map((issue: string, i: number) => (

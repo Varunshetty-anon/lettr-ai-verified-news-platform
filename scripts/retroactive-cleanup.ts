@@ -11,7 +11,7 @@ async function runCleanup() {
     throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
   }
 
-  await mongoose.connect(MONGODB_URI);
+  await mongoose.connect(MONGODB_URI, { dbName: 'lettr' });
   console.log('Connected to MongoDB.');
 
   const Post = mongoose.models.Post || mongoose.model('Post', new mongoose.Schema({
