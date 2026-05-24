@@ -72,17 +72,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return true;
     },
-    async jwt({ token, user, trigger }) {
-      if (user || trigger === "update") {
-        await dbConnect();
-        const dbUser = await User.findOne({ email: token.email || user?.email });
-        if (dbUser) {
-          token.role = dbUser.role;
-          token.id = dbUser._id.toString();
-          token.image = dbUser.image || "";
-          token.isVerifiedAuthor = dbUser.isVerifiedAuthor;
-          token.preferencesCount = (dbUser.preferences || []).length;
-        }
+    async jwt({ token, user }) {
+      // Always refresh from DB to prevent stale JWT after migration/role changes
+      await dbConnect();
+      const dbUser = await User.findOne({ email: token.email || user?.email }).lean();
+      if (dbUser) {
+        token.role = (dbUser as any).role;
+        token.id = (dbUser as any)._id.toString();
+        token.image = (dbUser as any).image || "";
+        token.isVerifiedAuthor = (dbUser as any).isVerifiedAuthor;
+        token.preferencesCount = ((dbUser as any).preferences || []).length;
       }
       return token;
     },
